@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Jost } from "next/font/google";
+import { TopNav } from "@/components/TopNav";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -28,7 +29,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${cormorant.variable} ${jost.variable}`}>
-      <body>{children}</body>
+      <body>
+        <TopNav variant="agency" />
+        {children}
+      </body>
     </html>
   );
 }

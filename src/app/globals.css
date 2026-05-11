@@ -9,8 +9,8 @@
   --color-arqud-bone: #f3ecd9;
   --color-arqud-muted: #6e6e6e;
 
-  --font-display: "Cormorant Garamond", Georgia, serif;
-  --font-body: "Jost", system-ui, sans-serif;
+  --font-display: var(--font-display-loaded), Georgia, serif;
+  --font-body: var(--font-body-loaded), system-ui, sans-serif;
 }
 
 html,

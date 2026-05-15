@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { roleForRedirect } from "@/lib/auth/redirects";
 
 export async function signInWithPassword(formData: FormData) {
@@ -19,8 +20,9 @@ export async function signInWithPassword(formData: FormData) {
     );
   }
 
-  // Use the same authenticated client instance — avoids RLS cookie timing issue
-  const { data: profileData } = await supabase
+  // Use admin client to bypass RLS for the initial profile lookup
+  const admin = createSupabaseAdminClient();
+  const { data: profileData } = await admin
     .from("profiles")
     .select("role")
     .eq("id", data.user.id)

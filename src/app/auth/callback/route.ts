@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { roleForRedirect } from "@/lib/auth/redirects";
 
 export async function GET(request: NextRequest) {
@@ -18,8 +19,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=expired_link", origin));
   }
 
-  // Use the same authenticated client instance to avoid RLS cookie timing issue
-  const { data: profileData } = await supabase
+  // Use admin client to bypass RLS for the initial profile lookup
+  const admin = createSupabaseAdminClient();
+  const { data: profileData } = await admin
     .from("profiles")
     .select("role")
     .eq("id", data.user.id)

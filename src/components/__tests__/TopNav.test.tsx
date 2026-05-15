@@ -34,4 +34,19 @@ describe("TopNav", () => {
     }
     expect(screen.getByText("SPARKLING AUTO")).toBeInTheDocument();
   });
+
+  it("renders no logout button when user prop is absent", () => {
+    render(<TopNav variant="agency" />);
+    expect(screen.queryByRole("button", { name: /logout/i })).not.toBeInTheDocument();
+  });
+
+  it("renders user pill with name and label when user prop is provided", () => {
+    render(<TopNav variant="agency" user={{ name: "Morne Swanepoel", label: "Admin" }} />);
+    expect(screen.getByText("Morne Swanepoel · Admin")).toBeInTheDocument();
+  });
+
+  it("renders a logout button when user prop is provided", () => {
+    render(<TopNav variant="agency" user={{ name: "Morne", label: "Admin" }} />);
+    expect(screen.getByRole("button", { name: /logout/i })).toBeInTheDocument();
+  });
 });

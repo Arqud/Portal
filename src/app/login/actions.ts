@@ -11,25 +11,37 @@ export async function signInWithPassword(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   const next = String(formData.get("next") ?? "");
 
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  let supabase;
+  try {
+    supabase = await createSupabaseServerClient();
+  } catch {
+    redirect("/login?error=server_error");
+  }
+
+  const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
 
   if (error || !data.user) {
+    // Auth failed — wrong password or unconfirmed email
     redirect(
       `/login?error=invalid_credentials${next ? `&next=${encodeURIComponent(next)}` : ""}`,
     );
   }
 
-  // Use admin client to bypass RLS for the initial profile lookup
+  // Auth succeeded — look up role via admin client (bypasses RLS)
   const admin = createSupabaseAdminClient();
-  const { data: profileData } = await admin
+  const { data: profileData, error: profileError } = await admin
     .from("profiles")
     .select("role")
     .eq("id", data.user.id)
     .single();
 
+  if (profileError || !profileData) {
+    // Profile missing — show a specific error so we can diagnose
+    redirect("/login?error=no_profile");
+  }
+
   revalidatePath("/", "layout");
-  redirect(next || roleForRedirect(profileData?.role ?? null));
+  redirect(next || roleForRedirect(profileData.role));
 }
 
 export async function sendMagicLink(formData: FormData) {

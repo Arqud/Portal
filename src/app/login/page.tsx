@@ -48,6 +48,16 @@ export default async function LoginPage({
                 Email or password incorrect.
               </p>
             )}
+            {error === "no_profile" && (
+              <p className="text-center text-sm text-red-400">
+                Account not fully set up — profile missing. Contact support.
+              </p>
+            )}
+            {error === "server_error" && (
+              <p className="text-center text-sm text-red-400">
+                Server error — please try again in a moment.
+              </p>
+            )}
 
             <form action={signInWithPassword} className="space-y-4">
               <input type="hidden" name="next" value={next} />

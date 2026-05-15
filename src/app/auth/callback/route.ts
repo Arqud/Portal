@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { roleForRedirect } from "@/lib/auth/redirects";
-import { getProfile } from "@/lib/auth/getProfile";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -19,7 +18,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=expired_link", origin));
   }
 
-  const profile = await getProfile(data.user.id);
-  const destination = next || roleForRedirect(profile?.role ?? null);
+  // Use the same authenticated client instance to avoid RLS cookie timing issue
+  const { data: profileData } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", data.user.id)
+    .single();
+
+  const destination = next || roleForRedirect(profileData?.role ?? null);
   return NextResponse.redirect(new URL(destination, origin));
 }

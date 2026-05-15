@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { roleForRedirect } from "@/lib/auth/redirects";
-import { getProfile } from "@/lib/auth/getProfile";
 
 export async function signInWithPassword(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
@@ -20,9 +19,15 @@ export async function signInWithPassword(formData: FormData) {
     );
   }
 
-  const profile = await getProfile(data.user.id);
+  // Use the same authenticated client instance — avoids RLS cookie timing issue
+  const { data: profileData } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", data.user.id)
+    .single();
+
   revalidatePath("/", "layout");
-  redirect(next || roleForRedirect(profile?.role ?? null));
+  redirect(next || roleForRedirect(profileData?.role ?? null));
 }
 
 export async function sendMagicLink(formData: FormData) {

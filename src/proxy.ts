@@ -25,7 +25,38 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const pathname = request.nextUrl.pathname;
+  const isAdminPath = pathname.startsWith("/admin");
+  const isClientPath = pathname.startsWith("/client");
+
+  if (!isAdminPath && !isClientPath) return response;
+
+  if (!user) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("next", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (isAdminPath && profile.role !== "admin") {
+    return NextResponse.redirect(new URL("/client/dashboard", request.url));
+  }
+  if (isClientPath && profile.role !== "client") {
+    return NextResponse.redirect(new URL("/admin/overview", request.url));
+  }
 
   return response;
 }

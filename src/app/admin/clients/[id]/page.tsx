@@ -4,6 +4,7 @@ import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getSignedUrl } from "@/lib/storage";
 import { ClientDetailClient } from "./ClientDetailClient";
+import { ClientDetailActions } from "./ClientDetailActions";
 
 export default async function ClientDetailPage({
   params,
@@ -80,6 +81,7 @@ export default async function ClientDetailPage({
       </div>
 
       {/* Client header */}
+      <ClientDetailActions client={client} />
       <div className="flex items-start justify-between mb-8">
         <div>
           <h1 className="text-5xl tracking-wide">{client.company ?? client.name}</h1>

@@ -14,23 +14,28 @@ async function requireAdmin() {
   return admin;
 }
 
-export async function createClient(formData: FormData) {
+export async function addNewClient(formData: FormData) {
   const admin = await requireAdmin();
 
   const name = String(formData.get("name") ?? "").trim();
   const company = String(formData.get("company") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
-  const subdomainSlug = String(formData.get("subdomain_slug") ?? "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+  const subdomainSlug = String(formData.get("subdomain_slug") ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "");
   const contactPerson = String(formData.get("contact_person") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
   const regNumber = String(formData.get("reg_number") ?? "").trim();
   const vatNumber = String(formData.get("vat_number") ?? "").trim();
   const createPortalAccess = formData.get("create_portal_access") === "on";
 
-  if (!name || !email || !subdomainSlug) throw new Error("Name, email and subdomain are required");
+  if (!name || !email || !subdomainSlug) {
+    throw new Error("Name, email and subdomain are required");
+  }
 
   // Insert client record
-  const { data: client, error: clientErr } = await admin
+  const { data: clientRecord, error: clientErr } = await admin
     .from("clients")
     .insert({
       name,
@@ -46,26 +51,41 @@ export async function createClient(formData: FormData) {
     .select("id")
     .single();
 
-  if (clientErr || !client) throw new Error(clientErr?.message ?? "Failed to create client");
+  if (clientErr || !clientRecord) {
+    throw new Error(clientErr?.message ?? "Failed to create client");
+  }
 
-  // Optionally create portal login
+  // Optionally create portal login via Supabase Admin REST API
   if (createPortalAccess) {
-    const tempPassword = `Portal${Math.random().toString(36).slice(2, 10)}!`;
-    const { data: authUser, error: authErr } = await admin.auth.admin.createUser({
-      email,
-      password: tempPassword,
-      email_confirm: true,
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+    const authRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        apikey: serviceKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password: `Portal${Math.random().toString(36).slice(2, 10)}!Tmp`,
+        email_confirm: true,
+      }),
     });
 
-    if (!authErr && authUser.user) {
-      await admin.from("profiles").insert({
-        id: authUser.user.id,
-        role: "client",
-        full_name: contactPerson || name,
-        client_id: client.id,
-      });
+    if (authRes.ok) {
+      const authUser = await authRes.json();
+      if (authUser.id) {
+        await admin.from("profiles").insert({
+          id: authUser.id,
+          role: "client",
+          full_name: contactPerson || name,
+          client_id: clientRecord.id,
+        });
+      }
     }
   }
 
-  redirect(`/admin/clients/${client.id}`);
+  redirect(`/admin/clients/${clientRecord.id}`);
 }

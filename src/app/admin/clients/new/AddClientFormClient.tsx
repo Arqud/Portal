@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition, useState } from "react";
-import { createClient } from "./actions";
+import { addNewClient } from "./actions";
 
 export function AddClientFormClient() {
   const [isPending, start] = useTransition();
@@ -13,7 +13,7 @@ export function AddClientFormClient() {
     setErr("");
     start(async () => {
       try {
-        await createClient(fd);
+        await addNewClient(fd);
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Something went wrong.");
       }

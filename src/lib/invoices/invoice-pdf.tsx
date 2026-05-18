@@ -98,6 +98,8 @@ export function InvoicePDF({ invoice, arqudVatNumber }: { invoice: InvoiceWithIt
             <Text style={S.billedD}>Morne@arqud.com</Text>
             <Text style={S.billedD}>Reg No: 2025/074398/07</Text>
             {vat && <Text style={S.billedD}>VAT No: {arqudVatNumber}</Text>}
+            <Text style={S.billedD}>Tel: +27 60 865 8690</Text>
+            <Text style={S.billedD}>Web: arqud.com</Text>
             <Text style={S.billedD}>Bank: FNB Gold Business</Text>
             <Text style={S.billedD}>Acc: 63195766482</Text>
           </View>

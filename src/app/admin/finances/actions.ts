@@ -64,6 +64,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
   }
 
   revalidatePath("/admin/finances");
+  return { id: invoice.id, invoiceNumber: invoiceNumber };
 }
 
 export async function markInvoicePaid(invoiceId: string, paidAt: string) {

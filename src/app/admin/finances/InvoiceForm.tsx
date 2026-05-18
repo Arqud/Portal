@@ -9,6 +9,8 @@ const emptyLine = (): Omit<LineItem, "id"> => ({
   description: "", detail: "", rate: 0, quantity: 1, amount: 0, sort_order: 0,
 });
 
+type CreatedInvoice = { id: string; invoiceNumber: string };
+
 export function InvoiceForm({ clients, onClose }: { clients: Client[]; onClose: () => void }) {
   const today = new Date().toISOString().split("T")[0];
   const due14 = new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0];
@@ -18,9 +20,11 @@ export function InvoiceForm({ clients, onClose }: { clients: Client[]; onClose: 
   const [dueDate, setDueDate] = useState(due14);
   const [terms, setTerms] = useState("14 Days");
   const [notes, setNotes] = useState("");
+  const [vatRate, setVatRate] = useState(15);
   const [lines, setLines] = useState<Omit<LineItem, "id">[]>([emptyLine()]);
   const [isPending, start] = useTransition();
   const [err, setErr] = useState("");
+  const [created, setCreated] = useState<CreatedInvoice | null>(null);
 
   function updateLine(i: number, field: string, value: string | number) {
     setLines((prev) => {
@@ -33,8 +37,10 @@ export function InvoiceForm({ clients, onClose }: { clients: Client[]; onClose: 
   }
 
   const subtotal = calcSubtotal(lines);
-  const vatAmt = calcVat(subtotal, 15);
+  const vatAmt = calcVat(subtotal, vatRate);
   const total = calcTotal(subtotal, vatAmt);
+
+  const selectedClient = clients.find((c) => c.id === clientId);
 
   function submit(isDraft: boolean) {
     if (!clientId) { setErr("Select a client."); return; }
@@ -43,20 +49,68 @@ export function InvoiceForm({ clients, onClose }: { clients: Client[]; onClose: 
     setErr("");
     start(async () => {
       try {
-        await createInvoice({
-          clientId, issueDate, dueDate, terms, notes, vatRate: 15,
+        const result = await createInvoice({
+          clientId, issueDate, dueDate, terms, notes, vatRate,
           lineItems: valid.map((l, i) => ({ ...l, sort_order: i })),
           isDraft,
         });
-        onClose();
+        if (!isDraft && result) {
+          setCreated({ id: result.id, invoiceNumber: result.invoiceNumber ?? "" });
+        } else {
+          onClose();
+        }
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Something went wrong.");
       }
     });
   }
 
-  const inputCls = "w-full bg-arqud-black border border-arqud-ink px-4 py-3 text-arqud-bone focus:border-arqud-gold focus:outline-none";
+  const inputCls = "w-full bg-arqud-black border border-arqud-ink px-4 py-3 text-arqud-bone focus:border-arqud-gold focus:outline-none text-sm";
   const smallCls = "bg-arqud-black border border-arqud-ink px-2 py-2 text-arqud-bone text-sm focus:border-arqud-gold focus:outline-none";
+
+  // Success state — show after invoice created
+  if (created) {
+    const clientEmail = selectedClient?.email ?? "";
+    const clientName = selectedClient?.company ?? selectedClient?.name ?? "";
+    const pdfUrl = `/api/invoices/${created.id}/pdf`;
+    const mailtoUrl = `mailto:${clientEmail}?subject=Invoice ${created.invoiceNumber} from ARQUD (PTY) LTD&body=Dear ${clientName},%0A%0APlease find your invoice ${created.invoiceNumber} attached.%0A%0AAmount due: R ${total.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}%0ADue date: ${dueDate}%0A%0AYou can download your invoice here:%0A${pdfUrl}%0A%0AKind regards,%0AMorne Swanepoel%0AARQUD (PTY) LTD`;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+        <div className="w-full max-w-md bg-arqud-night border border-arqud-ink p-8 space-y-6 text-center">
+          <div>
+            <p className="text-green-400 text-4xl mb-4">✓</p>
+            <h2 className="font-display text-3xl text-arqud-gold">{created.invoiceNumber}</h2>
+            <p className="text-arqud-bone mt-2">Invoice created successfully</p>
+            <p className="text-arqud-muted text-sm mt-1">
+              R {total.toLocaleString("en-ZA", { minimumFractionDigits: 2 })} · Due {dueDate}
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <a href={pdfUrl} target="_blank" rel="noopener noreferrer"
+              className="block w-full bg-arqud-gold py-3 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft">
+              Preview &amp; Download PDF
+            </a>
+            <a href={mailtoUrl}
+              className="block w-full border border-arqud-gold py-3 text-sm font-semibold uppercase tracking-widest text-arqud-gold hover:bg-arqud-gold hover:text-arqud-black">
+              Send via Email
+            </a>
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <button onClick={() => { setCreated(null); setLines([emptyLine()]); setNotes(""); }}
+                className="border border-arqud-ink py-2 text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-bone">
+                New Invoice
+              </button>
+              <button onClick={onClose}
+                className="border border-arqud-ink py-2 text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-bone">
+                Back to Finances
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 pt-8 pb-8 px-4">
@@ -75,15 +129,14 @@ export function InvoiceForm({ clients, onClose }: { clients: Client[]; onClose: 
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: "Invoice Date", val: issueDate, set: setIssueDate },
-            { label: "Due Date", val: dueDate, set: setDueDate },
-          ].map(({ label, val, set }) => (
-            <div key={label}>
-              <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">{label}</label>
-              <input type="date" value={val} onChange={(e) => set(e.target.value)} className={inputCls} />
-            </div>
-          ))}
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Invoice Date</label>
+            <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Due Date</label>
+            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={inputCls} />
+          </div>
           <div>
             <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Terms</label>
             <input type="text" value={terms} onChange={(e) => setTerms(e.target.value)} className={inputCls} />
@@ -121,10 +174,26 @@ export function InvoiceForm({ clients, onClose }: { clients: Client[]; onClose: 
           </button>
         </div>
 
-        <div className="border-t border-arqud-ink pt-4 space-y-1 text-right">
-          <p className="text-sm text-arqud-muted">Subtotal: <span className="text-arqud-bone">R {subtotal.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</span></p>
-          <p className="text-sm text-arqud-muted">VAT (15%): <span className="text-arqud-bone">R {vatAmt.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</span></p>
-          <p className="font-display text-2xl text-arqud-gold">R {total.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</p>
+        {/* VAT rate + totals */}
+        <div className="border-t border-arqud-ink pt-4 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-arqud-muted">Subtotal</span>
+            <span className="text-arqud-bone">R {subtotal.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-arqud-muted">VAT</span>
+              <input type="number" value={vatRate} min={0} max={100} step={1}
+                onChange={(e) => setVatRate(parseFloat(e.target.value) || 0)}
+                className="w-16 bg-arqud-black border border-arqud-ink px-2 py-1 text-arqud-bone text-xs text-right focus:border-arqud-gold focus:outline-none" />
+              <span className="text-arqud-muted text-xs">%</span>
+            </div>
+            <span className="text-arqud-bone">R {vatAmt.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-arqud-muted text-sm font-semibold">Total</span>
+            <span className="font-display text-2xl text-arqud-gold">R {total.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</span>
+          </div>
         </div>
 
         <div>

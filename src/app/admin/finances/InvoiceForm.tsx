@@ -20,6 +20,7 @@ export function InvoiceForm({ clients, onClose }: { clients: Client[]; onClose: 
   const [dueDate, setDueDate] = useState(due14);
   const [terms, setTerms] = useState("14 Days");
   const [notes, setNotes] = useState("");
+  const [chargeVat, setChargeVat] = useState(true);
   const [vatRate, setVatRate] = useState(15);
   const [lines, setLines] = useState<Omit<LineItem, "id">[]>([emptyLine()]);
   const [isPending, start] = useTransition();
@@ -37,7 +38,8 @@ export function InvoiceForm({ clients, onClose }: { clients: Client[]; onClose: 
   }
 
   const subtotal = calcSubtotal(lines);
-  const vatAmt = calcVat(subtotal, vatRate);
+  const effectiveVatRate = chargeVat ? vatRate : 0;
+  const vatAmt = calcVat(subtotal, effectiveVatRate);
   const total = calcTotal(subtotal, vatAmt);
 
   const selectedClient = clients.find((c) => c.id === clientId);
@@ -50,7 +52,7 @@ export function InvoiceForm({ clients, onClose }: { clients: Client[]; onClose: 
     start(async () => {
       try {
         const result = await createInvoice({
-          clientId, issueDate, dueDate, terms, notes, vatRate,
+          clientId, issueDate, dueDate, terms, notes, vatRate: effectiveVatRate,
           lineItems: valid.map((l, i) => ({ ...l, sort_order: i })),
           isDraft,
         });
@@ -174,21 +176,33 @@ export function InvoiceForm({ clients, onClose }: { clients: Client[]; onClose: 
           </button>
         </div>
 
-        {/* VAT rate + totals */}
+        {/* VAT toggle + totals */}
         <div className="border-t border-arqud-ink pt-4 space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-arqud-muted">Subtotal</span>
             <span className="text-arqud-bone">R {subtotal.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-arqud-muted">VAT</span>
-              <input type="number" value={vatRate} min={0} max={100} step={1}
-                onChange={(e) => setVatRate(parseFloat(e.target.value) || 0)}
-                className="w-16 bg-arqud-black border border-arqud-ink px-2 py-1 text-arqud-bone text-xs text-right focus:border-arqud-gold focus:outline-none" />
-              <span className="text-arqud-muted text-xs">%</span>
+            <div className="flex items-center gap-3">
+              <input type="checkbox" id="charge-vat" checked={chargeVat}
+                onChange={(e) => setChargeVat(e.target.checked)}
+                className="w-4 h-4 accent-arqud-gold" />
+              <label htmlFor="charge-vat" className="text-arqud-muted cursor-pointer">Charge VAT</label>
+              {chargeVat && (
+                <div className="flex items-center gap-1">
+                  <input type="number" value={vatRate} min={0} max={100} step={1}
+                    onChange={(e) => setVatRate(parseFloat(e.target.value) || 0)}
+                    className="w-14 bg-arqud-black border border-arqud-ink px-2 py-1 text-arqud-bone text-xs text-right focus:border-arqud-gold focus:outline-none" />
+                  <span className="text-arqud-muted text-xs">%</span>
+                </div>
+              )}
             </div>
-            <span className="text-arqud-bone">R {vatAmt.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</span>
+            <span className="text-arqud-bone">
+              {chargeVat
+                ? `R ${vatAmt.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`
+                : <span className="text-arqud-muted">R 0.00 (zero-rated)</span>
+              }
+            </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-arqud-muted text-sm font-semibold">Total</span>

@@ -59,14 +59,16 @@ export function TopNav(props: TopNavProps) {
       </ul>
       {props.user && (
         <div className="flex items-center gap-4">
+          {props.variant === "agency" && (
+            <Link href="/admin/settings" className="text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-gold">
+              Settings
+            </Link>
+          )}
           <span className="text-sm text-arqud-bone">
             {props.user.name} · {props.user.label}
           </span>
           <form action="/logout" method="POST">
-            <button
-              type="submit"
-              className="text-sm uppercase tracking-widest text-arqud-muted hover:text-arqud-gold"
-            >
+            <button type="submit" className="text-sm uppercase tracking-widest text-arqud-muted hover:text-arqud-gold">
               Logout
             </button>
           </form>

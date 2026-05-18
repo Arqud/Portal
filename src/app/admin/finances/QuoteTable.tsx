@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { updateQuoteStatus } from "./actions";
 import { ConvertModal } from "./ConvertModal";
 import { QuoteForm } from "./QuoteForm";
+import { QuoteDetailModal } from "./QuoteDetailModal";
 import type { QuoteWithItems, Client } from "@/lib/invoices/types";
 
 const STATUS: Record<string, string> = {
@@ -17,11 +18,13 @@ export function QuoteTable({ quotes, clients, onNew }: { quotes: QuoteWithItems[
   const [pending, start] = useTransition();
   const [converting, setConverting] = useState<QuoteWithItems | null>(null);
   const [editing, setEditing] = useState<QuoteWithItems | null>(null);
+  const [viewing, setViewing] = useState<QuoteWithItems | null>(null);
 
   return (
     <div>
       {converting && <ConvertModal quote={converting} onClose={() => setConverting(null)} />}
       {editing && <QuoteForm clients={clients} editQuote={editing} onClose={() => setEditing(null)} />}
+      {viewing && <QuoteDetailModal quote={viewing} onClose={() => setViewing(null)} />}
       <div className="flex justify-end mb-4">
         <button onClick={onNew}
           className="bg-arqud-gold px-6 py-2 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft">
@@ -42,7 +45,11 @@ export function QuoteTable({ quotes, clients, onNew }: { quotes: QuoteWithItems[
           <tbody>
             {quotes.map((q) => (
               <tr key={q.id} className="border-b border-arqud-ink/50 hover:bg-arqud-night/50">
-                <td className="py-3 pr-4 text-arqud-bone">{q.quote_number}</td>
+                <td className="py-3 pr-4">
+                  <button onClick={() => setViewing(q)} className="text-arqud-gold hover:text-arqud-gold-soft hover:underline font-medium">
+                    {q.quote_number}
+                  </button>
+                </td>
                 <td className="py-3 pr-4 text-arqud-bone">{q.client?.company ?? q.client?.name ?? "—"}</td>
                 <td className="py-3 pr-4 text-arqud-muted">{q.issue_date}</td>
                 <td className="py-3 pr-4 text-arqud-bone">R {q.total.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</td>

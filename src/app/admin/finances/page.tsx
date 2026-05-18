@@ -1,6 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { verifySession } from "@/lib/auth/session";
-import { RevenueSummary } from "./RevenueSummary";
 import { FinancesClient } from "./FinancesClient";
 import type { InvoiceWithItems, QuoteWithItems } from "@/lib/invoices/types";
 
@@ -55,13 +54,6 @@ export default async function FinancesPage() {
   return (
     <main className="min-h-screen px-8 py-12">
       <h1 className="text-5xl tracking-wide mb-8">Finances</h1>
-      <RevenueSummary
-        invoicedThisMonth={invoicedThisMonth}
-        collectedThisMonth={collectedThisMonth}
-        outstanding={outstanding}
-        overdue={overdue}
-        ytd={ytd}
-      />
       <FinancesClient invoices={invoices} quotes={quotes} clients={clients} />
     </main>
   );

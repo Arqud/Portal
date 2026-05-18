@@ -1,0 +1,13 @@
+
+> arqud-portal@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.183:3000
+- Environments: .env.local
+✓ Ready in 554ms
+
+ GET / 200 in 396ms (next.js: 87ms, proxy.ts: 170ms, application-code: 140ms)
+ GET / 200 in 37ms (next.js: 4ms, proxy.ts: 5ms, application-code: 28ms)
+[?25h

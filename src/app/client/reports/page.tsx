@@ -1,5 +1,6 @@
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getSignedUrl } from "@/lib/storage";
 
 export default async function ClientReportsPage() {
   const { profile } = await verifySession("client");
@@ -13,10 +14,17 @@ export default async function ClientReportsPage() {
 
   const list = reports ?? [];
 
+  // Generate signed download URLs
+  const signedUrls: Record<string, string> = {};
+  await Promise.all(
+    list.map(async (r) => {
+      try { signedUrls[r.id] = await getSignedUrl(r.pdf_url); } catch { /* skip */ }
+    })
+  );
+
   return (
     <main className="min-h-screen px-8 py-12">
       <h1 className="text-5xl tracking-wide mb-8">Reports</h1>
-
       {list.length === 0 ? (
         <div className="border border-arqud-ink bg-arqud-night p-12 text-center space-y-3">
           <p className="font-display text-2xl text-arqud-gold">No reports yet</p>
@@ -40,10 +48,12 @@ export default async function ClientReportsPage() {
                 <td className="py-3 pr-4 text-arqud-muted">{r.period}</td>
                 <td className="py-3 pr-4 text-arqud-muted">{new Date(r.created_at).toLocaleDateString("en-ZA")}</td>
                 <td className="py-3">
-                  <a href={r.pdf_url} target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-arqud-gold hover:text-arqud-gold-soft uppercase tracking-widest">
-                    Download PDF
-                  </a>
+                  {signedUrls[r.id] ? (
+                    <a href={signedUrls[r.id]} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-arqud-gold hover:text-arqud-gold-soft uppercase tracking-widest">
+                      Download PDF
+                    </a>
+                  ) : <span className="text-xs text-arqud-muted">Unavailable</span>}
                 </td>
               </tr>
             ))}

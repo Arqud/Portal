@@ -141,10 +141,10 @@ export function FinancesClient({ invoices, quotes, clients }: Props) {
       </div>
 
       {tab === "invoices" && (
-        <InvoiceTable invoices={filteredInvoices} onNew={() => setShowInvoice(true)} />
+        <InvoiceTable invoices={filteredInvoices} clients={clients} onNew={() => setShowInvoice(true)} />
       )}
       {tab === "quotes" && (
-        <QuoteTable quotes={filteredQuotes} onNew={() => setShowQuote(true)} />
+        <QuoteTable quotes={filteredQuotes} clients={clients} onNew={() => setShowQuote(true)} />
       )}
     </div>
   );

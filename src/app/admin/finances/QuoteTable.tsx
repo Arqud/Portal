@@ -3,7 +3,8 @@
 import { useState, useTransition } from "react";
 import { updateQuoteStatus } from "./actions";
 import { ConvertModal } from "./ConvertModal";
-import type { QuoteWithItems } from "@/lib/invoices/types";
+import { QuoteForm } from "./QuoteForm";
+import type { QuoteWithItems, Client } from "@/lib/invoices/types";
 
 const STATUS: Record<string, string> = {
   draft: "text-arqud-muted border-arqud-muted",
@@ -12,13 +13,15 @@ const STATUS: Record<string, string> = {
   rejected: "text-red-400 border-red-400",
 };
 
-export function QuoteTable({ quotes, onNew }: { quotes: QuoteWithItems[]; onNew: () => void }) {
+export function QuoteTable({ quotes, clients, onNew }: { quotes: QuoteWithItems[]; clients: Client[]; onNew: () => void }) {
   const [pending, start] = useTransition();
   const [converting, setConverting] = useState<QuoteWithItems | null>(null);
+  const [editing, setEditing] = useState<QuoteWithItems | null>(null);
 
   return (
     <div>
       {converting && <ConvertModal quote={converting} onClose={() => setConverting(null)} />}
+      {editing && <QuoteForm clients={clients} editQuote={editing} onClose={() => setEditing(null)} />}
       <div className="flex justify-end mb-4">
         <button onClick={onNew}
           className="bg-arqud-gold px-6 py-2 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft">
@@ -69,6 +72,10 @@ export function QuoteTable({ quotes, onNew }: { quotes: QuoteWithItems[]; onNew:
                   {q.status === "accepted" && !q.converted_to_invoice_id && (
                     <button onClick={() => setConverting(q)}
                       className="text-xs text-arqud-gold hover:text-arqud-gold-soft">Convert to Invoice</button>
+                  )}
+                  {!q.converted_to_invoice_id && q.status !== "accepted" && q.status !== "rejected" && (
+                    <button onClick={() => setEditing(q)}
+                      className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">Edit</button>
                   )}
                   {q.converted_to_invoice_id && (
                     <span className="text-xs text-green-400">Invoiced</span>

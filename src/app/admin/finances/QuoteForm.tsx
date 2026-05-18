@@ -1,20 +1,34 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createQuote } from "./actions";
-import type { Client, LineItem } from "@/lib/invoices/types";
+import { createQuote, updateQuote } from "./actions";
+import type { Client, LineItem, QuoteWithItems } from "@/lib/invoices/types";
 import { calcLineAmount, calcSubtotal } from "@/lib/invoices/calculations";
 
 const emptyLine = (): Omit<LineItem, "id"> => ({
   description: "", detail: "", rate: 0, quantity: 1, amount: 0, sort_order: 0,
 });
 
-export function QuoteForm({ clients, onClose }: { clients: Client[]; onClose: () => void }) {
+export function QuoteForm({
+  clients, onClose, editQuote,
+}: {
+  clients: Client[];
+  onClose: () => void;
+  editQuote?: QuoteWithItems;
+}) {
+  const isEdit = Boolean(editQuote);
   const today = new Date().toISOString().split("T")[0];
-  const [clientId, setClientId] = useState(clients[0]?.id ?? "");
-  const [issueDate, setIssueDate] = useState(today);
-  const [notes, setNotes] = useState("");
-  const [lines, setLines] = useState<Omit<LineItem, "id">[]>([emptyLine()]);
+  const [clientId, setClientId] = useState(editQuote?.client_id ?? clients[0]?.id ?? "");
+  const [issueDate, setIssueDate] = useState(editQuote?.issue_date ?? today);
+  const [notes, setNotes] = useState(editQuote?.notes ?? "");
+  const [lines, setLines] = useState<Omit<LineItem, "id">[]>(
+    editQuote?.line_items?.length
+      ? editQuote.line_items.map((li) => ({
+          description: li.description, detail: li.detail ?? "",
+          rate: li.rate, quantity: li.quantity, amount: li.amount, sort_order: li.sort_order,
+        }))
+      : [emptyLine()],
+  );
   const [isPending, start] = useTransition();
   const [err, setErr] = useState("");
 
@@ -37,11 +51,12 @@ export function QuoteForm({ clients, onClose }: { clients: Client[]; onClose: ()
     setErr("");
     start(async () => {
       try {
-        await createQuote({
-          clientId, issueDate, notes,
-          lineItems: valid.map((l, i) => ({ ...l, sort_order: i })),
-          isDraft,
-        });
+        const input = { clientId, issueDate, notes, lineItems: valid.map((l, i) => ({ ...l, sort_order: i })), isDraft };
+        if (isEdit && editQuote) {
+          await updateQuote(editQuote.id, input);
+        } else {
+          await createQuote(input);
+        }
         onClose();
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Something went wrong.");
@@ -56,7 +71,7 @@ export function QuoteForm({ clients, onClose }: { clients: Client[]; onClose: ()
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 pt-8 pb-8 px-4">
       <div className="w-full max-w-2xl bg-arqud-night border border-arqud-ink p-8 space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-3xl text-arqud-gold">New Quote</h2>
+          <h2 className="font-display text-3xl text-arqud-gold">{isEdit ? `Edit ${editQuote?.quote_number}` : "New Quote"}</h2>
           <button onClick={onClose} className="text-arqud-muted hover:text-arqud-bone text-xl">✕</button>
         </div>
         {err && <p className="text-red-400 text-sm">{err}</p>}
@@ -119,7 +134,7 @@ export function QuoteForm({ clients, onClose }: { clients: Client[]; onClose: ()
         <div className="flex gap-4">
           <button onClick={() => submit(false)} disabled={isPending}
             className="flex-1 bg-arqud-gold py-3 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft disabled:opacity-50">
-            {isPending ? "Creating..." : "Create Quote"}
+            {isPending ? (isEdit ? "Saving..." : "Creating...") : (isEdit ? "Save Changes" : "Create Quote")}
           </button>
           <button onClick={() => submit(true)} disabled={isPending}
             className="flex-1 border border-arqud-ink py-3 text-sm uppercase tracking-widest text-arqud-muted hover:text-arqud-bone disabled:opacity-50">

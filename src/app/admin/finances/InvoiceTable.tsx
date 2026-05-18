@@ -3,7 +3,8 @@
 import { useState, useTransition } from "react";
 import { markInvoicePaid, deleteInvoice } from "./actions";
 import { InvoiceDetailModal } from "./InvoiceDetailModal";
-import type { InvoiceWithItems } from "@/lib/invoices/types";
+import { InvoiceForm } from "./InvoiceForm";
+import type { InvoiceWithItems, Client } from "@/lib/invoices/types";
 
 const STATUS: Record<string, string> = {
   draft: "text-arqud-muted border-arqud-muted",
@@ -12,13 +13,15 @@ const STATUS: Record<string, string> = {
   overdue: "text-red-400 border-red-400",
 };
 
-export function InvoiceTable({ invoices, onNew }: { invoices: InvoiceWithItems[]; onNew: () => void }) {
+export function InvoiceTable({ invoices, clients, onNew }: { invoices: InvoiceWithItems[]; clients: Client[]; onNew: () => void }) {
   const [pending, start] = useTransition();
   const [viewing, setViewing] = useState<InvoiceWithItems | null>(null);
+  const [editing, setEditing] = useState<InvoiceWithItems | null>(null);
 
   return (
     <div>
       {viewing && <InvoiceDetailModal invoice={viewing} onClose={() => setViewing(null)} />}
+      {editing && <InvoiceForm clients={clients} editInvoice={editing} onClose={() => setEditing(null)} />}
 
       <div className="flex justify-end mb-4">
         <button onClick={onNew}
@@ -69,6 +72,10 @@ export function InvoiceTable({ invoices, onNew }: { invoices: InvoiceWithItems[]
                     <button disabled={pending}
                       onClick={() => start(() => markInvoicePaid(inv.id, new Date().toISOString().split("T")[0]))}
                       className="text-xs text-green-400 hover:text-green-300 disabled:opacity-50">Mark Paid</button>
+                  )}
+                  {inv.status !== "paid" && (
+                    <button onClick={() => setEditing(inv)}
+                      className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">Edit</button>
                   )}
                   {inv.status === "draft" && (
                     <button disabled={pending}

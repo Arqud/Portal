@@ -77,6 +77,48 @@ export async function markInvoicePaid(invoiceId: string, paidAt: string) {
   revalidatePath("/admin/finances");
 }
 
+export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput) {
+  const admin = await requireAdmin();
+
+  const lineItems = input.lineItems.map((li, i) => ({
+    ...li,
+    amount: calcLineAmount(li.rate, li.quantity),
+    sort_order: i,
+  }));
+
+  const subtotal = calcSubtotal(lineItems);
+  const vatAmount = calcVat(subtotal, input.vatRate);
+  const total = calcTotal(subtotal, vatAmount);
+
+  const { error } = await admin
+    .from("invoices")
+    .update({
+      client_id: input.clientId,
+      issue_date: input.issueDate,
+      due_date: input.dueDate,
+      terms: input.terms,
+      notes: input.notes || null,
+      subtotal,
+      vat_rate: input.vatRate,
+      vat_amount: vatAmount,
+      amount: total,
+      status: input.isDraft ? "draft" : "pending",
+    })
+    .eq("id", invoiceId);
+
+  if (error) throw new Error(error.message);
+
+  // Replace line items
+  await admin.from("invoice_line_items").delete().eq("invoice_id", invoiceId);
+  if (lineItems.length > 0) {
+    await admin.from("invoice_line_items").insert(
+      lineItems.map((li) => ({ ...li, invoice_id: invoiceId })),
+    );
+  }
+
+  revalidatePath("/admin/finances");
+}
+
 export async function deleteInvoice(invoiceId: string) {
   const admin = await requireAdmin();
   const { data } = await admin
@@ -121,6 +163,41 @@ export async function createQuote(input: CreateQuoteInput) {
       .from("quote_line_items")
       .insert(lineItems.map((li) => ({ ...li, quote_id: quote.id })));
     if (liErr) throw new Error(liErr.message);
+  }
+
+  revalidatePath("/admin/finances");
+}
+
+export async function updateQuote(quoteId: string, input: CreateQuoteInput) {
+  const admin = await requireAdmin();
+
+  const lineItems = input.lineItems.map((li, i) => ({
+    ...li,
+    amount: calcLineAmount(li.rate, li.quantity),
+    sort_order: i,
+  }));
+
+  const subtotal = calcSubtotal(lineItems);
+
+  const { error } = await admin
+    .from("quotes")
+    .update({
+      client_id: input.clientId,
+      issue_date: input.issueDate,
+      notes: input.notes || null,
+      subtotal,
+      total: subtotal,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", quoteId);
+
+  if (error) throw new Error(error.message);
+
+  await admin.from("quote_line_items").delete().eq("quote_id", quoteId);
+  if (lineItems.length > 0) {
+    await admin.from("quote_line_items").insert(
+      lineItems.map((li) => ({ ...li, quote_id: quoteId })),
+    );
   }
 
   revalidatePath("/admin/finances");

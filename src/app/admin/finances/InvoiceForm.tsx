@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createInvoice } from "./actions";
-import type { Client, LineItem } from "@/lib/invoices/types";
+import { createInvoice, updateInvoice } from "./actions";
+import type { Client, LineItem, InvoiceWithItems } from "@/lib/invoices/types";
 import { calcLineAmount, calcSubtotal, calcVat, calcTotal } from "@/lib/invoices/calculations";
 
 const emptyLine = (): Omit<LineItem, "id"> => ({
@@ -11,18 +11,36 @@ const emptyLine = (): Omit<LineItem, "id"> => ({
 
 type CreatedInvoice = { id: string; invoiceNumber: string };
 
-export function InvoiceForm({ clients, onClose }: { clients: Client[]; onClose: () => void }) {
+export function InvoiceForm({
+  clients, onClose, editInvoice,
+}: {
+  clients: Client[];
+  onClose: () => void;
+  editInvoice?: InvoiceWithItems;
+}) {
+  const isEdit = Boolean(editInvoice);
   const today = new Date().toISOString().split("T")[0];
   const due14 = new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0];
 
-  const [clientId, setClientId] = useState(clients[0]?.id ?? "");
-  const [issueDate, setIssueDate] = useState(today);
-  const [dueDate, setDueDate] = useState(due14);
-  const [terms, setTerms] = useState("14 Days");
-  const [notes, setNotes] = useState("");
-  const [chargeVat, setChargeVat] = useState(true);
-  const [vatRate, setVatRate] = useState(15);
-  const [lines, setLines] = useState<Omit<LineItem, "id">[]>([emptyLine()]);
+  const [clientId, setClientId] = useState(editInvoice?.client_id ?? clients[0]?.id ?? "");
+  const [issueDate, setIssueDate] = useState(editInvoice?.issue_date ?? today);
+  const [dueDate, setDueDate] = useState(editInvoice?.due_date ?? due14);
+  const [terms, setTerms] = useState(editInvoice?.terms ?? "14 Days");
+  const [notes, setNotes] = useState(editInvoice?.notes ?? "");
+  const [chargeVat, setChargeVat] = useState((editInvoice?.vat_rate ?? 15) > 0);
+  const [vatRate, setVatRate] = useState(editInvoice?.vat_rate && editInvoice.vat_rate > 0 ? editInvoice.vat_rate : 15);
+  const [lines, setLines] = useState<Omit<LineItem, "id">[]>(
+    editInvoice?.line_items?.length
+      ? editInvoice.line_items.map((li) => ({
+          description: li.description,
+          detail: li.detail ?? "",
+          rate: li.rate,
+          quantity: li.quantity,
+          amount: li.amount,
+          sort_order: li.sort_order,
+        }))
+      : [emptyLine()],
+  );
   const [isPending, start] = useTransition();
   const [err, setErr] = useState("");
   const [created, setCreated] = useState<CreatedInvoice | null>(null);
@@ -51,15 +69,21 @@ export function InvoiceForm({ clients, onClose }: { clients: Client[]; onClose: 
     setErr("");
     start(async () => {
       try {
-        const result = await createInvoice({
+        const input = {
           clientId, issueDate, dueDate, terms, notes, vatRate: effectiveVatRate,
           lineItems: valid.map((l, i) => ({ ...l, sort_order: i })),
           isDraft,
-        });
-        if (!isDraft && result) {
-          setCreated({ id: result.id, invoiceNumber: result.invoiceNumber ?? "" });
-        } else {
+        };
+        if (isEdit && editInvoice) {
+          await updateInvoice(editInvoice.id, input);
           onClose();
+        } else {
+          const result = await createInvoice(input);
+          if (!isDraft && result) {
+            setCreated({ id: result.id, invoiceNumber: result.invoiceNumber ?? "" });
+          } else {
+            onClose();
+          }
         }
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Something went wrong.");
@@ -118,7 +142,7 @@ export function InvoiceForm({ clients, onClose }: { clients: Client[]; onClose: 
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 pt-8 pb-8 px-4">
       <div className="w-full max-w-2xl bg-arqud-night border border-arqud-ink p-8 space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-3xl text-arqud-gold">New Invoice</h2>
+          <h2 className="font-display text-3xl text-arqud-gold">{isEdit ? `Edit ${editInvoice?.invoice_number}` : "New Invoice"}</h2>
           <button onClick={onClose} className="text-arqud-muted hover:text-arqud-bone text-xl">✕</button>
         </div>
         {err && <p className="text-red-400 text-sm">{err}</p>}
@@ -219,7 +243,7 @@ export function InvoiceForm({ clients, onClose }: { clients: Client[]; onClose: 
         <div className="flex gap-4">
           <button onClick={() => submit(false)} disabled={isPending}
             className="flex-1 bg-arqud-gold py-3 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft disabled:opacity-50">
-            {isPending ? "Creating..." : "Create Invoice"}
+            {isPending ? (isEdit ? "Saving..." : "Creating...") : (isEdit ? "Save Changes" : "Create Invoice")}
           </button>
           <button onClick={() => submit(true)} disabled={isPending}
             className="flex-1 border border-arqud-ink py-3 text-sm uppercase tracking-widest text-arqud-muted hover:text-arqud-bone disabled:opacity-50">

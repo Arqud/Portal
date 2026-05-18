@@ -30,8 +30,8 @@ export async function addNewClient(formData: FormData) {
   const vatNumber = String(formData.get("vat_number") ?? "").trim();
   const createPortalAccess = formData.get("create_portal_access") === "on";
 
-  if (!name || !email || !subdomainSlug) {
-    throw new Error("Name, email and subdomain are required");
+  if (!name || !email) {
+    throw new Error("Name and email are required");
   }
 
   // Insert client record
@@ -41,7 +41,7 @@ export async function addNewClient(formData: FormData) {
       name,
       company: company || null,
       email,
-      subdomain_slug: subdomainSlug,
+      subdomain_slug: subdomainSlug || `billing-${Date.now()}`,
       contact_person: contactPerson || null,
       address: address || null,
       reg_number: regNumber || null,

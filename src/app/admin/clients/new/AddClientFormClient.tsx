@@ -6,6 +6,8 @@ import { addNewClient } from "./actions";
 export function AddClientFormClient() {
   const [isPending, start] = useTransition();
   const [err, setErr] = useState("");
+  const [subdomain, setSubdomain] = useState("");
+  const hasSubdomain = subdomain.trim().length > 0;
 
   function handle(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -43,16 +45,28 @@ export function AddClientFormClient() {
       </div>
 
       <div>
-        <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Portal Subdomain *</label>
+        <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">
+          Portal Subdomain <span className="text-arqud-muted normal-case">(leave blank for billing-only clients)</span>
+        </label>
         <div className="flex items-center gap-0">
-          <input name="subdomain_slug" required placeholder="arno"
+          <input
+            name="subdomain_slug"
+            value={subdomain}
+            placeholder="e.g. arno (optional)"
             className="flex-1 bg-arqud-black border border-arqud-ink px-4 py-3 text-arqud-bone focus:border-arqud-gold focus:outline-none text-sm"
             onChange={(e) => {
-              e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
-            }} />
-          <span className="bg-arqud-ink border border-l-0 border-arqud-ink px-4 py-3 text-xs text-arqud-muted whitespace-nowrap">.arqudportal.co.za</span>
+              setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
+            }}
+          />
+          <span className="bg-arqud-ink border border-l-0 border-arqud-ink px-4 py-3 text-xs text-arqud-muted whitespace-nowrap">
+            .arqudportal.co.za
+          </span>
         </div>
-        <p className="text-xs text-arqud-muted mt-1">Only lowercase letters, numbers and hyphens</p>
+        <p className="text-xs text-arqud-muted mt-1">
+          {hasSubdomain
+            ? `Portal will be at ${subdomain}.arqudportal.co.za`
+            : "No portal — client is for invoicing/quoting only"}
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -77,16 +91,18 @@ export function AddClientFormClient() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 border border-arqud-ink bg-arqud-night p-4">
-        <input type="checkbox" name="create_portal_access" id="portal_access"
-          className="w-4 h-4 accent-arqud-gold" defaultChecked />
-        <label htmlFor="portal_access" className="text-sm text-arqud-bone cursor-pointer">
-          Create portal login for this client
-          <span className="block text-xs text-arqud-muted mt-0.5">
-            Sends a magic link to their email so they can set their password and access their portal.
-          </span>
-        </label>
-      </div>
+      {hasSubdomain && (
+        <div className="flex items-center gap-3 border border-arqud-ink bg-arqud-night p-4">
+          <input type="checkbox" name="create_portal_access" id="portal_access"
+            className="w-4 h-4 accent-arqud-gold" defaultChecked />
+          <label htmlFor="portal_access" className="text-sm text-arqud-bone cursor-pointer">
+            Create portal login for this client
+            <span className="block text-xs text-arqud-muted mt-0.5">
+              Creates their login so they can access {subdomain}.arqudportal.co.za
+            </span>
+          </label>
+        </div>
+      )}
 
       <div className="flex gap-4 pt-2">
         <button type="submit" disabled={isPending}

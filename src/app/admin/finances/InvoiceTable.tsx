@@ -73,10 +73,8 @@ export function InvoiceTable({ invoices, clients, onNew }: { invoices: InvoiceWi
                       onClick={() => start(() => markInvoicePaid(inv.id, new Date().toISOString().split("T")[0]))}
                       className="text-xs text-green-400 hover:text-green-300 disabled:opacity-50">Mark Paid</button>
                   )}
-                  {inv.status !== "paid" && (
-                    <button onClick={() => setEditing(inv)}
-                      className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">Edit</button>
-                  )}
+                  <button onClick={() => setEditing(inv)}
+                    className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">Edit</button>
                   {inv.status === "draft" && (
                     <button disabled={pending}
                       onClick={() => { if (confirm(`Delete ${inv.invoice_number}?`)) start(() => deleteInvoice(inv.id)); }}

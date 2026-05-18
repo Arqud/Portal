@@ -1,7 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { markInvoicePaid, deleteInvoice } from "./actions";
+import { InvoiceDetailModal } from "./InvoiceDetailModal";
 import type { InvoiceWithItems } from "@/lib/invoices/types";
 
 const STATUS: Record<string, string> = {
@@ -13,15 +14,19 @@ const STATUS: Record<string, string> = {
 
 export function InvoiceTable({ invoices, onNew }: { invoices: InvoiceWithItems[]; onNew: () => void }) {
   const [pending, start] = useTransition();
+  const [viewing, setViewing] = useState<InvoiceWithItems | null>(null);
 
   return (
     <div>
+      {viewing && <InvoiceDetailModal invoice={viewing} onClose={() => setViewing(null)} />}
+
       <div className="flex justify-end mb-4">
         <button onClick={onNew}
           className="bg-arqud-gold px-6 py-2 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft">
           + New Invoice
         </button>
       </div>
+
       {invoices.length === 0 ? (
         <p className="text-arqud-muted text-center py-16">No invoices yet.</p>
       ) : (
@@ -36,17 +41,26 @@ export function InvoiceTable({ invoices, onNew }: { invoices: InvoiceWithItems[]
           <tbody>
             {invoices.map((inv) => (
               <tr key={inv.id} className="border-b border-arqud-ink/50 hover:bg-arqud-night/50">
-                <td className="py-3 pr-4 text-arqud-bone">{inv.invoice_number}</td>
+                <td className="py-3 pr-4">
+                  <button onClick={() => setViewing(inv)}
+                    className="text-arqud-gold hover:text-arqud-gold-soft hover:underline font-medium">
+                    {inv.invoice_number}
+                  </button>
+                </td>
                 <td className="py-3 pr-4 text-arqud-bone">{inv.client?.company ?? inv.client?.name ?? "—"}</td>
                 <td className="py-3 pr-4 text-arqud-muted">{inv.issue_date}</td>
                 <td className="py-3 pr-4 text-arqud-muted">{inv.due_date}</td>
-                <td className="py-3 pr-4 text-arqud-bone">R {inv.amount.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</td>
+                <td className="py-3 pr-4 text-arqud-bone">R {Number(inv.amount).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</td>
                 <td className="py-3 pr-4">
                   <span className={`text-xs uppercase tracking-widest border px-2 py-0.5 ${STATUS[inv.status] ?? ""}`}>
                     {inv.status}
                   </span>
                 </td>
                 <td className="py-3 flex gap-3 flex-wrap items-center">
+                  <button onClick={() => setViewing(inv)}
+                    className="text-xs text-arqud-muted hover:text-arqud-bone uppercase tracking-widest">
+                    View
+                  </button>
                   {inv.status !== "draft" && (
                     <a href={`/api/invoices/${inv.id}/pdf`} target="_blank" rel="noopener noreferrer"
                       className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">PDF</a>

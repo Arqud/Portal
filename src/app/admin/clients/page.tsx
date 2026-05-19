@@ -13,7 +13,6 @@ export default async function AdminClientsPage() {
 
   const list = clients ?? [];
 
-  // Get invoice totals per client
   const { data: invoices } = await admin
     .from("invoices")
     .select("client_id, amount, status")
@@ -27,58 +26,89 @@ export default async function AdminClientsPage() {
     if (inv.status === "pending" || inv.status === "overdue") invoiceMap[inv.client_id].outstanding += inv.amount;
   }
 
+  const activeCount = list.filter((c) => c.status === "active").length;
+
   function fmt(n: number) {
     return `R ${n.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
   }
 
   return (
-    <main className="min-h-screen px-8 py-12">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-5xl tracking-wide">Clients</h1>
-        <Link href="/admin/clients/new"
-          className="bg-arqud-gold px-6 py-2 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft">
-          + Add Client
-        </Link>
+    <main className="min-h-screen px-8 py-10 space-y-10 animate-fade-up">
+      <div className="flex items-end justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-arqud-muted mb-1">
+            {activeCount} active · {list.length} total
+          </p>
+          <h1 className="font-display text-5xl font-normal" style={{ letterSpacing: "-0.02em" }}>
+            Clients
+          </h1>
+        </div>
+        <Link href="/admin/clients/new" className="btn-gold">+ Add Client</Link>
       </div>
 
       {list.length === 0 ? (
-        <div className="border border-arqud-ink bg-arqud-night p-12 text-center">
-          <p className="font-display text-2xl text-arqud-gold mb-2">No clients yet</p>
+        <div className="card p-12 text-center space-y-3">
+          <p className="font-display text-2xl text-arqud-gold">No clients yet</p>
           <p className="text-arqud-muted text-sm">Add your first client to get started.</p>
+          <Link href="/admin/clients/new" className="btn-gold inline-flex mt-2">+ Add Client</Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="space-y-4">
           {list.map((client) => {
             const stats = invoiceMap[client.id] ?? { total: 0, paid: 0, outstanding: 0 };
             return (
-              <Link key={client.id} href={`/admin/clients/${client.id}`}
-                className="block border border-arqud-ink bg-arqud-night p-6 hover:border-arqud-gold transition-colors">
+              <Link
+                key={client.id}
+                href={`/admin/clients/${client.id}`}
+                className="card block p-6 group"
+              >
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-display text-2xl text-arqud-gold">{client.company ?? client.name}</p>
-                    <p className="text-sm text-arqud-muted mt-1">{client.name} · {client.email}</p>
-                    {client.address && <p className="text-xs text-arqud-muted mt-0.5">{client.address}</p>}
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0"
+                      style={{
+                        background: "rgba(200,169,110,0.1)",
+                        border: "1px solid rgba(200,169,110,0.2)",
+                        color: "var(--color-arqud-gold)",
+                      }}
+                    >
+                      {(client.company ?? client.name).charAt(0)}
+                    </div>
+                    <div>
+                      <p
+                        className="font-display text-2xl text-arqud-gold group-hover:text-arqud-gold-soft transition-colors"
+                        style={{ letterSpacing: "-0.01em" }}
+                      >
+                        {client.company ?? client.name}
+                      </p>
+                      <p className="text-xs text-arqud-muted mt-0.5">
+                        {client.name} · {client.email}
+                      </p>
+                    </div>
                   </div>
-                  <span className={`text-xs uppercase tracking-widest border px-2 py-0.5 ${
-                    client.status === "active" ? "text-green-400 border-green-400" : "text-arqud-muted border-arqud-muted"
-                  }`}>
+                  <span className={`status-dot status-${client.status === "active" ? "paid" : "draft"}`}>
                     {client.status}
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-arqud-ink">
+
+                <div
+                  className="grid grid-cols-3 gap-6 mt-5 pt-5"
+                  style={{ borderTop: "1px solid var(--color-arqud-ink)" }}
+                >
                   {[
                     { label: "Total Invoiced", value: fmt(stats.total) },
-                    { label: "Total Paid", value: fmt(stats.paid), color: "text-green-400" },
-                    { label: "Outstanding", value: fmt(stats.outstanding), color: stats.outstanding > 0 ? "text-arqud-gold" : undefined },
+                    { label: "Total Paid", value: fmt(stats.paid), color: "#4ade80" },
+                    { label: "Outstanding", value: fmt(stats.outstanding), color: stats.outstanding > 0 ? "var(--color-arqud-gold)" : undefined },
                   ].map(({ label, value, color }) => (
                     <div key={label}>
                       <p className="text-xs uppercase tracking-widest text-arqud-muted mb-1">{label}</p>
-                      <p className={`font-display text-xl ${color ?? "text-arqud-bone"}`}>{value}</p>
+                      <p className="stat-number text-xl" style={color ? { color } : undefined}>{value}</p>
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-arqud-muted mt-3">
-                  Portal: {client.subdomain_slug}.arqudportal.co.za · Click to manage →
+
+                <p className="text-xs text-arqud-muted mt-4">
+                  {client.subdomain_slug}.arqudportal.co.za · Click to manage →
                 </p>
               </Link>
             );

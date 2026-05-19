@@ -15,7 +15,6 @@ export default async function AdminFilesPage() {
   const files = filesRes.data ?? [];
   const clients = clientsRes.data ?? [];
 
-  // Generate signed URLs
   const signedUrls: Record<string, string> = {};
   await Promise.all(
     files.map(async (f) => {
@@ -24,8 +23,15 @@ export default async function AdminFilesPage() {
   );
 
   return (
-    <main className="min-h-screen px-8 py-12">
-      <h1 className="text-5xl tracking-wide mb-8">Files</h1>
+    <main className="min-h-screen px-8 py-10 space-y-10 animate-fade-up">
+      <div>
+        <p className="text-xs uppercase tracking-widest text-arqud-muted mb-1">
+          {files.length} {files.length === 1 ? "file" : "files"}
+        </p>
+        <h1 className="font-display text-5xl font-normal" style={{ letterSpacing: "-0.02em" }}>
+          Files
+        </h1>
+      </div>
       <FilesClient files={files} clients={clients} signedUrls={signedUrls} />
     </main>
   );

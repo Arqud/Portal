@@ -20,7 +20,7 @@ const CLIENT_ROUTES = {
   Documents: "/client/documents",
 } as const;
 
-type UserPill = { name: string; label: string };
+type UserPill = { name: string; label: string; avatarUrl?: string };
 type TopNavProps =
   | { variant: "agency"; brandName?: never; user?: UserPill }
   | { variant: "client"; brandName: string; user?: UserPill };
@@ -112,16 +112,25 @@ export function TopNav(props: TopNavProps) {
               style={{ borderLeft: "1px solid rgba(30,37,53,0.8)" }}
             >
               {/* Avatar */}
-              <div
-                className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold flex-shrink-0"
-                style={{
-                  background: "linear-gradient(135deg, rgba(200,169,110,0.2), rgba(200,169,110,0.05))",
-                  border: "1px solid rgba(200,169,110,0.3)",
-                  color: "var(--color-arqud-gold)",
-                }}
-              >
-                {props.user.name.charAt(0).toUpperCase()}
-              </div>
+              {props.user.avatarUrl ? (
+                <img
+                  src={props.user.avatarUrl}
+                  alt={props.user.name}
+                  className="w-7 h-7 rounded-full object-cover flex-shrink-0"
+                  style={{ border: "1px solid rgba(200,169,110,0.3)" }}
+                />
+              ) : (
+                <div
+                  className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold flex-shrink-0"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(200,169,110,0.2), rgba(200,169,110,0.05))",
+                    border: "1px solid rgba(200,169,110,0.3)",
+                    color: "var(--color-arqud-gold)",
+                  }}
+                >
+                  {props.user.name.charAt(0).toUpperCase()}
+                </div>
+              )}
 
               <div className="hidden sm:block">
                 <p className="text-xs text-arqud-bone leading-none">{props.user.name}</p>

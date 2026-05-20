@@ -1,6 +1,7 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { verifySession } from "@/lib/auth/session";
 import { FinancesClient } from "./FinancesClient";
+import { getTransactions } from "./transactionActions";
 import type { InvoiceWithItems, QuoteWithItems } from "@/lib/invoices/types";
 
 async function flagOverdue() {
@@ -21,7 +22,7 @@ export default async function FinancesPage() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
   const yearStart = new Date(now.getFullYear(), 0, 1).toISOString().split("T")[0];
 
-  const [invRes, qRes, cRes] = await Promise.all([
+  const [invRes, qRes, cRes, transactions] = await Promise.all([
     admin.from("invoices")
       .select("*, client:clients(id,name,company,email,contact_person,address,reg_number,vat_number), line_items:invoice_line_items(*)")
       .order("created_at", { ascending: false }),
@@ -29,6 +30,7 @@ export default async function FinancesPage() {
       .select("*, client:clients(id,name,company,email,contact_person,address,reg_number,vat_number), line_items:quote_line_items(*)")
       .order("created_at", { ascending: false }),
     admin.from("clients").select("id,name,company,email,contact_person,address,reg_number,vat_number").eq("status", "active"),
+    getTransactions(),
   ]);
 
   const invoices = (invRes.data ?? []) as InvoiceWithItems[];
@@ -76,7 +78,7 @@ export default async function FinancesPage() {
         ))}
       </div>
 
-      <FinancesClient invoices={invoices} quotes={quotes} clients={clients} />
+      <FinancesClient invoices={invoices} quotes={quotes} clients={clients} transactions={transactions} />
     </main>
   );
 }

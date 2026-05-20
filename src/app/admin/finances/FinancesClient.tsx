@@ -6,12 +6,15 @@ import { QuoteTable } from "./QuoteTable";
 import { InvoiceForm } from "./InvoiceForm";
 import { QuoteForm } from "./QuoteForm";
 import { RevenueSummary } from "./RevenueSummary";
+import { TransactionsTab } from "./TransactionsTab";
 import type { InvoiceWithItems, QuoteWithItems, Client } from "@/lib/invoices/types";
+import type { Transaction } from "./transactionActions";
 
 type Props = {
   invoices: InvoiceWithItems[];
   quotes: QuoteWithItems[];
   clients: Client[];
+  transactions: Transaction[];
 };
 
 const MONTHS = [
@@ -23,9 +26,9 @@ function fmt(n: number) {
   return `R ${n.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
 }
 
-export function FinancesClient({ invoices, quotes, clients }: Props) {
+export function FinancesClient({ invoices, quotes, clients, transactions }: Props) {
   const now = new Date();
-  const [tab, setTab] = useState<"invoices" | "quotes">("invoices");
+  const [tab, setTab] = useState<"invoices" | "quotes" | "transactions">("invoices");
   const [showInvoice, setShowInvoice] = useState(false);
   const [showQuote, setShowQuote] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth()); // 0-based
@@ -128,16 +131,24 @@ export function FinancesClient({ invoices, quotes, clients }: Props) {
 
       {/* Sub-tabs */}
       <div className="flex gap-0 border-b border-arqud-ink mb-8">
-        {(["invoices", "quotes"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-8 py-3 text-sm uppercase tracking-widest border-b-2 transition-colors ${
-              tab === t
-                ? "border-arqud-gold text-arqud-gold"
-                : "border-transparent text-arqud-muted hover:text-arqud-bone"
-            }`}>
-            {t} {t === "invoices" ? `(${filteredInvoices.length})` : `(${filteredQuotes.length})`}
-          </button>
-        ))}
+        <button onClick={() => setTab("invoices")}
+          className={`px-8 py-3 text-sm uppercase tracking-widest border-b-2 transition-colors ${
+            tab === "invoices" ? "border-arqud-gold text-arqud-gold" : "border-transparent text-arqud-muted hover:text-arqud-bone"
+          }`}>
+          Invoices ({filteredInvoices.length})
+        </button>
+        <button onClick={() => setTab("quotes")}
+          className={`px-8 py-3 text-sm uppercase tracking-widest border-b-2 transition-colors ${
+            tab === "quotes" ? "border-arqud-gold text-arqud-gold" : "border-transparent text-arqud-muted hover:text-arqud-bone"
+          }`}>
+          Quotes ({filteredQuotes.length})
+        </button>
+        <button onClick={() => setTab("transactions")}
+          className={`px-8 py-3 text-sm uppercase tracking-widest border-b-2 transition-colors ${
+            tab === "transactions" ? "border-arqud-gold text-arqud-gold" : "border-transparent text-arqud-muted hover:text-arqud-bone"
+          }`}>
+          Bank Transactions {transactions.length > 0 ? `(${transactions.length})` : ""}
+        </button>
       </div>
 
       {tab === "invoices" && (
@@ -145,6 +156,9 @@ export function FinancesClient({ invoices, quotes, clients }: Props) {
       )}
       {tab === "quotes" && (
         <QuoteTable quotes={filteredQuotes} clients={clients} onNew={() => setShowQuote(true)} />
+      )}
+      {tab === "transactions" && (
+        <TransactionsTab transactions={transactions} />
       )}
     </div>
   );

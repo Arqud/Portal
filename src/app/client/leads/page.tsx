@@ -8,7 +8,7 @@ export default async function ClientLeadsPage() {
 
   const { data: leads } = await admin
     .from("leads")
-    .select("*")
+    .select("id,full_name,phone,email,branch,meta_campaign_name,meta_ad_name,status,notes,follow_up_date,created_at")
     .eq("client_id", profile.client_id!)
     .order("created_at", { ascending: false });
 

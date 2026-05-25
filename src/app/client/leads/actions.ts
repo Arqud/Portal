@@ -8,11 +8,11 @@ export async function updateLeadStatus(
   leadId: string,
   status: "new" | "contacted" | "converted" | "lost",
   notes: string,
+  followUpDate: string | null,
 ) {
   const { profile } = await verifySession("client");
   const admin = createSupabaseAdminClient();
 
-  // Verify the lead belongs to this client before updating
   const { data: lead } = await admin
     .from("leads")
     .select("client_id")
@@ -25,10 +25,15 @@ export async function updateLeadStatus(
 
   const { error } = await admin
     .from("leads")
-    .update({ status, notes: notes.trim() || null })
+    .update({
+      status,
+      notes: notes.trim() || null,
+      follow_up_date: followUpDate || null,
+    })
     .eq("id", leadId);
 
   if (error) throw new Error(error.message);
 
   revalidatePath("/client/leads");
+  revalidatePath("/client/dashboard");
 }

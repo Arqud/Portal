@@ -13,7 +13,7 @@ export default async function ClientDashboardPage() {
       .eq("client_id", profile.client_id!).neq("status", "draft")
       .order("created_at", { ascending: false }),
     admin.from("campaigns").select("*").eq("client_id", profile.client_id!),
-    admin.from("leads").select("*").eq("client_id", profile.client_id!).order("created_at", { ascending: false }),
+    admin.from("leads").select("id,full_name,phone,email,branch,meta_campaign_name,meta_ad_name,status,notes,follow_up_date,created_at").eq("client_id", profile.client_id!).order("created_at", { ascending: false }),
   ]);
 
   const invoices = invoicesRes.data ?? [];

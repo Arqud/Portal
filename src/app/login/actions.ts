@@ -21,13 +21,11 @@ export async function signInWithPassword(formData: FormData) {
   const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
 
   if (error || !data.user) {
-    // Auth failed — wrong password or unconfirmed email
     redirect(
       `/login?error=invalid_credentials${next ? `&next=${encodeURIComponent(next)}` : ""}`,
     );
   }
 
-  // Auth succeeded — look up role via admin client (bypasses RLS)
   const admin = createSupabaseAdminClient();
   const { data: profileData, error: profileError } = await admin
     .from("profiles")
@@ -36,7 +34,6 @@ export async function signInWithPassword(formData: FormData) {
     .single();
 
   if (profileError || !profileData) {
-    // Profile missing — show a specific error so we can diagnose
     redirect("/login?error=no_profile");
   }
 

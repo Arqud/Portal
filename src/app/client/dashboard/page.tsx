@@ -1,5 +1,6 @@
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { LeadsClient } from "../leads/LeadsClient";
 
 export default async function ClientDashboardPage() {
   const { profile } = await verifySession("client");
@@ -7,15 +8,17 @@ export default async function ClientDashboardPage() {
 
   const now = new Date();
 
-  const [invoicesRes, campaignsRes] = await Promise.all([
+  const [invoicesRes, campaignsRes, leadsRes] = await Promise.all([
     admin.from("invoices").select("id, invoice_number, amount, status, due_date, issue_date")
       .eq("client_id", profile.client_id!).neq("status", "draft")
       .order("created_at", { ascending: false }),
     admin.from("campaigns").select("*").eq("client_id", profile.client_id!),
+    admin.from("leads").select("*").eq("client_id", profile.client_id!).order("created_at", { ascending: false }),
   ]);
 
   const invoices = invoicesRes.data ?? [];
   const campaigns = campaignsRes.data ?? [];
+  const leads = leadsRes.data ?? [];
 
   const totalInvoiced = invoices.reduce((s, i) => s + i.amount, 0);
   const totalPaid = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
@@ -24,6 +27,12 @@ export default async function ClientDashboardPage() {
   const totalLeads = campaigns.reduce((s, c) => s + c.leads, 0);
   const totalSpend = campaigns.reduce((s, c) => s + c.spend, 0);
   const avgCpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
+
+  const leadsTotal = leads.length;
+  const leadsContacted = leads.filter((l) => l.status === "contacted").length;
+  const leadsConverted = leads.filter((l) => l.status === "converted").length;
+  const leadsNew = leads.filter((l) => l.status === "new").length;
+  const convRate = leadsTotal > 0 ? Math.round((leadsConverted / leadsTotal) * 100) : 0;
 
   const fmt = (n: number) => `R ${n.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
   const monthName = now.toLocaleString("en-ZA", { month: "long" });
@@ -134,6 +143,47 @@ export default async function ClientDashboardPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Leads CRM */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-3xl font-normal">Leads</h2>
+          {leadsTotal > 0 && (
+            <p className="text-xs uppercase tracking-widest text-arqud-muted">{leadsTotal} total</p>
+          )}
+        </div>
+
+        {leadsTotal > 0 ? (
+          <>
+            {/* Lead KPIs */}
+            <div className="grid grid-cols-4 gap-px bg-arqud-ink border border-arqud-ink">
+              {[
+                { label: "New", value: leadsNew.toString(), color: "var(--color-arqud-gold)" },
+                { label: "Contacted", value: leadsContacted.toString(), color: "#60a5fa" },
+                { label: "Converted", value: leadsConverted.toString(), color: "#4ade80" },
+                { label: "Conversion Rate", value: `${convRate}%`, color: convRate > 0 ? "#4ade80" : "var(--color-arqud-muted)" },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="bg-arqud-night px-6 py-5">
+                  <p className="text-xs uppercase tracking-widest text-arqud-muted mb-2">{label}</p>
+                  <p className="font-display text-3xl" style={{ color }}>{value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Leads table */}
+            <LeadsClient leads={leads} />
+          </>
+        ) : (
+          <div className="border border-arqud-ink bg-arqud-night p-12 text-center space-y-4">
+            <p className="font-display text-2xl text-arqud-gold">Leads coming soon</p>
+            <p className="text-arqud-bone text-sm max-w-md mx-auto">
+              Once your Meta ads go live, every lead that fills in your form will appear here
+              in real time — with their name, number, branch, and which ad they came from.
+            </p>
+            <p className="text-xs text-arqud-muted">Expected: 25 May 2026</p>
+          </div>
+        )}
       </div>
     </main>
   );

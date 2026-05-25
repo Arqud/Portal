@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getSignedUrl } from "@/lib/storage";
 import { ClientDetailClient } from "./ClientDetailClient";
 import { ClientDetailActions } from "./ClientDetailActions";
+import { LeadsTab } from "./LeadsTab";
 
 export default async function ClientDetailPage({
   params,
@@ -18,7 +19,7 @@ export default async function ClientDetailPage({
   const { data: client } = await admin.from("clients").select("*").eq("id", id).single();
   if (!client) notFound();
 
-  const [invoicesRes, quotesRes, reportsRes, docsRes] = await Promise.all([
+  const [invoicesRes, quotesRes, reportsRes, docsRes, leadsRes] = await Promise.all([
     admin.from("invoices")
       .select("id, invoice_number, amount, status, issue_date, due_date")
       .eq("client_id", id).neq("status", "draft")
@@ -33,12 +34,16 @@ export default async function ClientDetailPage({
     admin.from("files")
       .select("*").eq("client_id", id)
       .order("uploaded_at", { ascending: false }),
+    admin.from("leads")
+      .select("*").eq("client_id", id)
+      .order("created_at", { ascending: false }),
   ]);
 
   const invoices = invoicesRes.data ?? [];
   const quotes = quotesRes.data ?? [];
   const reports = reportsRes.data ?? [];
   const documents = docsRes.data ?? [];
+  const leads = leadsRes.data ?? [];
 
   // Generate signed URLs for reports and documents
   const reportUrls: Record<string, string> = {};
@@ -191,6 +196,15 @@ export default async function ClientDetailPage({
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* Leads */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-2xl text-arqud-gold">Leads</h2>
+          <span className="text-xs uppercase tracking-widest text-arqud-muted">{leads.length} total</span>
+        </div>
+        <LeadsTab leads={leads} />
       </div>
 
       {/* Reports + Documents (interactive) */}

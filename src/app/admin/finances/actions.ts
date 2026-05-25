@@ -6,7 +6,9 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { nextDocumentNumber } from "@/lib/invoices/numbering";
 import { calcSubtotal, calcVat, calcTotal, calcLineAmount } from "@/lib/invoices/calculations";
-import type { CreateInvoiceInput, CreateQuoteInput } from "@/lib/invoices/types";
+import type { CreateDocumentInput } from "@/lib/invoices/types";
+type CreateInvoiceInput = CreateDocumentInput;
+type CreateQuoteInput = CreateDocumentInput;
 
 async function sendInvoiceEmail(invoiceId: string, invoiceNumber: string, clientEmail: string, clientName: string, amount: number, dueDate: string) {
   if (!process.env.RESEND_API_KEY) return;
@@ -55,7 +57,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
   }));
 
   const subtotal = calcSubtotal(lineItems);
-  const vatAmount = calcVat(subtotal, input.vatRate);
+  const vatAmount = calcVat(subtotal, input.vatRate ?? 0);
   const total = calcTotal(subtotal, vatAmount);
   const invoiceNumber = input.isDraft
     ? `DRAFT-${Date.now()}`
@@ -99,7 +101,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
     if (clientData?.email) {
       await sendInvoiceEmail(
         invoice.id, invoiceNumber ?? "", clientData.email,
-        clientData.company ?? clientData.name, total, input.dueDate,
+        clientData.company ?? clientData.name, total, input.dueDate ?? "",
       );
     }
   }
@@ -127,7 +129,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
   }));
 
   const subtotal = calcSubtotal(lineItems);
-  const vatAmount = calcVat(subtotal, input.vatRate);
+  const vatAmount = calcVat(subtotal, input.vatRate ?? 0);
   const total = calcTotal(subtotal, vatAmount);
 
   const { error } = await admin

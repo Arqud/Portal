@@ -6,9 +6,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { nextDocumentNumber } from "@/lib/invoices/numbering";
 import { calcSubtotal, calcVat, calcTotal, calcLineAmount } from "@/lib/invoices/calculations";
-import type { CreateDocumentInput } from "@/lib/invoices/types";
-type CreateInvoiceInput = CreateDocumentInput;
-type CreateQuoteInput = CreateDocumentInput;
+import type { CreateDocumentInput as CreateInvoiceInput } from "@/lib/invoices/types";
+import type { CreateDocumentInput as CreateQuoteInput } from "@/lib/invoices/types";
 
 async function sendInvoiceEmail(invoiceId: string, invoiceNumber: string, clientEmail: string, clientName: string, amount: number, dueDate: string) {
   if (!process.env.RESEND_API_KEY) return;

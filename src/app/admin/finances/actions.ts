@@ -100,7 +100,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
     if (clientData?.email) {
       await sendInvoiceEmail(
         invoice.id, invoiceNumber ?? "", clientData.email,
-        clientData.company ?? clientData.name, total, input.dueDate,
+        clientData.company ?? clientData.name, total, input.dueDate ?? "",
       );
     }
   }

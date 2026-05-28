@@ -56,7 +56,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
   }));
 
   const subtotal = calcSubtotal(lineItems);
-  const vatAmount = calcVat(subtotal, input.vatRate);
+  const vatAmount = calcVat(subtotal, input.vatRate ?? 0);
   const total = calcTotal(subtotal, vatAmount);
   const invoiceNumber = input.isDraft
     ? `DRAFT-${Date.now()}`
@@ -73,7 +73,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
       terms: input.terms,
       notes: input.notes || null,
       subtotal,
-      vat_rate: input.vatRate,
+      vat_rate: input.vatRate ?? 0,
       vat_amount: vatAmount,
       amount: total,
       description: null,
@@ -128,7 +128,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
   }));
 
   const subtotal = calcSubtotal(lineItems);
-  const vatAmount = calcVat(subtotal, input.vatRate);
+  const vatAmount = calcVat(subtotal, input.vatRate ?? 0);
   const total = calcTotal(subtotal, vatAmount);
 
   const { error } = await admin
@@ -140,7 +140,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
       terms: input.terms,
       notes: input.notes || null,
       subtotal,
-      vat_rate: input.vatRate,
+      vat_rate: input.vatRate ?? 0,
       vat_amount: vatAmount,
       amount: total,
       status: input.isDraft ? "draft" : "pending",

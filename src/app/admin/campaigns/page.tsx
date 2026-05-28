@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { CampaignsClient } from "./CampaignsClient";

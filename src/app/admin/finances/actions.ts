@@ -57,7 +57,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
   }));
 
   const subtotal = calcSubtotal(lineItems);
-  const vatAmount = calcVat(subtotal, input.vatRate ?? 0);
+  const vatAmount = calcVat(subtotal, input.vatRate);
   const total = calcTotal(subtotal, vatAmount);
   const invoiceNumber = input.isDraft
     ? `DRAFT-${Date.now()}`
@@ -101,7 +101,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
     if (clientData?.email) {
       await sendInvoiceEmail(
         invoice.id, invoiceNumber ?? "", clientData.email,
-        clientData.company ?? clientData.name, total, input.dueDate ?? "",
+        clientData.company ?? clientData.name, total, input.dueDate,
       );
     }
   }
@@ -129,7 +129,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
   }));
 
   const subtotal = calcSubtotal(lineItems);
-  const vatAmount = calcVat(subtotal, input.vatRate ?? 0);
+  const vatAmount = calcVat(subtotal, input.vatRate);
   const total = calcTotal(subtotal, vatAmount);
 
   const { error } = await admin

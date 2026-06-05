@@ -27,6 +27,20 @@ const STATUS_STYLES: Record<string, string> = {
 const STATUS_OPTIONS = ["new", "contacted", "converted", "lost"] as const;
 
 type DateFilter = "today" | "week" | "month" | "all";
+type BrandFilter = "all" | "Sparkling" | "We Wash";
+
+function getBrand(lead: Lead): "Sparkling" | "We Wash" | "Other" {
+  const name = (lead.meta_campaign_name ?? lead.meta_ad_name ?? "").toLowerCase();
+  if (name.includes("sparkling")) return "Sparkling";
+  if (name.includes("we wash") || name.includes("wewash") || name.includes("wwcars")) return "We Wash";
+  return "Other";
+}
+
+const BRAND_STYLES: Record<string, string> = {
+  Sparkling: "text-blue-400 border-blue-400/60 bg-blue-400/10",
+  "We Wash": "text-arqud-gold border-arqud-gold/60 bg-arqud-gold/10",
+  Other: "text-arqud-muted border-arqud-ink bg-transparent",
+};
 
 function toE164(phone: string) {
   const digits = phone.replace(/\D/g, "");
@@ -64,6 +78,7 @@ function exportCsv(leads: Lead[]) {
 export function LeadsClient({ leads: initial }: { leads: Lead[] }) {
   const [leads, setLeads] = useState(initial);
   const [selected, setSelected] = useState<Lead | null>(null);
+  const [brandFilter, setBrandFilter] = useState<BrandFilter>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [branchFilter, setBranchFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
@@ -94,6 +109,7 @@ export function LeadsClient({ leads: initial }: { leads: Lead[] }) {
 
   const filtered = useMemo(() => {
     return leads.filter((l) => {
+      if (brandFilter !== "all" && getBrand(l) !== brandFilter) return false;
       if (statusFilter !== "all" && l.status !== statusFilter) return false;
       if (branchFilter !== "all" && l.branch !== branchFilter) return false;
       if (search) {
@@ -144,6 +160,34 @@ export function LeadsClient({ leads: initial }: { leads: Lead[] }) {
           ))}
         </div>
       )}
+
+      {/* Brand Tabs */}
+      <div className="flex gap-0 mb-5 border-b border-arqud-ink">
+        {(["all", "Sparkling", "We Wash"] as const).map((b) => (
+          <button
+            key={b}
+            onClick={() => { setBrandFilter(b); setBranchFilter("all"); }}
+            className={`px-5 py-2.5 text-xs uppercase tracking-widest border-b-2 transition-colors -mb-px ${
+              brandFilter === b
+                ? b === "Sparkling"
+                  ? "border-blue-400 text-blue-400"
+                  : b === "We Wash"
+                  ? "border-arqud-gold text-arqud-gold"
+                  : "border-arqud-gold text-arqud-gold"
+                : "border-transparent text-arqud-muted hover:text-arqud-bone"
+            }`}
+          >
+            {b === "all" ? "All Leads" : b}
+          </button>
+        ))}
+        <span className="ml-auto flex items-center text-xs text-arqud-muted pr-1">
+          {brandFilter !== "all" && (
+            <span className={`text-xs border px-2 py-0.5 ${BRAND_STYLES[brandFilter]}`}>
+              {leads.filter(l => getBrand(l) === brandFilter).length} leads
+            </span>
+          )}
+        </span>
+      </div>
 
       {/* Filters + Export */}
       <div className="flex flex-wrap items-center gap-2 mb-5">
@@ -203,7 +247,7 @@ export function LeadsClient({ leads: initial }: { leads: Lead[] }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-arqud-night border-b border-arqud-ink">
-              {["Date", "Name", "Contact", "Branch", "Campaign", "Follow-up", "Status", ""].map((h) => (
+              {["Date", "Name", "Contact", "Branch", "Brand", "Follow-up", "Status", ""].map((h) => (
                 <th key={h} className="text-left text-xs uppercase tracking-widest text-arqud-muted px-4 py-3 font-normal whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -249,7 +293,11 @@ export function LeadsClient({ leads: initial }: { leads: Lead[] }) {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-arqud-bone text-xs whitespace-nowrap">{lead.branch ?? "—"}</td>
-                  <td className="px-4 py-3 text-arqud-muted text-xs max-w-[140px] truncate">{lead.meta_campaign_name ?? lead.meta_ad_name ?? "—"}</td>
+                  <td className="px-4 py-3 text-xs whitespace-nowrap">
+                    <span className={`text-xs border px-2 py-0.5 uppercase tracking-widest ${BRAND_STYLES[getBrand(lead)]}`}>
+                      {getBrand(lead)}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-xs whitespace-nowrap">
                     {lead.follow_up_date ? (
                       <span className={isOverdue ? "text-red-400" : "text-arqud-bone"}>

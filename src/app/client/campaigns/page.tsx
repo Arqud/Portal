@@ -24,7 +24,7 @@ export default async function ClientCampaignsPage() {
             Your Meta Ads campaign performance will appear here once your Meta Business Manager
             access is connected to this portal.
           </p>
-          <p className="text-xs text-arqud-muted">Expected: 25 May 2026</p>
+          <p className="text-xs text-arqud-muted">Campaigns launching soon</p>
           <div className="grid grid-cols-4 gap-px bg-arqud-ink border border-arqud-ink mt-8">
             {["Leads", "Cost Per Lead", "Ad Spend", "Reach"].map((label) => (
               <div key={label} className="bg-arqud-night px-6 py-4">

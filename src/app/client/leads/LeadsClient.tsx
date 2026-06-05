@@ -210,15 +210,28 @@ export function LeadsClient({ leads: initial }: { leads: Lead[] }) {
         </div>
 
         {/* Branch */}
-        {branches.length > 1 && (
-          <select
-            value={branchFilter}
-            onChange={(e) => setBranchFilter(e.target.value)}
-            className="bg-arqud-night border border-arqud-ink px-3 py-1.5 text-xs text-arqud-muted focus:border-arqud-gold focus:outline-none"
-          >
-            <option value="all">All branches</option>
-            {branches.map((b) => <option key={b} value={b}>{b}</option>)}
-          </select>
+        {branches.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            <button
+              onClick={() => setBranchFilter("all")}
+              className={filterBtn(branchFilter === "all")}
+            >
+              All branches
+            </button>
+            {branches.map((b) => (
+              <button
+                key={b}
+                onClick={() => setBranchFilter(b)}
+                className={`px-3 py-1.5 text-xs uppercase tracking-widest border transition-colors ${
+                  branchFilter === b
+                    ? "border-arqud-gold bg-arqud-gold/10 text-arqud-gold"
+                    : "border-arqud-ink text-arqud-muted hover:border-arqud-gold/50 hover:text-arqud-bone"
+                }`}
+              >
+                {b}
+              </button>
+            ))}
+          </div>
         )}
 
         {/* Date */}
@@ -292,7 +305,17 @@ export function LeadsClient({ leads: initial }: { leads: Lead[] }) {
                       <span className="text-arqud-muted text-xs">{lead.phone ?? "—"}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-arqud-bone text-xs whitespace-nowrap">{lead.branch ?? "—"}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {lead.branch ? (
+                      <span className="text-xs border border-arqud-gold/50 bg-arqud-gold/10 text-arqud-gold px-2 py-0.5 uppercase tracking-widest">
+                        {lead.branch}
+                      </span>
+                    ) : (
+                      <span className="text-xs border border-red-500/50 bg-red-500/10 text-red-400 px-2 py-0.5 uppercase tracking-widest">
+                        No branch
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-xs whitespace-nowrap">
                     <span className={`text-xs border px-2 py-0.5 uppercase tracking-widest ${BRAND_STYLES[getBrand(lead)]}`}>
                       {getBrand(lead)}
@@ -386,7 +409,14 @@ function LeadModal({ lead, onClose, onUpdated }: { lead: Lead; onClose: () => vo
             </div>
           )}
           {lead.email && <p className="text-arqud-muted text-xs">{lead.email}</p>}
-          {lead.branch && <p className="text-arqud-muted text-xs">Branch: {lead.branch}</p>}
+          {lead.branch && (
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-arqud-muted text-xs uppercase tracking-widest">Branch:</span>
+              <span className="text-xs border border-arqud-gold/50 bg-arqud-gold/10 text-arqud-gold px-2 py-0.5 uppercase tracking-widest">
+                {lead.branch}
+              </span>
+            </div>
+          )}
           {lead.meta_campaign_name && <p className="text-arqud-muted text-xs">Campaign: {lead.meta_campaign_name}</p>}
           <p className="text-arqud-muted text-xs">
             {new Date(lead.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" })}

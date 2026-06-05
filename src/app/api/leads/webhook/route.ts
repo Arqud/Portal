@@ -90,27 +90,50 @@ export async function POST(request: NextRequest) {
       const accessToken = accessTokenRes.data?.meta_access_token;
       if (!accessToken) continue;
 
+      // Try to get field_data from payload directly first (test payloads include it)
+      const payloadFieldData: { name: string; values: string[] }[] =
+        (value as { field_data?: { name: string; values: string[] }[] }).field_data ?? [];
+
       let leadData: Record<string, string> = {};
-      try {
-        const res = await fetch(
-          `https://graph.facebook.com/v19.0/${metaLeadId}?fields=field_data&access_token=${accessToken}`,
-        );
-        const json = await res.json();
-        for (const f of json.field_data ?? []) {
-          leadData[f.name] = f.values?.[0] ?? "";
-        }
-      } catch {
-        // Store what we have even if field fetch fails
+
+      // Seed from payload field_data if present
+      for (const f of payloadFieldData) {
+        leadData[f.name] = f.values?.[0] ?? "";
       }
+
+      // If no field_data in payload, fetch from Graph API
+      if (Object.keys(leadData).length === 0 && accessToken) {
+        try {
+          const res = await fetch(
+            `https://graph.facebook.com/v19.0/${metaLeadId}?fields=field_data&access_token=${accessToken}`,
+          );
+          const json = await res.json();
+          for (const f of json.field_data ?? []) {
+            leadData[f.name] = f.values?.[0] ?? "";
+          }
+        } catch {
+          // Store what we have even if field fetch fails
+        }
+      }
+
+      // Branch field name varies by how the form question was written in Meta
+      const branch =
+        leadData["branch"] ??
+        leadData["which_branch_is_most_convenient_for_you"] ??
+        leadData["preferred_branch"] ??
+        leadData["location"] ??
+        null;
 
       await admin.from("leads").insert({
         client_id: client.id,
         meta_lead_id: metaLeadId,
         meta_ad_id: metaAdId,
+        meta_ad_name: (value as { ad_name?: string }).ad_name ?? null,
+        meta_campaign_name: (value as { campaign_name?: string }).campaign_name ?? null,
         full_name: leadData["full_name"] ?? leadData["name"] ?? null,
         phone: leadData["phone_number"] ?? leadData["phone"] ?? null,
         email: leadData["email"] ?? null,
-        branch: leadData["branch"] ?? leadData["location"] ?? null,
+        branch,
         status: "new",
       });
     }

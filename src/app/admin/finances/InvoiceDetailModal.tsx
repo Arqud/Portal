@@ -1,7 +1,7 @@
 "use client";
 
-import { useTransition } from "react";
-import { markInvoicePaid } from "./actions";
+import { useTransition, useState } from "react";
+import { markInvoicePaid, deleteInvoice } from "./actions";
 import type { InvoiceWithItems } from "@/lib/invoices/types";
 
 const STATUS: Record<string, string> = {
@@ -20,6 +20,7 @@ function fmtDate(d: string) {
 
 export function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceWithItems; onClose: () => void }) {
   const [pending, start] = useTransition();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const client = invoice.client;
   const pdfUrl = `/api/invoices/${invoice.id}/pdf`;
   const sorted = [...(invoice.line_items ?? [])].sort((a, b) => a.sort_order - b.sort_order);
@@ -48,6 +49,25 @@ export function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceWithI
               className="bg-arqud-gold px-5 py-2 text-xs font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft">
               Download PDF
             </a>
+            {confirmDelete ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-red-400 uppercase tracking-widest">Delete?</span>
+                <button
+                  disabled={pending}
+                  onClick={() => start(async () => { await deleteInvoice(invoice.id); onClose(); })}
+                  className="text-xs text-red-400 border border-red-400/60 px-3 py-1 hover:bg-red-900/30 uppercase tracking-widest disabled:opacity-50"
+                >
+                  Yes, delete
+                </button>
+                <button onClick={() => setConfirmDelete(false)} className="text-xs text-arqud-muted uppercase tracking-widest hover:text-arqud-bone">
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmDelete(true)} className="text-xs text-red-400/60 hover:text-red-400 uppercase tracking-widest">
+                Delete
+              </button>
+            )}
             <button onClick={onClose} className="text-arqud-muted hover:text-white text-xl ml-1">✕</button>
           </div>
         </div>

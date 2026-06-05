@@ -162,9 +162,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
 
 export async function deleteInvoice(invoiceId: string) {
   const admin = await requireAdmin();
-  const { data } = await admin
-    .from("invoices").select("status").eq("id", invoiceId).single();
-  if (data?.status !== "draft") throw new Error("Only draft invoices can be deleted");
+  await admin.from("invoice_line_items").delete().eq("invoice_id", invoiceId);
   await admin.from("invoices").delete().eq("id", invoiceId);
   revalidatePath("/admin/finances");
 }

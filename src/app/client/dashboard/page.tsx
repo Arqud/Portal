@@ -1,6 +1,38 @@
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { LeadsClient } from "../leads/LeadsClient";
+import { Card, KpiCard, Pill, AreaChart, Avatar } from "@/components/ui";
+
+// Button is a <button>; these mirror its visual classes for real <a> navigation (no asChild support).
+const BTN_PRIMARY = "inline-flex items-center gap-2 font-semibold tracking-wide rounded-control transition-all text-xs px-[18px] py-[11px] text-arqud-bg bg-gradient-to-r from-arqud-gold to-arqud-gold-soft shadow-[0_8px_22px_rgba(200,169,110,0.28)] hover:-translate-y-px";
+const BTN_OUTLINE_SM = "inline-flex items-center gap-2 font-semibold tracking-wide rounded-control transition-all text-[11px] px-3.5 py-2 text-arqud-gold-soft border border-arqud-gold/40 hover:border-arqud-gold/70 hover:bg-arqud-gold/5";
+
+function getBrand(lead: { meta_campaign_name: string | null; meta_ad_name: string | null }): "Sparkling" | "We Wash" | "Other" {
+  const name = (lead.meta_campaign_name ?? lead.meta_ad_name ?? "").toLowerCase();
+  if (name.includes("sparkling")) return "Sparkling";
+  if (name.includes("we wash") || name.includes("wewash") || name.includes("wwcars")) return "We Wash";
+  return "Other";
+}
+
+const BRAND_TONE: Record<string, string> = {
+  Sparkling: "spark",
+  "We Wash": "wash",
+  Other: "neutral",
+};
+
+const STATUS_TONE: Record<string, string> = {
+  new: "new",
+  contacted: "contacted",
+  converted: "converted",
+  lost: "neutral",
+};
+
+function initialsOf(name: string | null) {
+  if (!name) return "—";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
 export default async function ClientDashboardPage() {
   const { profile } = await verifySession("client");
@@ -24,9 +56,9 @@ export default async function ClientDashboardPage() {
   const totalPaid = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
   const outstanding = invoices.filter((i) => i.status === "pending" || i.status === "overdue").reduce((s, i) => s + i.amount, 0);
   const latestInvoice = invoices[0];
-  const totalLeads = campaigns.reduce((s, c) => s + c.leads, 0);
+  const totalCampaignLeads = campaigns.reduce((s, c) => s + c.leads, 0);
   const totalSpend = campaigns.reduce((s, c) => s + c.spend, 0);
-  const avgCpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
+  const avgCpl = totalCampaignLeads > 0 ? totalSpend / totalCampaignLeads : 0;
 
   const leadsTotal = leads.length;
   const leadsContacted = leads.filter((l) => l.status === "contacted").length;
@@ -36,6 +68,21 @@ export default async function ClientDashboardPage() {
 
   const fmt = (n: number) => `R ${n.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
   const monthName = now.toLocaleString("en-ZA", { month: "long" });
+  const firstName = (profile.full_name ?? "there").split(" ")[0];
+
+  // Real daily lead counts for the current month — derived from the leads already fetched above.
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const dailyCounts = new Array(daysInMonth).fill(0);
+  for (const l of leads) {
+    const d = new Date(l.created_at);
+    if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) {
+      dailyCounts[d.getDate() - 1] += 1;
+    }
+  }
+  const leadsThisMonth = dailyCounts.reduce((s, n) => s + n, 0);
+  const hasMonthlyTrend = leadsThisMonth > 0;
+
+  const latestLeads = leads.slice(0, 5);
 
   const STATUS_COLOR: Record<string, string> = {
     pending: "var(--color-arqud-gold)",
@@ -44,46 +91,68 @@ export default async function ClientDashboardPage() {
   };
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-10 animate-fade-up">
-      <div>
-        <p className="text-xs uppercase tracking-widest text-arqud-muted mb-1">
-          {monthName} {now.getFullYear()}
-        </p>
-        <h1 className="font-display text-5xl font-normal" style={{ letterSpacing: "-0.02em" }}>
-          Dashboard
-        </h1>
+    <main className="min-h-screen px-8 py-10 space-y-8 animate-fade-up">
+      {/* Greeting header */}
+      <div className="flex justify-between items-start gap-4 flex-wrap">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-arqud-muted mb-1">
+            {monthName} {now.getFullYear()}
+          </p>
+          <h1 className="font-display text-arqud-bone text-[28px] sm:text-[32px] font-normal" style={{ letterSpacing: "-0.01em" }}>
+            Welcome back, {firstName}
+          </h1>
+          <p className="text-arqud-muted text-[12.5px] mt-1.5">Here&apos;s how your campaigns are performing today.</p>
+        </div>
+        <a href="/client/leads" className={BTN_PRIMARY}>View Leads →</a>
       </div>
 
-      {/* Invoice KPIs */}
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: "Total Invoiced", value: fmt(totalInvoiced), color: "var(--color-arqud-gold)" },
-          { label: "Total Paid", value: fmt(totalPaid), color: "#4ade80" },
-          { label: "Outstanding", value: fmt(outstanding), color: outstanding > 0 ? "var(--color-arqud-gold)" : "var(--color-arqud-muted)" },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="card p-6">
-            <p className="text-xs uppercase tracking-widest text-arqud-muted mb-4">{label}</p>
-            <p className="stat-number text-3xl" style={{ color }}>{value}</p>
-          </div>
-        ))}
+      {/* Lead KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <KpiCard label="Total Leads" value={leadsTotal.toString()} trend={leadsNew > 0 ? { dir: "up", text: `${leadsNew} new` } : undefined} />
+        <KpiCard label="Contacted" value={leadsContacted.toString()} />
+        <KpiCard label="Converted" value={leadsConverted.toString()} trend={leadsConverted > 0 ? { dir: "up", text: `${convRate}% conversion` } : undefined} />
+        <KpiCard label="Cost / Lead" value={totalCampaignLeads > 0 ? fmt(avgCpl) : "—"} />
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
-        {/* Latest invoice */}
-        <div className="card p-6 space-y-5">
-          <div className="flex items-center justify-between">
-            <p className="text-xs uppercase tracking-widest text-arqud-muted">Latest Invoice</p>
-            <a href="/client/invoices" className="text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-gold transition-colors">
-              View all →
-            </a>
-          </div>
-          {latestInvoice ? (
-            <>
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-display italic text-2xl text-arqud-gold">{latestInvoice.invoice_number}</p>
-                  <p className="text-xs mt-1 text-arqud-muted">Due {latestInvoice.due_date}</p>
+      {/* Chart + Latest leads */}
+      <div className="grid lg:grid-cols-[1.45fr_1fr] gap-3.5">
+        <Card title="Leads this month" caption={`All campaigns combined · ${monthName} ${now.getFullYear()}`}>
+          {hasMonthlyTrend ? (
+            <AreaChart points={dailyCounts} />
+          ) : (
+            <div className="py-10 text-center">
+              <p className="text-xs uppercase tracking-widest text-arqud-muted">No leads yet this month</p>
+            </div>
+          )}
+        </Card>
+
+        <Card title="Latest leads" caption="Live from your ads">
+          {latestLeads.length > 0 ? (
+            <div className="space-y-0.5">
+              {latestLeads.map((lead) => (
+                <div key={lead.id} className="flex items-center gap-2.5 py-2.5 border-t border-arqud-line/60 first:border-t-0">
+                  <Avatar initials={initialsOf(lead.full_name)} />
+                  <span className="text-[12.5px] text-arqud-bone truncate flex-1 min-w-0">{lead.full_name ?? "Unnamed lead"}</span>
+                  <Pill tone={BRAND_TONE[getBrand(lead)]}>{getBrand(lead)}</Pill>
+                  <Pill tone={STATUS_TONE[lead.status] ?? "neutral"}>{lead.status}</Pill>
                 </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-10 text-center">
+              <p className="text-xs uppercase tracking-widest text-arqud-muted">No leads yet</p>
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {/* Billing snapshot */}
+      <div className="grid lg:grid-cols-[1.45fr_1fr] gap-3.5">
+        <Card title="Latest Invoice" caption={latestInvoice ? `Due ${latestInvoice.due_date}` : undefined}>
+          {latestInvoice ? (
+            <div className="space-y-4">
+              <div className="flex items-start justify-between">
+                <p className="font-display italic text-2xl text-arqud-gold">{latestInvoice.invoice_number}</p>
                 <span className="flex items-center gap-1.5 text-xs uppercase tracking-widest"
                   style={{ color: STATUS_COLOR[latestInvoice.status] ?? "var(--color-arqud-muted)" }}>
                   <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
@@ -91,98 +160,63 @@ export default async function ClientDashboardPage() {
                   {latestInvoice.status}
                 </span>
               </div>
-              <div className="gold-rule" />
-              <p className="stat-number text-4xl">{fmt(latestInvoice.amount)}</p>
-              <a href={`/api/invoices/${latestInvoice.id}/pdf`} target="_blank" rel="noopener noreferrer"
-                className="btn-gold text-xs">
-                Download PDF
-              </a>
-            </>
+              <p className="stat-number text-3xl">{fmt(latestInvoice.amount)}</p>
+              <div className="flex items-center gap-4 pt-1">
+                <a href={`/api/invoices/${latestInvoice.id}/pdf`} target="_blank" rel="noopener noreferrer" className={BTN_OUTLINE_SM}>
+                  Download PDF
+                </a>
+                <a href="/client/invoices" className="text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-gold transition-colors">
+                  View all →
+                </a>
+              </div>
+            </div>
           ) : (
             <div className="py-8 text-center">
               <p className="text-xs uppercase tracking-widest text-arqud-muted">No invoices yet</p>
             </div>
           )}
-        </div>
+        </Card>
 
-        {/* Campaigns */}
-        <div className="card p-6 space-y-5">
-          <p className="text-xs uppercase tracking-widest text-arqud-muted">Campaign Performance</p>
-          {campaigns.length > 0 ? (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { label: "Leads", value: totalLeads.toLocaleString() },
-                  { label: "Cost Per Lead", value: fmt(avgCpl) },
-                  { label: "Ad Spend", value: fmt(totalSpend) },
-                  { label: "Reach", value: campaigns.reduce((s, c) => s + c.reach, 0).toLocaleString() },
-                ].map(({ label, value }) => (
-                  <div key={label}>
-                    <p className="text-xs uppercase tracking-widest text-arqud-muted mb-1">{label}</p>
-                    <p className="stat-number text-xl">{value}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="gold-rule" />
-              <a href="/client/campaigns" className="text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-gold transition-colors">
-                View campaigns →
-              </a>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-4 space-y-4 text-center">
-              <div className="grid grid-cols-2 gap-4 w-full opacity-30 pointer-events-none">
-                {["Leads", "Cost Per Lead", "Ad Spend", "Reach"].map((l) => (
-                  <div key={l}>
-                    <p className="text-xs uppercase tracking-widest text-arqud-muted mb-1">{l}</p>
-                    <p className="stat-number text-xl text-arqud-muted">—</p>
-                  </div>
-                ))}
-              </div>
-              <div className="gold-rule w-full" />
-              <p className="text-xs text-arqud-muted">Live data connects when Meta Ads access is granted</p>
+        <Card title="Billing Summary">
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <p className="text-[10px] tracking-[0.14em] uppercase text-arqud-muted mb-1.5">Invoiced</p>
+              <p className="stat-number text-xl text-arqud-gold">{fmt(totalInvoiced)}</p>
             </div>
-          )}
-        </div>
+            <div>
+              <p className="text-[10px] tracking-[0.14em] uppercase text-arqud-muted mb-1.5">Paid</p>
+              <p className="stat-number text-xl text-arqud-green">{fmt(totalPaid)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] tracking-[0.14em] uppercase text-arqud-muted mb-1.5">Outstanding</p>
+              <p className="stat-number text-xl" style={{ color: outstanding > 0 ? "var(--color-arqud-gold)" : "var(--color-arqud-muted)" }}>{fmt(outstanding)}</p>
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* Leads CRM */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-3xl font-normal">Leads</h2>
+          <h2 className="font-display text-arqud-bone text-2xl font-normal">Leads</h2>
           {leadsTotal > 0 && (
             <p className="text-xs uppercase tracking-widest text-arqud-muted">{leadsTotal} total</p>
           )}
         </div>
 
         {leadsTotal > 0 ? (
-          <>
-            {/* Lead KPIs */}
-            <div className="grid grid-cols-4 gap-px bg-arqud-ink border border-arqud-ink">
-              {[
-                { label: "New", value: leadsNew.toString(), color: "var(--color-arqud-gold)" },
-                { label: "Contacted", value: leadsContacted.toString(), color: "#60a5fa" },
-                { label: "Converted", value: leadsConverted.toString(), color: "#4ade80" },
-                { label: "Conversion Rate", value: `${convRate}%`, color: convRate > 0 ? "#4ade80" : "var(--color-arqud-muted)" },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="bg-arqud-night px-6 py-5">
-                  <p className="text-xs uppercase tracking-widest text-arqud-muted mb-2">{label}</p>
-                  <p className="font-display text-3xl" style={{ color }}>{value}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Leads table */}
-            <LeadsClient leads={leads} />
-          </>
+          <LeadsClient leads={leads} />
         ) : (
-          <div className="border border-arqud-ink bg-arqud-night p-12 text-center space-y-4">
-            <p className="font-display text-2xl text-arqud-gold">Leads coming soon</p>
-            <p className="text-arqud-bone text-sm max-w-md mx-auto">
-              Once your Meta ads go live, every lead that fills in your form will appear here
-              in real time — with their name, number, branch, and which ad they came from.
-            </p>
-            <p className="text-xs text-arqud-muted">Expected: 25 May 2026</p>
-          </div>
+          <Card>
+            <div className="py-6 text-center space-y-4">
+              <p className="font-display text-2xl text-arqud-gold">Leads coming soon</p>
+              <p className="text-arqud-bone-dim text-sm max-w-md mx-auto">
+                Once your Meta ads go live, every lead that fills in your form will appear here
+                in real time — with their name, number, branch, and which ad they came from.
+              </p>
+              <p className="text-xs text-arqud-muted">Expected: 25 May 2026</p>
+            </div>
+          </Card>
         )}
       </div>
     </main>

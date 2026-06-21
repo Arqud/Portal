@@ -1,6 +1,10 @@
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getSignedUrl } from "@/lib/storage";
+import { Card, PageHeader, Table, Tr, Td } from "@/components/ui";
+
+// Button is a <button>; this mirrors its outline-sm classes for real <a> downloads (no asChild support).
+const BTN_OUTLINE_SM = "inline-flex items-center gap-2 font-semibold tracking-wide rounded-control transition-all text-[11px] px-3.5 py-2 text-arqud-gold-soft border border-arqud-gold/40 hover:border-arqud-gold/70 hover:bg-arqud-gold/5";
 
 export default async function ClientReportsPage() {
   const { profile } = await verifySession("client");
@@ -22,59 +26,43 @@ export default async function ClientReportsPage() {
   );
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-10 animate-fade-up">
-      <div>
-        <p className="text-xs uppercase tracking-widest text-arqud-muted mb-1">
-          {list.length} {list.length === 1 ? "report" : "reports"}
-        </p>
-        <h1 className="font-display text-5xl font-normal" style={{ letterSpacing: "-0.02em" }}>
-          Reports
-        </h1>
-      </div>
+    <main className="min-h-screen px-8 py-10 space-y-8 animate-fade-up">
+      <PageHeader title="Reports" count={`${list.length} ${list.length === 1 ? "report" : "reports"}`} />
 
       {list.length === 0 ? (
-        <div className="card p-12 text-center space-y-3">
-          <p className="font-display text-2xl text-arqud-gold">No reports yet</p>
-          <p className="text-arqud-muted text-sm max-w-md mx-auto">
-            Your monthly performance reports will appear here once your agency uploads them.
-          </p>
-        </div>
+        <Card>
+          <div className="py-6 text-center space-y-3">
+            <p className="font-display text-2xl text-arqud-gold">No reports yet</p>
+            <p className="text-arqud-muted text-sm max-w-md mx-auto">
+              Your monthly performance reports will appear here once your agency uploads them.
+            </p>
+          </div>
+        </Card>
       ) : (
-        <div className="card">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Report</th>
-                <th>Period</th>
-                <th>Date Added</th>
-                <th>Download</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((r) => (
-                <tr key={r.id}>
-                  <td className="text-arqud-bone">{r.title}</td>
-                  <td>{r.period}</td>
-                  <td>{new Date(r.created_at).toLocaleDateString("en-ZA")}</td>
-                  <td>
-                    {signedUrls[r.id] ? (
-                      <a
-                        href={signedUrls[r.id]}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs uppercase tracking-widest text-arqud-gold hover:text-arqud-gold-soft transition-colors"
-                      >
-                        PDF →
-                      </a>
-                    ) : (
-                      <span className="text-xs text-arqud-muted">Unavailable</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <Tr header>
+            <Td className="basis-[1.6fr] grow">Report</Td>
+            <Td className="basis-[1fr] grow">Period</Td>
+            <Td className="basis-[1fr] grow">Date Added</Td>
+            <Td className="basis-[0.8fr] grow text-right">Download</Td>
+          </Tr>
+          {list.map((r) => (
+            <Tr key={r.id}>
+              <Td className="basis-[1.6fr] grow text-arqud-bone truncate">{r.title}</Td>
+              <Td className="basis-[1fr] grow">{r.period}</Td>
+              <Td className="basis-[1fr] grow">{new Date(r.created_at).toLocaleDateString("en-ZA")}</Td>
+              <Td className="basis-[0.8fr] grow text-right">
+                {signedUrls[r.id] ? (
+                  <a href={signedUrls[r.id]} target="_blank" rel="noopener noreferrer" className={BTN_OUTLINE_SM}>
+                    PDF →
+                  </a>
+                ) : (
+                  <span className="text-xs text-arqud-muted">Unavailable</span>
+                )}
+              </Td>
+            </Tr>
+          ))}
+        </Table>
       )}
     </main>
   );

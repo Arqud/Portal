@@ -1,11 +1,15 @@
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { InvoiceWithItems } from "@/lib/invoices/types";
+import { Card, KpiCard, PageHeader, Table, Tr, Td, Pill } from "@/components/ui";
 
-const STATUS_DOT: Record<string, string> = {
-  pending: "status-pending",
-  paid: "status-paid",
-  overdue: "status-overdue",
+// Button is a <button>; this mirrors its outline-sm classes for real <a> downloads (no asChild support).
+const BTN_OUTLINE_SM = "inline-flex items-center gap-2 font-semibold tracking-wide rounded-control transition-all text-[11px] px-3.5 py-2 text-arqud-gold-soft border border-arqud-gold/40 hover:border-arqud-gold/70 hover:bg-arqud-gold/5";
+
+const STATUS_TONE: Record<string, string> = {
+  paid: "converted",
+  pending: "contacted",
+  overdue: "neutral",
 };
 
 export default async function ClientInvoicesPage() {
@@ -14,8 +18,10 @@ export default async function ClientInvoicesPage() {
   if (!profile.client_id) {
     return (
       <main className="min-h-screen px-8 py-10 animate-fade-up">
-        <h1 className="font-display text-5xl font-normal" style={{ letterSpacing: "-0.02em" }}>Invoices</h1>
-        <p className="mt-4 text-arqud-muted">No client account linked. Contact your agency.</p>
+        <PageHeader title="Invoices" />
+        <Card>
+          <p className="text-arqud-muted text-sm">No client account linked. Contact your agency.</p>
+        </Card>
       </main>
     );
   }
@@ -35,76 +41,50 @@ export default async function ClientInvoicesPage() {
   const fmt = (n: number) => `R ${n.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-10 animate-fade-up">
-      <div>
-        <p className="text-xs uppercase tracking-widest text-arqud-muted mb-1">
-          {invoices.length} {invoices.length === 1 ? "invoice" : "invoices"}
-        </p>
-        <h1 className="font-display text-5xl font-normal" style={{ letterSpacing: "-0.02em" }}>
-          Invoices
-        </h1>
-      </div>
+    <main className="min-h-screen px-8 py-10 space-y-8 animate-fade-up">
+      <PageHeader title="Invoices" count={`${invoices.length} ${invoices.length === 1 ? "invoice" : "invoices"}`} />
 
       {invoices.length > 0 && (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="card p-5">
-            <p className="text-xs uppercase tracking-widest text-arqud-muted mb-3">Total Paid</p>
-            <p className="stat-number text-2xl" style={{ color: "#4ade80" }}>{fmt(totalPaid)}</p>
-          </div>
-          <div className="card p-5">
-            <p className="text-xs uppercase tracking-widest text-arqud-muted mb-3">Outstanding</p>
-            <p className="stat-number text-2xl" style={{ color: outstanding > 0 ? "var(--color-arqud-gold)" : undefined }}>
-              {fmt(outstanding)}
-            </p>
-          </div>
+        <div className="grid grid-cols-2 gap-3.5">
+          <KpiCard label="Total Paid" value={fmt(totalPaid)} />
+          <KpiCard label="Outstanding" value={fmt(outstanding)} />
         </div>
       )}
 
       {invoices.length === 0 ? (
-        <div className="card p-12 text-center space-y-3">
-          <p className="font-display text-2xl text-arqud-gold">No invoices yet</p>
-          <p className="text-arqud-muted text-sm">Your invoices will appear here once issued.</p>
-        </div>
+        <Card>
+          <div className="py-6 text-center space-y-3">
+            <p className="font-display text-2xl text-arqud-gold">No invoices yet</p>
+            <p className="text-arqud-muted text-sm">Your invoices will appear here once issued.</p>
+          </div>
+        </Card>
       ) : (
-        <div className="card">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Invoice #</th>
-                <th>Issue Date</th>
-                <th>Due Date</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Download</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((inv) => (
-                <tr key={inv.id}>
-                  <td className="font-display italic text-arqud-gold">{inv.invoice_number}</td>
-                  <td>{inv.issue_date}</td>
-                  <td>{inv.due_date}</td>
-                  <td>{fmt(inv.amount)}</td>
-                  <td>
-                    <span className={`status-dot ${STATUS_DOT[inv.status] ?? ""}`}>
-                      {inv.status}
-                    </span>
-                  </td>
-                  <td>
-                    <a
-                      href={`/api/invoices/${inv.id}/pdf`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs uppercase tracking-widest text-arqud-gold hover:text-arqud-gold-soft transition-colors"
-                    >
-                      PDF →
-                    </a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <Tr header>
+            <Td className="basis-[1fr] grow">Invoice #</Td>
+            <Td className="basis-[0.9fr] grow">Issue Date</Td>
+            <Td className="basis-[0.9fr] grow">Due Date</Td>
+            <Td className="basis-[0.9fr] grow">Amount</Td>
+            <Td className="basis-[0.8fr] grow">Status</Td>
+            <Td className="basis-[0.7fr] grow text-right">Download</Td>
+          </Tr>
+          {invoices.map((inv) => (
+            <Tr key={inv.id}>
+              <Td className="basis-[1fr] grow font-display italic text-arqud-gold">{inv.invoice_number}</Td>
+              <Td className="basis-[0.9fr] grow">{inv.issue_date}</Td>
+              <Td className="basis-[0.9fr] grow">{inv.due_date}</Td>
+              <Td className="basis-[0.9fr] grow text-arqud-bone">{fmt(inv.amount)}</Td>
+              <Td className="basis-[0.8fr] grow">
+                <Pill tone={STATUS_TONE[inv.status] ?? "neutral"}>{inv.status}</Pill>
+              </Td>
+              <Td className="basis-[0.7fr] grow text-right">
+                <a href={`/api/invoices/${inv.id}/pdf`} target="_blank" rel="noopener noreferrer" className={BTN_OUTLINE_SM}>
+                  PDF →
+                </a>
+              </Td>
+            </Tr>
+          ))}
+        </Table>
       )}
     </main>
   );

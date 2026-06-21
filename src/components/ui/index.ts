@@ -5,3 +5,4 @@ export { KpiCard } from "./KpiCard";
 export { Input, Select, Textarea } from "./Field";
 export { Tabs } from "./Tabs";
 export { FilterPill } from "./FilterPill";
+export { Table, Tr, Td, Avatar } from "./DataTable";

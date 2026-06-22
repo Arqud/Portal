@@ -5,13 +5,15 @@ import { updateQuoteStatus } from "./actions";
 import { ConvertModal } from "./ConvertModal";
 import { QuoteForm } from "./QuoteForm";
 import { QuoteDetailModal } from "./QuoteDetailModal";
+import { Table, Tr, Td, Pill, Button } from "@/components/ui";
 import type { QuoteWithItems, Client } from "@/lib/invoices/types";
 
-const STATUS: Record<string, string> = {
-  draft: "text-arqud-muted border-arqud-muted",
-  sent: "text-arqud-gold border-arqud-gold",
-  accepted: "text-green-400 border-green-400",
-  rejected: "text-red-400 border-red-400",
+// Quote statuses (draft/sent/accepted/rejected) mapped by meaning to the shared Pill tone vocabulary.
+const STATUS_TONE: Record<string, string> = {
+  draft: "neutral",
+  sent: "contacted",
+  accepted: "converted",
+  rejected: "danger",
 };
 
 export function QuoteTable({ quotes, clients, onNew }: { quotes: QuoteWithItems[]; clients: Client[]; onNew: () => void }) {
@@ -26,72 +28,66 @@ export function QuoteTable({ quotes, clients, onNew }: { quotes: QuoteWithItems[
       {editing && <QuoteForm clients={clients} editQuote={editing} onClose={() => setEditing(null)} />}
       {viewing && <QuoteDetailModal quote={viewing} onClose={() => setViewing(null)} />}
       <div className="flex justify-end mb-4">
-        <button onClick={onNew}
-          className="bg-arqud-gold px-6 py-2 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft">
-          + New Quote
-        </button>
+        <Button onClick={onNew}>+ New Quote</Button>
       </div>
       {quotes.length === 0 ? (
         <p className="text-arqud-muted text-center py-16">No quotes yet.</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-arqud-ink">
-              {["Quote #", "Client", "Date", "Total (excl. VAT)", "Status", "Actions"].map((h) => (
-                <th key={h} className="text-left text-xs uppercase tracking-widest text-arqud-muted pb-3 pr-4">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {quotes.map((q) => (
-              <tr key={q.id} className="border-b border-arqud-ink/50 hover:bg-arqud-night/50">
-                <td className="py-3 pr-4">
-                  <button onClick={() => setViewing(q)} className="text-arqud-gold hover:text-arqud-gold-soft hover:underline font-medium">
-                    {q.quote_number}
-                  </button>
-                </td>
-                <td className="py-3 pr-4 text-arqud-bone">{q.client?.company ?? q.client?.name ?? "—"}</td>
-                <td className="py-3 pr-4 text-arqud-muted">{q.issue_date}</td>
-                <td className="py-3 pr-4 text-arqud-bone">R {q.total.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</td>
-                <td className="py-3 pr-4">
-                  <span className={`text-xs uppercase tracking-widest border px-2 py-0.5 ${STATUS[q.status] ?? ""}`}>
-                    {q.status}
-                  </span>
-                </td>
-                <td className="py-3 flex gap-3 flex-wrap items-center">
-                  <a href={`/api/quotes/${q.id}/pdf`} target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">PDF</a>
-                  {q.status === "draft" && (
+        <Table>
+          <Tr header>
+            <Td className="basis-[1fr] grow">Quote #</Td>
+            <Td className="basis-[1.2fr] grow">Client</Td>
+            <Td className="basis-[1fr] grow">Date</Td>
+            <Td className="basis-[1.1fr] grow">Total (excl. VAT)</Td>
+            <Td className="basis-[0.8fr] grow">Status</Td>
+            <Td className="basis-[1.8fr] grow">Actions</Td>
+          </Tr>
+          {quotes.map((q) => (
+            <Tr key={q.id}>
+              <Td className="basis-[1fr] grow">
+                <button onClick={() => setViewing(q)} className="text-arqud-gold hover:text-arqud-gold-soft hover:underline font-medium">
+                  {q.quote_number}
+                </button>
+              </Td>
+              <Td className="basis-[1.2fr] grow text-arqud-bone">{q.client?.company ?? q.client?.name ?? "—"}</Td>
+              <Td className="basis-[1fr] grow text-arqud-muted">{q.issue_date}</Td>
+              <Td className="basis-[1.1fr] grow text-arqud-bone">R {q.total.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</Td>
+              <Td className="basis-[0.8fr] grow">
+                <Pill tone={STATUS_TONE[q.status] ?? "neutral"}>{q.status}</Pill>
+              </Td>
+              <Td className="basis-[1.8fr] grow flex gap-3 flex-wrap items-center">
+                <a href={`/api/quotes/${q.id}/pdf`} target="_blank" rel="noopener noreferrer"
+                  className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">PDF</a>
+                {q.status === "draft" && (
+                  <button disabled={pending}
+                    onClick={() => start(() => updateQuoteStatus(q.id, "sent"))}
+                    className="text-xs text-arqud-gold hover:text-arqud-gold-soft disabled:opacity-50">Mark Sent</button>
+                )}
+                {q.status === "sent" && (
+                  <>
                     <button disabled={pending}
-                      onClick={() => start(() => updateQuoteStatus(q.id, "sent"))}
-                      className="text-xs text-arqud-gold hover:text-arqud-gold-soft disabled:opacity-50">Mark Sent</button>
-                  )}
-                  {q.status === "sent" && (
-                    <>
-                      <button disabled={pending}
-                        onClick={() => start(() => updateQuoteStatus(q.id, "accepted"))}
-                        className="text-xs text-green-400 hover:text-green-300 disabled:opacity-50">Accept</button>
-                      <button disabled={pending}
-                        onClick={() => start(() => updateQuoteStatus(q.id, "rejected"))}
-                        className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">Reject</button>
-                    </>
-                  )}
-                  {q.status === "accepted" && !q.converted_to_invoice_id && (
-                    <button onClick={() => setConverting(q)}
-                      className="text-xs text-arqud-gold hover:text-arqud-gold-soft">Convert to Invoice</button>
-                  )}
-                  {!q.converted_to_invoice_id && q.status !== "accepted" && q.status !== "rejected" && (
-                    <button onClick={() => setEditing(q)}
-                      className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">Edit</button>
-                  )}
-                  {q.converted_to_invoice_id && (
-                    <span className="text-xs text-green-400">Invoiced</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                      onClick={() => start(() => updateQuoteStatus(q.id, "accepted"))}
+                      className="text-xs text-green-400 hover:text-green-300 disabled:opacity-50">Accept</button>
+                    <button disabled={pending}
+                      onClick={() => start(() => updateQuoteStatus(q.id, "rejected"))}
+                      className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">Reject</button>
+                  </>
+                )}
+                {q.status === "accepted" && !q.converted_to_invoice_id && (
+                  <button onClick={() => setConverting(q)}
+                    className="text-xs text-arqud-gold hover:text-arqud-gold-soft">Convert to Invoice</button>
+                )}
+                {!q.converted_to_invoice_id && q.status !== "accepted" && q.status !== "rejected" && (
+                  <button onClick={() => setEditing(q)}
+                    className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">Edit</button>
+                )}
+                {q.converted_to_invoice_id && (
+                  <span className="text-xs text-green-400">Invoiced</span>
+                )}
+              </Td>
+            </Tr>
+          ))}
+        </Table>
       )}
     </div>
   );

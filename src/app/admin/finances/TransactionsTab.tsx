@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { uploadTransactionsCsv } from "./transactionActions";
+import { KpiCard, Table, Tr, Td } from "@/components/ui";
 import type { Transaction } from "./transactionActions";
 
 function fmt(n: number) {
@@ -65,26 +66,23 @@ export function TransactionsTab({ transactions: initial }: Props) {
     <div>
       {/* Summary cards */}
       {transactions.length > 0 && (
-        <div className="grid grid-cols-3 gap-px bg-arqud-ink border border-arqud-ink mb-8">
-          {[
-            { label: "Money In", value: fmt(totalIn), color: "text-green-400" },
-            { label: "Money Out", value: fmt(totalOut), color: "text-red-400" },
-            { label: "Current Balance", value: latestBalance !== null ? `R ${latestBalance.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}` : "—", color: (latestBalance ?? 0) >= 0 ? "text-arqud-bone" : "text-red-400" },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="bg-arqud-night px-5 py-5">
-              <p className="text-xs uppercase tracking-widest text-arqud-muted mb-2">{label}</p>
-              <p className={`font-display text-2xl ${color}`}>{value}</p>
-            </div>
-          ))}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 mb-8">
+          <KpiCard label="Money In" value={fmt(totalIn)} />
+          <KpiCard label="Money Out" value={fmt(totalOut)} />
+          <KpiCard
+            label="Current Balance"
+            value={latestBalance !== null ? `R ${latestBalance.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}` : "—"}
+            trend={(latestBalance ?? 0) < 0 ? { dir: "down", text: "negative balance" } : undefined}
+          />
         </div>
       )}
 
       {/* Upload zone */}
       <div
-        className={`border-2 border-dashed rounded-sm p-10 text-center mb-8 transition-colors cursor-pointer ${
+        className={`border-2 border-dashed rounded-card p-10 text-center mb-8 transition-colors cursor-pointer ${
           dragging
             ? "border-arqud-gold bg-arqud-gold/5"
-            : "border-arqud-ink hover:border-arqud-gold/50"
+            : "border-arqud-line-2 hover:border-arqud-gold/50"
         }`}
         onClick={() => inputRef.current?.click()}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
@@ -113,32 +111,26 @@ export function TransactionsTab({ transactions: initial }: Props) {
 
       {/* Transactions table */}
       {transactions.length > 0 ? (
-        <div className="border border-arqud-ink">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-arqud-night border-b border-arqud-ink">
-                <th className="text-left px-5 py-3 text-xs uppercase tracking-widest text-arqud-muted font-normal">Date</th>
-                <th className="text-left px-5 py-3 text-xs uppercase tracking-widest text-arqud-muted font-normal">Description</th>
-                <th className="text-right px-5 py-3 text-xs uppercase tracking-widest text-arqud-muted font-normal">Amount</th>
-                <th className="text-right px-5 py-3 text-xs uppercase tracking-widest text-arqud-muted font-normal">Balance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((t) => (
-                <tr key={t.id} className="border-b border-arqud-ink/50 hover:bg-arqud-night/60 transition-colors">
-                  <td className="px-5 py-3 text-arqud-muted whitespace-nowrap">{formatDate(t.date)}</td>
-                  <td className="px-5 py-3 text-arqud-bone">{t.description}</td>
-                  <td className={`px-5 py-3 text-right font-mono whitespace-nowrap ${t.amount >= 0 ? "text-green-400" : "text-red-400"}`}>
-                    {t.amount >= 0 ? "+" : "−"} {fmt(t.amount)}
-                  </td>
-                  <td className={`px-5 py-3 text-right font-mono whitespace-nowrap ${t.balance >= 0 ? "text-arqud-bone" : "text-red-400"}`}>
-                    R {t.balance.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <Tr header>
+            <Td className="basis-[110px] grow-0 shrink-0">Date</Td>
+            <Td className="basis-[1fr] grow">Description</Td>
+            <Td className="basis-[1fr] grow text-right">Amount</Td>
+            <Td className="basis-[1fr] grow text-right">Balance</Td>
+          </Tr>
+          {transactions.map((t) => (
+            <Tr key={t.id}>
+              <Td className="basis-[110px] grow-0 shrink-0 text-arqud-muted whitespace-nowrap">{formatDate(t.date)}</Td>
+              <Td className="basis-[1fr] grow text-arqud-bone">{t.description}</Td>
+              <Td className={`basis-[1fr] grow text-right font-mono whitespace-nowrap ${t.amount >= 0 ? "text-green-400" : "text-red-400"}`}>
+                {t.amount >= 0 ? "+" : "−"} {fmt(t.amount)}
+              </Td>
+              <Td className={`basis-[1fr] grow text-right font-mono whitespace-nowrap ${t.balance >= 0 ? "text-arqud-bone" : "text-red-400"}`}>
+                R {t.balance.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}
+              </Td>
+            </Tr>
+          ))}
+        </Table>
       ) : (
         <div className="text-center py-16 text-arqud-muted text-sm">
           No transactions yet. Upload your FNB CSV to get started.

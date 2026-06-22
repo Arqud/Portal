@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { convertQuoteToInvoice } from "./actions";
+import { Card, Input, Button } from "@/components/ui";
 import type { QuoteWithItems } from "@/lib/invoices/types";
 
 export function ConvertModal({ quote, onClose }: { quote: QuoteWithItems; onClose: () => void }) {
@@ -24,11 +25,9 @@ export function ConvertModal({ quote, onClose }: { quote: QuoteWithItems; onClos
     });
   }
 
-  const inputCls = "w-full bg-arqud-black border border-arqud-ink px-4 py-3 text-arqud-bone focus:border-arqud-gold focus:outline-none";
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-      <div className="w-full max-w-md bg-arqud-night border border-arqud-ink p-8 space-y-6">
+      <Card className="w-full max-w-md space-y-6">
         <h2 className="font-display text-2xl text-arqud-gold">Convert to Invoice</h2>
         <p className="text-sm text-arqud-bone">
           Converting <span className="text-arqud-gold">{quote.quote_number}</span> —{" "}
@@ -41,25 +40,23 @@ export function ConvertModal({ quote, onClose }: { quote: QuoteWithItems; onClos
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Invoice Date</label>
-            <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className={inputCls} />
+            <Input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className="w-full" />
           </div>
           <div>
             <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Due Date</label>
-            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={inputCls} />
+            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full" />
           </div>
         </div>
 
         <div className="flex gap-4">
-          <button onClick={handle} disabled={isPending}
-            className="flex-1 bg-arqud-gold py-3 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft disabled:opacity-50">
+          <Button onClick={handle} disabled={isPending} className="flex-1 justify-center">
             {isPending ? "Converting..." : "Confirm & Convert"}
-          </button>
-          <button onClick={onClose}
-            className="flex-1 border border-arqud-ink py-3 text-sm uppercase tracking-widest text-arqud-muted hover:text-arqud-bone">
+          </Button>
+          <Button variant="outline" onClick={onClose} className="flex-1 justify-center">
             Cancel
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

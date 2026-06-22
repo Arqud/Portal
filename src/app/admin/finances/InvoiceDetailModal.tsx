@@ -2,13 +2,14 @@
 
 import { useTransition, useState } from "react";
 import { markInvoicePaid, deleteInvoice } from "./actions";
+import { Pill, Button } from "@/components/ui";
 import type { InvoiceWithItems } from "@/lib/invoices/types";
 
-const STATUS: Record<string, string> = {
-  draft: "text-arqud-muted border-arqud-muted",
-  pending: "text-arqud-gold border-arqud-gold",
-  paid: "text-green-400 border-green-400",
-  overdue: "text-red-400 border-red-400",
+const STATUS_TONE: Record<string, string> = {
+  draft: "neutral",
+  pending: "contacted",
+  paid: "converted",
+  overdue: "danger",
 };
 
 function fmt(n: number) {
@@ -31,9 +32,7 @@ export function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceWithI
       {/* Action bar */}
       <div className="w-full max-w-[210mm]">
         <div className="flex items-center justify-between mb-3">
-          <span className={`text-xs uppercase tracking-widest border px-2 py-0.5 ${STATUS[invoice.status] ?? ""}`}>
-            {invoice.status}
-          </span>
+          <Pill tone={STATUS_TONE[invoice.status] ?? "neutral"}>{invoice.status}</Pill>
           <div className="flex items-center gap-3">
             {(invoice.status === "pending" || invoice.status === "overdue") && (
               <button disabled={pending}
@@ -45,9 +44,8 @@ export function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceWithI
             <a href={mailtoUrl} className="text-xs text-arqud-gold hover:text-arqud-gold-soft uppercase tracking-widest">
               Send Email
             </a>
-            <a href={pdfUrl} target="_blank" rel="noopener noreferrer"
-              className="bg-arqud-gold px-5 py-2 text-xs font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft">
-              Download PDF
+            <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+              <Button size="sm">Download PDF</Button>
             </a>
             {confirmDelete ? (
               <div className="flex items-center gap-2">
@@ -55,7 +53,7 @@ export function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceWithI
                 <button
                   disabled={pending}
                   onClick={() => start(async () => { await deleteInvoice(invoice.id); onClose(); })}
-                  className="text-xs text-red-400 border border-red-400/60 px-3 py-1 hover:bg-red-900/30 uppercase tracking-widest disabled:opacity-50"
+                  className="text-xs text-red-400 border border-red-400/60 px-3 py-1 hover:bg-red-900/30 uppercase tracking-widest disabled:opacity-50 rounded-control"
                 >
                   Yes, delete
                 </button>

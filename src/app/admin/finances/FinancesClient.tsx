@@ -5,8 +5,8 @@ import { InvoiceTable } from "./InvoiceTable";
 import { QuoteTable } from "./QuoteTable";
 import { InvoiceForm } from "./InvoiceForm";
 import { QuoteForm } from "./QuoteForm";
-import { RevenueSummary } from "./RevenueSummary";
 import { TransactionsTab } from "./TransactionsTab";
+import { KpiCard, Tabs, Button, Select } from "@/components/ui";
 import type { InvoiceWithItems, QuoteWithItems, Client } from "@/lib/invoices/types";
 import type { Transaction } from "./transactionActions";
 
@@ -76,6 +76,12 @@ export function FinancesClient({ invoices, quotes, clients, transactions }: Prop
     ? "All time"
     : `${MONTHS[selectedMonth]} ${selectedYear}`;
 
+  const TAB_LABELS: { value: "invoices" | "quotes" | "transactions"; label: string }[] = [
+    { value: "invoices", label: `Invoices (${filteredInvoices.length})` },
+    { value: "quotes", label: `Quotes (${filteredQuotes.length})` },
+    { value: "transactions", label: `Bank Transactions${transactions.length > 0 ? ` (${transactions.length})` : ""}` },
+  ];
+
   return (
     <div>
       {showInvoice && <InvoiceForm clients={clients} onClose={() => setShowInvoice(false)} />}
@@ -87,25 +93,18 @@ export function FinancesClient({ invoices, quotes, clients, transactions }: Prop
 
         {!showAllTime && (
           <>
-            <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-              className="bg-arqud-night border border-arqud-ink px-4 py-2 text-arqud-bone text-sm focus:border-arqud-gold focus:outline-none">
+            <Select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="w-auto">
               {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
-            </select>
-            <select value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="bg-arqud-night border border-arqud-ink px-4 py-2 text-arqud-bone text-sm focus:border-arqud-gold focus:outline-none">
+            </Select>
+            <Select value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))} className="w-auto">
               {availableYears.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
+            </Select>
           </>
         )}
 
-        <button onClick={() => setShowAllTime((p) => !p)}
-          className={`text-xs uppercase tracking-widest border px-3 py-2 transition-colors ${
-            showAllTime
-              ? "border-arqud-gold text-arqud-gold"
-              : "border-arqud-ink text-arqud-muted hover:border-arqud-gold hover:text-arqud-gold"
-          }`}>
+        <Button variant={showAllTime ? "outline" : "ghost"} size="sm" onClick={() => setShowAllTime((p) => !p)}>
           {showAllTime ? "All time ✓" : "All time"}
-        </button>
+        </Button>
 
         <span className="text-xs text-arqud-muted ml-2">
           {filteredInvoices.filter((i) => i.status !== "draft").length} invoice(s) ·{" "}
@@ -114,41 +113,32 @@ export function FinancesClient({ invoices, quotes, clients, transactions }: Prop
       </div>
 
       {/* Revenue summary for the period */}
-      <div className="grid grid-cols-5 gap-px bg-arqud-ink border border-arqud-ink mb-8">
-        {[
-          { label: `Invoiced — ${periodLabel}`, value: fmt(invoicedPeriod), color: "text-arqud-bone" },
-          { label: `Collected — ${periodLabel}`, value: fmt(collectedPeriod), color: "text-green-400" },
-          { label: "Outstanding (all)", value: fmt(outstanding), color: outstanding > 0 ? "text-arqud-gold" : "text-arqud-bone" },
-          { label: "Overdue (all)", value: fmt(overdue), color: overdue > 0 ? "text-red-400" : "text-arqud-bone" },
-          { label: `YTD ${selectedYear}`, value: fmt(ytd), color: "text-arqud-bone" },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="bg-arqud-night px-5 py-5">
-            <p className="text-xs uppercase tracking-widest text-arqud-muted mb-2 leading-tight">{label}</p>
-            <p className={`font-display text-2xl ${color}`}>{value}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5 mb-8">
+        <KpiCard label={`Invoiced — ${periodLabel}`} value={fmt(invoicedPeriod)} />
+        <KpiCard label={`Collected — ${periodLabel}`} value={fmt(collectedPeriod)} />
+        <KpiCard
+          label="Outstanding (all)"
+          value={fmt(outstanding)}
+          trend={outstanding > 0 ? { dir: "down", text: "needs follow-up" } : undefined}
+        />
+        <KpiCard
+          label="Overdue (all)"
+          value={fmt(overdue)}
+          trend={overdue > 0 ? { dir: "down", text: "past due date" } : undefined}
+        />
+        <KpiCard label={`YTD ${selectedYear}`} value={fmt(ytd)} />
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-0 border-b border-arqud-ink mb-8">
-        <button onClick={() => setTab("invoices")}
-          className={`px-8 py-3 text-sm uppercase tracking-widest border-b-2 transition-colors ${
-            tab === "invoices" ? "border-arqud-gold text-arqud-gold" : "border-transparent text-arqud-muted hover:text-arqud-bone"
-          }`}>
-          Invoices ({filteredInvoices.length})
-        </button>
-        <button onClick={() => setTab("quotes")}
-          className={`px-8 py-3 text-sm uppercase tracking-widest border-b-2 transition-colors ${
-            tab === "quotes" ? "border-arqud-gold text-arqud-gold" : "border-transparent text-arqud-muted hover:text-arqud-bone"
-          }`}>
-          Quotes ({filteredQuotes.length})
-        </button>
-        <button onClick={() => setTab("transactions")}
-          className={`px-8 py-3 text-sm uppercase tracking-widest border-b-2 transition-colors ${
-            tab === "transactions" ? "border-arqud-gold text-arqud-gold" : "border-transparent text-arqud-muted hover:text-arqud-bone"
-          }`}>
-          Bank Transactions {transactions.length > 0 ? `(${transactions.length})` : ""}
-        </button>
+      <div className="mb-8">
+        <Tabs
+          tabs={TAB_LABELS.map((t) => t.label)}
+          value={TAB_LABELS.find((t) => t.value === tab)!.label}
+          onChange={(label) => {
+            const found = TAB_LABELS.find((t) => t.label === label)!;
+            setTab(found.value);
+          }}
+        />
       </div>
 
       {tab === "invoices" && (

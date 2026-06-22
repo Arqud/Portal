@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { PageHeader, Card, Table, Tr, Td, Pill, Avatar } from "@/components/ui";
+
+// Button is a <button>; this mirrors its primary classes for real <a> navigation (no asChild support).
+const BTN_PRIMARY = "inline-flex items-center gap-2 font-semibold tracking-wide rounded-control transition-all text-xs px-[18px] py-[11px] text-arqud-bg bg-gradient-to-r from-arqud-gold to-arqud-gold-soft shadow-[0_8px_22px_rgba(200,169,110,0.28)] hover:-translate-y-px";
 
 export default async function AdminClientsPage() {
   await verifySession("admin");
@@ -33,87 +37,62 @@ export default async function AdminClientsPage() {
   }
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-10 animate-fade-up">
-      <div className="flex items-end justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-widest text-arqud-muted mb-1">
-            {activeCount} active · {list.length} total
-          </p>
-          <h1 className="font-display text-5xl font-normal" style={{ letterSpacing: "-0.02em" }}>
-            Clients
-          </h1>
-        </div>
-        <Link href="/admin/clients/new" className="btn-gold">+ Add Client</Link>
-      </div>
+    <main className="min-h-screen px-8 py-10 animate-fade-up">
+      <PageHeader title="Clients" count={`${activeCount} active · ${list.length} total`}>
+        <Link href="/admin/clients/new" className={BTN_PRIMARY}>+ Add Client</Link>
+      </PageHeader>
 
       {list.length === 0 ? (
-        <div className="card p-12 text-center space-y-3">
-          <p className="font-display text-2xl text-arqud-gold">No clients yet</p>
-          <p className="text-arqud-muted text-sm">Add your first client to get started.</p>
-          <Link href="/admin/clients/new" className="btn-gold inline-flex mt-2">+ Add Client</Link>
-        </div>
+        <Card>
+          <div className="py-10 text-center space-y-3">
+            <p className="font-display text-2xl text-arqud-gold">No clients yet</p>
+            <p className="text-arqud-muted text-sm">Add your first client to get started.</p>
+            <Link href="/admin/clients/new" className={`${BTN_PRIMARY} mt-2`}>+ Add Client</Link>
+          </div>
+        </Card>
       ) : (
-        <div className="space-y-4">
+        <Table>
+          <Tr header>
+            <Td className="basis-[1.6fr] grow">Client</Td>
+            <Td className="basis-[1fr] grow">Subdomain</Td>
+            <Td className="basis-[0.9fr] grow">Invoiced</Td>
+            <Td className="basis-[0.9fr] grow">Outstanding</Td>
+            <Td className="basis-[0.7fr] grow">Status</Td>
+            <Td className="basis-[0.5fr] grow-0 shrink-0 text-right">Manage</Td>
+          </Tr>
+
           {list.map((client) => {
             const stats = invoiceMap[client.id] ?? { total: 0, paid: 0, outstanding: 0 };
             return (
-              <Link
-                key={client.id}
-                href={`/admin/clients/${client.id}`}
-                className="card block p-6 group"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0"
-                      style={{
-                        background: "rgba(200,169,110,0.1)",
-                        border: "1px solid rgba(200,169,110,0.2)",
-                        color: "var(--color-arqud-gold)",
-                      }}
-                    >
-                      {(client.company ?? client.name).charAt(0)}
+              <Tr key={client.id}>
+                <Td className="basis-[1.6fr] grow">
+                  <Link href={`/admin/clients/${client.id}`} className="flex items-center gap-2.5 text-arqud-bone hover:text-arqud-gold-soft transition-colors">
+                    <Avatar initials={(client.company ?? client.name).charAt(0)} />
+                    <div className="min-w-0">
+                      <p className="font-display text-[14px] truncate leading-tight">{client.company ?? client.name}</p>
+                      <p className="text-[11px] text-arqud-muted truncate leading-tight">{client.name} · {client.email}</p>
                     </div>
-                    <div>
-                      <p
-                        className="font-display text-2xl text-arqud-gold group-hover:text-arqud-gold-soft transition-colors"
-                        style={{ letterSpacing: "-0.01em" }}
-                      >
-                        {client.company ?? client.name}
-                      </p>
-                      <p className="text-xs text-arqud-muted mt-0.5">
-                        {client.name} · {client.email}
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`status-dot status-${client.status === "active" ? "paid" : "draft"}`}>
-                    {client.status}
-                  </span>
-                </div>
-
-                <div
-                  className="grid grid-cols-3 gap-6 mt-5 pt-5"
-                  style={{ borderTop: "1px solid var(--color-arqud-ink)" }}
-                >
-                  {[
-                    { label: "Total Invoiced", value: fmt(stats.total) },
-                    { label: "Total Paid", value: fmt(stats.paid), color: "#4ade80" },
-                    { label: "Outstanding", value: fmt(stats.outstanding), color: stats.outstanding > 0 ? "var(--color-arqud-gold)" : undefined },
-                  ].map(({ label, value, color }) => (
-                    <div key={label}>
-                      <p className="text-xs uppercase tracking-widest text-arqud-muted mb-1">{label}</p>
-                      <p className="stat-number text-xl" style={color ? { color } : undefined}>{value}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <p className="text-xs text-arqud-muted mt-4">
-                  {client.subdomain_slug}.arqudportal.co.za · Click to manage →
-                </p>
-              </Link>
+                  </Link>
+                </Td>
+                <Td className="basis-[1fr] grow text-arqud-muted text-[12px] truncate">
+                  {client.subdomain_slug}.arqudportal.co.za
+                </Td>
+                <Td className="basis-[0.9fr] grow text-arqud-bone">{fmt(stats.total)}</Td>
+                <Td className="basis-[0.9fr] grow">
+                  <span className={stats.outstanding > 0 ? "text-arqud-gold-soft" : "text-arqud-bone"}>{fmt(stats.outstanding)}</span>
+                </Td>
+                <Td className="basis-[0.7fr] grow">
+                  <Pill tone={client.status === "active" ? "converted" : "neutral"}>{client.status}</Pill>
+                </Td>
+                <Td className="basis-[0.5fr] grow-0 shrink-0 text-right" onClick={(e) => e.stopPropagation()}>
+                  <Link href={`/admin/clients/${client.id}`} className="text-arqud-gold text-[12px] font-medium hover:underline">
+                    Manage →
+                  </Link>
+                </Td>
+              </Tr>
             );
           })}
-        </div>
+        </Table>
       )}
     </main>
   );

@@ -3,6 +3,7 @@ import { verifySession } from "@/lib/auth/session";
 import { FinancesClient } from "./FinancesClient";
 import { getTransactions } from "./transactionActions";
 import type { InvoiceWithItems, QuoteWithItems } from "@/lib/invoices/types";
+import { PageHeader, KpiCard } from "@/components/ui";
 
 async function flagOverdue() {
   const admin = createSupabaseAdminClient();
@@ -53,29 +54,23 @@ export default async function FinancesPage() {
   const monthName = now.toLocaleString("en-ZA", { month: "long" });
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-10 animate-fade-up">
-      <div>
-        <p className="text-xs uppercase tracking-widest text-arqud-muted mb-1">
-          {monthName} {now.getFullYear()}
-        </p>
-        <h1 className="font-display text-5xl font-normal" style={{ letterSpacing: "-0.02em" }}>
-          Finances
-        </h1>
-      </div>
+    <main className="min-h-screen px-8 py-10 space-y-8 animate-fade-up">
+      <PageHeader title="Finances" count={`${monthName} ${now.getFullYear()}`} />
 
-      <div className="grid grid-cols-5 gap-4">
-        {[
-          { label: `Invoiced ${monthName}`, value: fmt(invoicedThisMonth), color: "var(--color-arqud-gold)" },
-          { label: `Collected ${monthName}`, value: fmt(collectedThisMonth), color: "#4ade80" },
-          { label: "Outstanding", value: fmt(outstanding), color: outstanding > 0 ? "var(--color-arqud-gold)" : undefined },
-          { label: "Overdue", value: fmt(overdue), color: overdue > 0 ? "#f87171" : undefined },
-          { label: `${now.getFullYear()} YTD`, value: fmt(ytd) },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="card p-5">
-            <p className="text-xs uppercase tracking-widest text-arqud-muted mb-3">{label}</p>
-            <p className="stat-number text-xl" style={color ? { color } : undefined}>{value}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <KpiCard label={`Invoiced ${monthName}`} value={fmt(invoicedThisMonth)} />
+        <KpiCard label={`Collected ${monthName}`} value={fmt(collectedThisMonth)} />
+        <KpiCard
+          label="Outstanding"
+          value={fmt(outstanding)}
+          trend={outstanding > 0 ? { dir: "down", text: "needs follow-up" } : undefined}
+        />
+        <KpiCard
+          label="Overdue"
+          value={fmt(overdue)}
+          trend={overdue > 0 ? { dir: "down", text: "past due date" } : undefined}
+        />
+        <KpiCard label={`${now.getFullYear()} YTD`} value={fmt(ytd)} />
       </div>
 
       <FinancesClient invoices={invoices} quotes={quotes} clients={clients} transactions={transactions} />

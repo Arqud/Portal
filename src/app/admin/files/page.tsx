@@ -1,6 +1,7 @@
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getSignedUrl } from "@/lib/storage";
+import { PageHeader } from "@/components/ui";
 import { FilesClient } from "./FilesClient";
 
 export default async function AdminFilesPage() {
@@ -23,15 +24,8 @@ export default async function AdminFilesPage() {
   );
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-10 animate-fade-up">
-      <div>
-        <p className="text-xs uppercase tracking-widest text-arqud-muted mb-1">
-          {files.length} {files.length === 1 ? "file" : "files"}
-        </p>
-        <h1 className="font-display text-5xl font-normal" style={{ letterSpacing: "-0.02em" }}>
-          Files
-        </h1>
-      </div>
+    <main className="min-h-screen px-8 py-10 space-y-8 animate-fade-up">
+      <PageHeader title="Files" count={`${files.length} ${files.length === 1 ? "file" : "files"}`} />
       <FilesClient files={files} clients={clients} signedUrls={signedUrls} />
     </main>
   );

@@ -5,7 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getSignedUrl } from "@/lib/storage";
 import { ClientDetailClient } from "./ClientDetailClient";
 import { ClientDetailActions } from "./ClientDetailActions";
-import { LeadsTab } from "./LeadsTab";
+import { PageHeader, Card, KpiCard, Pill } from "@/components/ui";
 
 export default async function ClientDetailPage({
   params,
@@ -66,150 +66,48 @@ export default async function ClientDetailPage({
     return `R ${n.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
   }
 
-  const STATUS: Record<string, string> = {
-    draft: "text-arqud-muted border-arqud-muted",
-    pending: "text-arqud-gold border-arqud-gold",
-    paid: "text-green-400 border-green-400",
-    overdue: "text-red-400 border-red-400",
-    sent: "text-arqud-gold border-arqud-gold",
-    accepted: "text-green-400 border-green-400",
-    rejected: "text-red-400 border-red-400",
-  };
-
   return (
-    <main className="min-h-screen px-8 py-12">
+    <main className="min-h-screen px-8 py-10 space-y-5 animate-fade-up">
       {/* Breadcrumb */}
-      <div className="mb-6">
-        <Link href="/admin/clients" className="text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-gold">
-          ← Clients
-        </Link>
-      </div>
+      <Link href="/admin/clients" className="text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-gold transition-colors">
+        ← Clients
+      </Link>
 
       {/* Client header */}
-      <ClientDetailActions client={client} />
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <h1 className="text-5xl tracking-wide">{client.company ?? client.name}</h1>
-          <p className="text-arqud-muted mt-2">{client.name} · {client.email}</p>
-          {client.address && <p className="text-xs text-arqud-muted mt-1">{client.address}</p>}
-          {client.reg_number && <p className="text-xs text-arqud-muted">Reg: {client.reg_number}</p>}
-          <p className="text-xs text-arqud-muted mt-1">
+      <PageHeader title={client.company ?? client.name}>
+        <Pill tone={client.status === "active" ? "converted" : "neutral"}>{client.status}</Pill>
+        <ClientDetailActions client={client} />
+      </PageHeader>
+
+      <Card>
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+          <span className="text-arqud-bone">{client.name}</span>
+          <span className="text-arqud-muted">·</span>
+          <span className="text-arqud-muted">{client.email}</span>
+        </div>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-arqud-muted mt-2">
+          {client.address && <span>{client.address}</span>}
+          {client.reg_number && <span>Reg: {client.reg_number}</span>}
+          <span>
             Portal: <a href={`https://${client.subdomain_slug}.arqudportal.co.za`} target="_blank" rel="noopener noreferrer"
               className="text-arqud-gold hover:underline">{client.subdomain_slug}.arqudportal.co.za</a>
-          </p>
+          </span>
         </div>
-        <span className={`text-xs uppercase tracking-widest border px-2 py-0.5 ${
-          client.status === "active" ? "text-green-400 border-green-400" : "text-arqud-muted border-arqud-muted"
-        }`}>{client.status}</span>
-      </div>
+      </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-px bg-arqud-ink border border-arqud-ink mb-10">
-        {[
-          { label: "Total Invoiced", value: fmt(totalInvoiced), color: "text-arqud-bone" },
-          { label: "Total Paid", value: fmt(totalPaid), color: "text-green-400" },
-          { label: "Outstanding", value: fmt(outstanding), color: outstanding > 0 ? "text-arqud-gold" : "text-arqud-bone" },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="bg-arqud-night px-6 py-5">
-            <p className="text-xs uppercase tracking-widest text-arqud-muted mb-2">{label}</p>
-            <p className={`font-display text-2xl ${color}`}>{value}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-3 gap-3.5">
+        <KpiCard label="Total Invoiced" value={fmt(totalInvoiced)} />
+        <KpiCard label="Total Paid" value={fmt(totalPaid)} />
+        <KpiCard label="Outstanding" value={fmt(outstanding)} trend={outstanding > 0 ? { dir: "down", text: "needs follow-up" } : undefined} />
       </div>
 
-      {/* Invoices */}
-      <div className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-2xl text-arqud-gold">Invoices</h2>
-          <Link href="/admin/finances"
-            className="text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-gold">
-            + New Invoice →
-          </Link>
-        </div>
-        {invoices.length === 0 ? (
-          <p className="text-arqud-muted text-sm py-4 border border-arqud-ink text-center">No invoices yet.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-arqud-ink">
-                {["Invoice #", "Issue Date", "Due Date", "Amount", "Status", "PDF"].map((h) => (
-                  <th key={h} className="text-left text-xs uppercase tracking-widest text-arqud-muted pb-3 pr-4">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((inv) => (
-                <tr key={inv.id} className="border-b border-arqud-ink/50 hover:bg-arqud-night/50">
-                  <td className="py-3 pr-4 text-arqud-bone">{inv.invoice_number}</td>
-                  <td className="py-3 pr-4 text-arqud-muted">{inv.issue_date}</td>
-                  <td className="py-3 pr-4 text-arqud-muted">{inv.due_date}</td>
-                  <td className="py-3 pr-4 text-arqud-bone">{fmt(inv.amount)}</td>
-                  <td className="py-3 pr-4">
-                    <span className={`text-xs uppercase tracking-widest border px-2 py-0.5 ${STATUS[inv.status] ?? ""}`}>{inv.status}</span>
-                  </td>
-                  <td className="py-3">
-                    <a href={`/api/invoices/${inv.id}/pdf`} target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-arqud-gold hover:text-arqud-gold-soft uppercase tracking-widest">PDF</a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Quotes */}
-      <div className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-2xl text-arqud-gold">Quotes</h2>
-          <Link href="/admin/finances"
-            className="text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-gold">
-            + New Quote →
-          </Link>
-        </div>
-        {quotes.length === 0 ? (
-          <p className="text-arqud-muted text-sm py-4 border border-arqud-ink text-center">No quotes yet.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-arqud-ink">
-                {["Quote #", "Date", "Total (excl. VAT)", "Status", "PDF"].map((h) => (
-                  <th key={h} className="text-left text-xs uppercase tracking-widest text-arqud-muted pb-3 pr-4">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {quotes.map((q) => (
-                <tr key={q.id} className="border-b border-arqud-ink/50 hover:bg-arqud-night/50">
-                  <td className="py-3 pr-4 text-arqud-bone">{q.quote_number}</td>
-                  <td className="py-3 pr-4 text-arqud-muted">{q.issue_date}</td>
-                  <td className="py-3 pr-4 text-arqud-bone">{fmt(q.total)}</td>
-                  <td className="py-3 pr-4">
-                    <span className={`text-xs uppercase tracking-widest border px-2 py-0.5 ${STATUS[q.status] ?? ""}`}>{q.status}</span>
-                  </td>
-                  <td className="py-3">
-                    <a href={`/api/quotes/${q.id}/pdf`} target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-arqud-gold hover:text-arqud-gold-soft uppercase tracking-widest">PDF</a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Leads */}
-      <div className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-2xl text-arqud-gold">Leads</h2>
-          <span className="text-xs uppercase tracking-widest text-arqud-muted">{leads.length} total</span>
-        </div>
-        <LeadsTab leads={leads} />
-      </div>
-
-      {/* Reports + Documents (interactive) */}
+      {/* Tabs: Invoices / Quotes / Leads / Reports / Documents */}
       <ClientDetailClient
         clientId={id}
+        invoices={invoices}
+        quotes={quotes}
+        leads={leads}
         reports={reports}
         documents={documents}
         reportUrls={reportUrls}

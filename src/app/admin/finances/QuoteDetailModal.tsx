@@ -3,13 +3,15 @@
 import { useTransition, useState } from "react";
 import { updateQuoteStatus } from "./actions";
 import { ConvertModal } from "./ConvertModal";
+import { Pill, Button } from "@/components/ui";
 import type { QuoteWithItems } from "@/lib/invoices/types";
 
-const STATUS: Record<string, string> = {
-  draft: "text-arqud-muted border-arqud-muted",
-  sent: "text-arqud-gold border-arqud-gold",
-  accepted: "text-green-400 border-green-400",
-  rejected: "text-red-400 border-red-400",
+// Quote statuses mapped by meaning to the shared Pill tone vocabulary (same mapping as QuoteTable).
+const STATUS_TONE: Record<string, string> = {
+  draft: "neutral",
+  sent: "contacted",
+  accepted: "converted",
+  rejected: "danger",
 };
 
 function fmt(n: number) {
@@ -32,9 +34,7 @@ export function QuoteDetailModal({ quote, onClose }: { quote: QuoteWithItems; on
       {converting && <ConvertModal quote={quote} onClose={() => { setConverting(false); onClose(); }} />}
       <div className="w-full max-w-[210mm]">
         <div className="flex items-center justify-between mb-3">
-          <span className={`text-xs uppercase tracking-widest border px-2 py-0.5 ${STATUS[quote.status] ?? ""}`}>
-            {quote.status}
-          </span>
+          <Pill tone={STATUS_TONE[quote.status] ?? "neutral"}>{quote.status}</Pill>
           <div className="flex items-center gap-3">
             {quote.status === "draft" && (
               <button disabled={pending}
@@ -52,9 +52,8 @@ export function QuoteDetailModal({ quote, onClose }: { quote: QuoteWithItems; on
             <a href={mailtoUrl} className="text-xs text-arqud-gold hover:text-arqud-gold-soft uppercase tracking-widest">
               Send Email
             </a>
-            <a href={pdfUrl} target="_blank" rel="noopener noreferrer"
-              className="bg-arqud-gold px-5 py-2 text-xs font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft">
-              Download PDF
+            <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+              <Button size="sm">Download PDF</Button>
             </a>
             <button onClick={onClose} className="text-arqud-muted hover:text-white text-xl ml-1">✕</button>
           </div>

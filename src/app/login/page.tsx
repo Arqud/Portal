@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { Card, Input, Button } from "@/components/ui";
 import { signInWithPassword, sendMagicLink } from "./actions";
 
 type SearchParams = Promise<{
@@ -44,7 +45,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
   return (
     <div
       className="relative flex min-h-screen items-center justify-center px-4"
-      style={{ background: "var(--color-arqud-black)" }}
+      style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, var(--color-arqud-bg-2), var(--color-arqud-bg))" }}
     >
       {/* Atmospheric glow */}
       <div
@@ -75,7 +76,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         </div>
 
         {magicSent ? (
-          <div className="card p-6 text-center space-y-4">
+          <Card className="p-6 text-center space-y-4">
             <p className="text-arqud-bone text-sm">
               Check your inbox — we sent a sign-in link to{" "}
               <span className="text-arqud-gold">{sentToEmail}</span>.
@@ -86,7 +87,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
             >
               ← Back to sign in
             </a>
-          </div>
+          </Card>
         ) : (
           <div className="space-y-6">
             {(error === "invalid_credentials" || error === "no_profile" || error === "server_error") && (
@@ -98,7 +99,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
             )}
 
             {/* Password sign-in */}
-            <div className="card p-6 space-y-4">
+            <Card className="p-6 space-y-4">
               <p className="text-xs uppercase tracking-widest text-arqud-muted">Sign in with password</p>
               <form action={signInWithPassword} className="space-y-4">
                 <input type="hidden" name="next" value={next} />
@@ -106,13 +107,13 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
                   <label htmlFor="email-pw" className="mb-1.5 block text-xs uppercase tracking-widest text-arqud-muted">
                     Email
                   </label>
-                  <input
+                  <Input
                     id="email-pw"
                     name="email"
                     type="email"
                     required
                     autoComplete="email"
-                    className="w-full border border-arqud-ink bg-arqud-night px-4 py-3 text-arqud-bone placeholder-arqud-muted focus:border-arqud-gold focus:outline-none transition-colors"
+                    className="w-full"
                     placeholder="you@example.com"
                   />
                 </div>
@@ -120,19 +121,19 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
                   <label htmlFor="password" className="mb-1.5 block text-xs uppercase tracking-widest text-arqud-muted">
                     Password
                   </label>
-                  <input
+                  <Input
                     id="password"
                     name="password"
                     type="password"
                     required
                     autoComplete="current-password"
-                    className="w-full border border-arqud-ink bg-arqud-night px-4 py-3 text-arqud-bone placeholder-arqud-muted focus:border-arqud-gold focus:outline-none transition-colors"
+                    className="w-full"
                     placeholder="••••••••"
                   />
                 </div>
-                <button type="submit" className="btn-gold w-full justify-center">
+                <Button type="submit" className="w-full justify-center">
                   Sign in
-                </button>
+                </Button>
               </form>
               <p className="text-center">
                 <a
@@ -142,13 +143,13 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
                   Forgot password?
                 </a>
               </p>
-            </div>
+            </Card>
 
             {/* Divider */}
             <div className="flex items-center gap-4">
-              <div className="h-px flex-1" style={{ background: "var(--color-arqud-ink)" }} />
+              <div className="h-px flex-1 bg-arqud-line" />
               <span className="text-xs uppercase tracking-widest text-arqud-muted">or</span>
-              <div className="h-px flex-1" style={{ background: "var(--color-arqud-ink)" }} />
+              <div className="h-px flex-1 bg-arqud-line" />
             </div>
 
             {/* Magic link */}
@@ -158,19 +159,19 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
                 <label htmlFor="email-ml" className="mb-1.5 block text-xs uppercase tracking-widest text-arqud-muted">
                   Email
                 </label>
-                <input
+                <Input
                   id="email-ml"
                   name="email"
                   type="email"
                   required
                   autoComplete="email"
-                  className="w-full border border-arqud-ink bg-arqud-night px-4 py-3 text-arqud-bone placeholder-arqud-muted focus:border-arqud-gold focus:outline-none transition-colors"
+                  className="w-full"
                   placeholder="you@example.com"
                 />
               </div>
-              <button type="submit" className="btn-outline w-full justify-center hover:text-arqud-bone">
+              <Button type="submit" variant="outline" className="w-full justify-center">
                 Send magic link
-              </button>
+              </Button>
             </form>
           </div>
         )}

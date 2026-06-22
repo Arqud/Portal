@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createQuote, updateQuote } from "./actions";
+import { Card, Input, Select, Textarea, Button } from "@/components/ui";
 import type { Client, LineItem, QuoteWithItems } from "@/lib/invoices/types";
 import { calcLineAmount, calcSubtotal } from "@/lib/invoices/calculations";
 
@@ -64,12 +65,9 @@ export function QuoteForm({
     });
   }
 
-  const inputCls = "w-full bg-arqud-black border border-arqud-ink px-4 py-3 text-arqud-bone focus:border-arqud-gold focus:outline-none";
-  const smallCls = "bg-arqud-black border border-arqud-ink px-2 py-2 text-arqud-bone text-sm focus:border-arqud-gold focus:outline-none";
-
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 pt-8 pb-8 px-4">
-      <div className="w-full max-w-2xl bg-arqud-night border border-arqud-ink p-8 space-y-6">
+      <Card className="w-full max-w-2xl space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-3xl text-arqud-gold">{isEdit ? `Edit ${editQuote?.quote_number}` : "New Quote"}</h2>
           <button onClick={onClose} className="text-arqud-muted hover:text-arqud-bone text-xl">✕</button>
@@ -78,14 +76,14 @@ export function QuoteForm({
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Client</label>
-          <select value={clientId} onChange={(e) => setClientId(e.target.value)} className={inputCls}>
+          <Select value={clientId} onChange={(e) => setClientId(e.target.value)} className="w-full">
             {clients.map((c) => <option key={c.id} value={c.id}>{c.company ?? c.name}</option>)}
-          </select>
+          </Select>
         </div>
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Quote Date</label>
-          <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className={inputCls} />
+          <Input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className="w-full" />
         </div>
 
         <div>
@@ -98,28 +96,27 @@ export function QuoteForm({
           </div>
           {lines.map((line, i) => (
             <div key={i} className="grid grid-cols-12 gap-2 mb-2">
-              <input value={line.description} onChange={(e) => updateLine(i, "description", e.target.value)}
-                placeholder="Service description" className={`col-span-5 ${smallCls}`} />
-              <input value={line.detail ?? ""} onChange={(e) => updateLine(i, "detail", e.target.value)}
-                placeholder="Period / detail" className={`col-span-3 ${smallCls}`} />
-              <input type="number" value={line.quantity} min={1} step={0.5}
+              <Input value={line.description} onChange={(e) => updateLine(i, "description", e.target.value)}
+                placeholder="Service description" className="col-span-5 text-sm" />
+              <Input value={line.detail ?? ""} onChange={(e) => updateLine(i, "detail", e.target.value)}
+                placeholder="Period / detail" className="col-span-3 text-sm" />
+              <Input type="number" value={line.quantity} min={1} step={0.5}
                 onChange={(e) => updateLine(i, "quantity", parseFloat(e.target.value) || 1)}
-                className={`col-span-1 text-right ${smallCls}`} />
-              <input type="number" value={line.rate} min={0} step={100}
+                className="col-span-1 text-right text-sm" />
+              <Input type="number" value={line.rate} min={0} step={100}
                 onChange={(e) => updateLine(i, "rate", parseFloat(e.target.value) || 0)}
-                className={`col-span-2 text-right ${smallCls}`} />
+                className="col-span-2 text-right text-sm" />
               <button onClick={() => setLines((p) => p.filter((_, j) => j !== i))}
                 disabled={lines.length === 1}
                 className="col-span-1 text-arqud-muted hover:text-red-400 disabled:opacity-20 text-center">✕</button>
             </div>
           ))}
-          <button onClick={() => setLines((p) => [...p, emptyLine()])}
-            className="text-sm text-arqud-gold border border-arqud-gold px-4 py-2 mt-2 hover:bg-arqud-gold hover:text-arqud-black">
+          <Button variant="outline" size="sm" onClick={() => setLines((p) => [...p, emptyLine()])} className="mt-2">
             + Add line
-          </button>
+          </Button>
         </div>
 
-        <div className="border-t border-arqud-ink pt-4 text-right">
+        <div className="border-t border-arqud-line pt-4 text-right">
           <p className="text-sm text-arqud-muted">Total (excl. VAT):</p>
           <p className="font-display text-2xl text-arqud-gold">R {subtotal.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</p>
           <p className="text-xs text-arqud-muted mt-1">VAT (15%) added upon invoice conversion.</p>
@@ -127,21 +124,19 @@ export function QuoteForm({
 
         <div>
           <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Notes (optional)</label>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
-            className={`${inputCls} resize-none`} />
+          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
+            className="w-full resize-none" />
         </div>
 
         <div className="flex gap-4">
-          <button onClick={() => submit(false)} disabled={isPending}
-            className="flex-1 bg-arqud-gold py-3 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft disabled:opacity-50">
+          <Button onClick={() => submit(false)} disabled={isPending} className="flex-1 justify-center">
             {isPending ? (isEdit ? "Saving..." : "Creating...") : (isEdit ? "Save Changes" : "Create Quote")}
-          </button>
-          <button onClick={() => submit(true)} disabled={isPending}
-            className="flex-1 border border-arqud-ink py-3 text-sm uppercase tracking-widest text-arqud-muted hover:text-arqud-bone disabled:opacity-50">
+          </Button>
+          <Button variant="outline" onClick={() => submit(true)} disabled={isPending} className="flex-1 justify-center">
             Save as Draft
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

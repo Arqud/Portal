@@ -4,13 +4,14 @@ import { useState, useTransition } from "react";
 import { markInvoicePaid, deleteInvoice } from "./actions";
 import { InvoiceDetailModal } from "./InvoiceDetailModal";
 import { InvoiceForm } from "./InvoiceForm";
+import { Table, Tr, Td, Pill, Button } from "@/components/ui";
 import type { InvoiceWithItems, Client } from "@/lib/invoices/types";
 
-const STATUS: Record<string, string> = {
-  draft: "text-arqud-muted border-arqud-muted",
-  pending: "text-arqud-gold border-arqud-gold",
-  paid: "text-green-400 border-green-400",
-  overdue: "text-red-400 border-red-400",
+const STATUS_TONE: Record<string, string> = {
+  draft: "neutral",
+  pending: "contacted",
+  paid: "converted",
+  overdue: "danger",
 };
 
 export function InvoiceTable({ invoices, clients, onNew }: { invoices: InvoiceWithItems[]; clients: Client[]; onNew: () => void }) {
@@ -24,67 +25,62 @@ export function InvoiceTable({ invoices, clients, onNew }: { invoices: InvoiceWi
       {editing && <InvoiceForm clients={clients} editInvoice={editing} onClose={() => setEditing(null)} />}
 
       <div className="flex justify-end mb-4">
-        <button onClick={onNew}
-          className="bg-arqud-gold px-6 py-2 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft">
-          + New Invoice
-        </button>
+        <Button onClick={onNew}>+ New Invoice</Button>
       </div>
 
       {invoices.length === 0 ? (
         <p className="text-arqud-muted text-center py-16">No invoices yet.</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-arqud-ink">
-              {["Invoice #", "Client", "Issue Date", "Due Date", "Amount", "Status", "Actions"].map((h) => (
-                <th key={h} className="text-left text-xs uppercase tracking-widest text-arqud-muted pb-3 pr-4">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {invoices.map((inv) => (
-              <tr key={inv.id} className="border-b border-arqud-ink/50 hover:bg-arqud-night/50">
-                <td className="py-3 pr-4">
-                  <button onClick={() => setViewing(inv)}
-                    className="text-arqud-gold hover:text-arqud-gold-soft hover:underline font-medium">
-                    {inv.invoice_number}
-                  </button>
-                </td>
-                <td className="py-3 pr-4 text-arqud-bone">{inv.client?.company ?? inv.client?.name ?? "—"}</td>
-                <td className="py-3 pr-4 text-arqud-muted">{inv.issue_date}</td>
-                <td className="py-3 pr-4 text-arqud-muted">{inv.due_date}</td>
-                <td className="py-3 pr-4 text-arqud-bone">R {Number(inv.amount).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</td>
-                <td className="py-3 pr-4">
-                  <span className={`text-xs uppercase tracking-widest border px-2 py-0.5 ${STATUS[inv.status] ?? ""}`}>
-                    {inv.status}
-                  </span>
-                </td>
-                <td className="py-3 flex gap-3 flex-wrap items-center">
-                  <button onClick={() => setViewing(inv)}
-                    className="text-xs text-arqud-muted hover:text-arqud-bone uppercase tracking-widest">
-                    View
-                  </button>
-                  {inv.status !== "draft" && (
-                    <a href={`/api/invoices/${inv.id}/pdf`} target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">PDF</a>
-                  )}
-                  {(inv.status === "pending" || inv.status === "overdue") && (
-                    <button disabled={pending}
-                      onClick={() => start(() => markInvoicePaid(inv.id, new Date().toISOString().split("T")[0]))}
-                      className="text-xs text-green-400 hover:text-green-300 disabled:opacity-50">Mark Paid</button>
-                  )}
-                  <button onClick={() => setEditing(inv)}
-                    className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">Edit</button>
-                  {inv.status === "draft" && (
-                    <button disabled={pending}
-                      onClick={() => { if (confirm(`Delete ${inv.invoice_number}?`)) start(() => deleteInvoice(inv.id)); }}
-                      className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">Delete</button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Table>
+          <Tr header>
+            <Td className="basis-[1fr] grow">Invoice #</Td>
+            <Td className="basis-[1.2fr] grow">Client</Td>
+            <Td className="basis-[1fr] grow">Issue Date</Td>
+            <Td className="basis-[1fr] grow">Due Date</Td>
+            <Td className="basis-[1fr] grow">Amount</Td>
+            <Td className="basis-[0.8fr] grow">Status</Td>
+            <Td className="basis-[1.8fr] grow">Actions</Td>
+          </Tr>
+          {invoices.map((inv) => (
+            <Tr key={inv.id}>
+              <Td className="basis-[1fr] grow">
+                <button onClick={() => setViewing(inv)}
+                  className="text-arqud-gold hover:text-arqud-gold-soft hover:underline font-medium">
+                  {inv.invoice_number}
+                </button>
+              </Td>
+              <Td className="basis-[1.2fr] grow text-arqud-bone">{inv.client?.company ?? inv.client?.name ?? "—"}</Td>
+              <Td className="basis-[1fr] grow text-arqud-muted">{inv.issue_date}</Td>
+              <Td className="basis-[1fr] grow text-arqud-muted">{inv.due_date}</Td>
+              <Td className="basis-[1fr] grow text-arqud-bone">R {Number(inv.amount).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</Td>
+              <Td className="basis-[0.8fr] grow">
+                <Pill tone={STATUS_TONE[inv.status] ?? "neutral"}>{inv.status}</Pill>
+              </Td>
+              <Td className="basis-[1.8fr] grow flex gap-3 flex-wrap items-center">
+                <button onClick={() => setViewing(inv)}
+                  className="text-xs text-arqud-muted hover:text-arqud-bone uppercase tracking-widest">
+                  View
+                </button>
+                {inv.status !== "draft" && (
+                  <a href={`/api/invoices/${inv.id}/pdf`} target="_blank" rel="noopener noreferrer"
+                    className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">PDF</a>
+                )}
+                {(inv.status === "pending" || inv.status === "overdue") && (
+                  <button disabled={pending}
+                    onClick={() => start(() => markInvoicePaid(inv.id, new Date().toISOString().split("T")[0]))}
+                    className="text-xs text-green-400 hover:text-green-300 disabled:opacity-50">Mark Paid</button>
+                )}
+                <button onClick={() => setEditing(inv)}
+                  className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">Edit</button>
+                {inv.status === "draft" && (
+                  <button disabled={pending}
+                    onClick={() => { if (confirm(`Delete ${inv.invoice_number}?`)) start(() => deleteInvoice(inv.id)); }}
+                    className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">Delete</button>
+                )}
+              </Td>
+            </Tr>
+          ))}
+        </Table>
       )}
     </div>
   );

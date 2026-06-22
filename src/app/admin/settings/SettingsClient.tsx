@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef } from "react";
+import { Card, Input, Button } from "@/components/ui";
 import { updateProfile, updatePassword, uploadAvatar } from "./actions";
 
 export function SettingsClient({
@@ -13,8 +14,6 @@ export function SettingsClient({
   const [err, setErr] = useState("");
   const [preview, setPreview] = useState<string | null>(avatarUrl ?? null);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  const inputCls = "w-full bg-arqud-black border border-arqud-ink px-4 py-3 text-arqud-bone focus:border-arqud-gold focus:outline-none text-sm transition-colors";
 
   function handle(action: (fd: FormData) => Promise<void>) {
     return (e: React.FormEvent<HTMLFormElement>) => {
@@ -57,14 +56,13 @@ export function SettingsClient({
   const initials = fullName ? fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : email[0].toUpperCase();
 
   return (
-    <div className="max-w-lg space-y-8">
-      {msg && <p className="text-green-400 text-sm animate-fade-up">{msg}</p>}
+    <div className="max-w-lg space-y-5">
+      {msg && <p className="text-arqud-green text-sm animate-fade-up">{msg}</p>}
       {err && <p className="text-red-400 text-sm animate-fade-up">{err}</p>}
 
       {/* Avatar */}
-      <section className="card p-6">
-        <h2 className="font-display text-2xl mb-6">Profile Photo</h2>
-        <div className="flex items-center gap-6">
+      <Card title="Profile Photo">
+        <div className="flex items-center gap-6 mt-3">
           <div className="relative group cursor-pointer" onClick={() => fileRef.current?.click()}>
             {preview ? (
               <img src={preview} alt="Avatar" className="w-20 h-20 rounded-full object-cover"
@@ -87,57 +85,52 @@ export function SettingsClient({
           <div>
             <p className="text-sm text-arqud-bone mb-1">{fullName || email}</p>
             <p className="text-xs text-arqud-muted mb-3">{email}</p>
-            <button type="button" disabled={isPending}
-              onClick={() => fileRef.current?.click()}
-              className="btn-outline text-xs disabled:opacity-50">
+            <Button type="button" variant="outline" size="sm" disabled={isPending}
+              onClick={() => fileRef.current?.click()}>
               {isPending ? "Uploading..." : "Upload Photo"}
-            </button>
+            </Button>
           </div>
           <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp"
             className="hidden" onChange={handleAvatarChange} />
         </div>
-      </section>
+      </Card>
 
       {/* Profile */}
-      <section className="card p-6">
-        <h2 className="font-display text-2xl mb-6">Profile</h2>
-        <form id="profile-form" onSubmit={handle(updateProfile)} className="space-y-4">
+      <Card title="Profile">
+        <form id="profile-form" onSubmit={handle(updateProfile)} className="space-y-4 mt-3">
           <div>
             <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-2">Email</label>
-            <p className="text-arqud-bone text-sm px-4 py-3 border border-arqud-ink bg-arqud-black/50">{email}</p>
+            <p className="text-arqud-bone-dim text-sm px-3.5 py-2.5 border border-arqud-line-2 bg-arqud-panel rounded-control">{email}</p>
           </div>
           <div>
             <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-2">Display Name</label>
-            <input name="full_name" defaultValue={fullName} className={inputCls} />
+            <Input name="full_name" defaultValue={fullName} className="w-full" />
           </div>
-          <button type="submit" disabled={isPending} className="btn-gold disabled:opacity-50">
+          <Button type="submit" disabled={isPending}>
             {isPending ? "Saving..." : "Save Profile"}
-          </button>
+          </Button>
         </form>
-      </section>
+      </Card>
 
       {/* Password */}
-      <section className="card p-6">
-        <h2 className="font-display text-2xl mb-6">Change Password</h2>
-        <form onSubmit={handle(updatePassword)} className="space-y-4">
+      <Card title="Change Password">
+        <form onSubmit={handle(updatePassword)} className="space-y-4 mt-3">
           <div>
             <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-2">New Password</label>
-            <input name="password" type="password" required minLength={8} className={inputCls} placeholder="At least 8 characters" />
+            <Input name="password" type="password" required minLength={8} className="w-full" placeholder="At least 8 characters" />
           </div>
           <div>
             <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-2">Confirm Password</label>
-            <input name="confirm" type="password" required minLength={8} className={inputCls} placeholder="Repeat new password" />
+            <Input name="confirm" type="password" required minLength={8} className="w-full" placeholder="Repeat new password" />
           </div>
-          <button type="submit" disabled={isPending} className="btn-gold disabled:opacity-50">
+          <Button type="submit" disabled={isPending}>
             {isPending ? "Updating..." : "Update Password"}
-          </button>
+          </Button>
         </form>
-      </section>
+      </Card>
 
       {/* Company info */}
-      <section className="card p-6">
-        <h2 className="font-display text-2xl mb-4">ARQUD Company Details</h2>
-        <p className="text-xs text-arqud-muted mb-5">Appears automatically on every invoice and quote PDF.</p>
+      <Card title="ARQUD Company Details" caption="Appears automatically on every invoice and quote PDF.">
         <div className="grid grid-cols-2 gap-4">
           {[
             ["Company", "ARQUD (PTY) LTD"],
@@ -156,7 +149,7 @@ export function SettingsClient({
             </div>
           ))}
         </div>
-      </section>
+      </Card>
     </div>
   );
 }

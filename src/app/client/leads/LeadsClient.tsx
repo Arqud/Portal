@@ -2,6 +2,8 @@
 
 import { useState, useTransition, useMemo } from "react";
 import { updateLeadStatus } from "./actions";
+import { Button, Card, FilterPill, Pill, Tabs, Table, Tr, Td, Avatar, PageHeader } from "@/components/ui";
+import { getBrand, BRAND_TONE, STATUS_TONE, initialsOf } from "@/lib/leads/brand";
 
 export type Lead = {
   id: string;
@@ -17,30 +19,16 @@ export type Lead = {
   created_at: string;
 };
 
-const STATUS_STYLES: Record<string, string> = {
-  new: "text-arqud-gold border-arqud-gold/60 bg-arqud-gold/10",
-  contacted: "text-blue-400 border-blue-400/60 bg-blue-400/10",
-  converted: "text-green-400 border-green-400/60 bg-green-400/10",
-  lost: "text-red-400 border-red-400/60 bg-red-400/10",
-};
-
 const STATUS_OPTIONS = ["new", "contacted", "converted", "lost"] as const;
 
 type DateFilter = "today" | "week" | "month" | "all";
 type BrandFilter = "all" | "Sparkling" | "We Wash";
 
-function getBrand(lead: Lead): "Sparkling" | "We Wash" | "Other" {
-  const name = (lead.meta_campaign_name ?? lead.meta_ad_name ?? "").toLowerCase();
-  if (name.includes("sparkling")) return "Sparkling";
-  if (name.includes("we wash") || name.includes("wewash") || name.includes("wwcars")) return "We Wash";
-  return "Other";
-}
-
-const BRAND_STYLES: Record<string, string> = {
-  Sparkling: "text-blue-400 border-blue-400/60 bg-blue-400/10",
-  "We Wash": "text-arqud-gold border-arqud-gold/60 bg-arqud-gold/10",
-  Other: "text-arqud-muted border-arqud-ink bg-transparent",
-};
+const BRAND_TABS: { value: BrandFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "Sparkling", label: "Sparkling" },
+  { value: "We Wash", label: "We Wash" },
+];
 
 function toE164(phone: string) {
   const digits = phone.replace(/\D/g, "");
@@ -75,7 +63,7 @@ function exportCsv(leads: Lead[]) {
   URL.revokeObjectURL(url);
 }
 
-export function LeadsClient({ leads: initial }: { leads: Lead[] }) {
+export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: number }) {
   const [leads, setLeads] = useState(initial);
   const [selected, setSelected] = useState<Lead | null>(null);
   const [brandFilter, setBrandFilter] = useState<BrandFilter>("all");
@@ -92,6 +80,7 @@ export function LeadsClient({ leads: initial }: { leads: Lead[] }) {
     return Array.from(b).sort();
   }, [leads]);
 
+  // Per-special performance cards — grouped from the real leads data, no new query.
   const campaigns = useMemo(() => {
     const map = new Map<string, { leads: number; converted: number }>();
     leads.forEach((l) => {
@@ -132,7 +121,7 @@ export function LeadsClient({ leads: initial }: { leads: Lead[] }) {
       }
       return true;
     });
-  }, [leads, statusFilter, branchFilter, dateFilter, search, today]);
+  }, [leads, brandFilter, statusFilter, branchFilter, dateFilter, search, today]);
 
   function handleUpdated(updated: Lead) {
     setLeads((prev) => prev.map((l) => l.id === updated.id ? updated : l));
@@ -140,67 +129,81 @@ export function LeadsClient({ leads: initial }: { leads: Lead[] }) {
   }
 
   const filterBtn = (active: boolean) =>
-    `px-3 py-1.5 text-xs uppercase tracking-widest border transition-colors ${
-      active ? "border-arqud-gold text-arqud-gold" : "border-arqud-ink text-arqud-muted hover:border-arqud-gold/50 hover:text-arqud-bone"
+    `px-3 py-1.5 text-[10.5px] uppercase tracking-widest border rounded-control transition-colors ${
+      active ? "border-arqud-gold text-arqud-gold-soft bg-arqud-gold/10" : "border-arqud-line-2 text-arqud-muted hover:border-arqud-gold/50 hover:text-arqud-bone"
     }`;
 
   return (
     <>
-      {/* Lead Source Breakdown */}
-      {campaigns.length > 1 && (
-        <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: `repeat(${Math.min(campaigns.length, 4)}, 1fr)` }}>
+      {total !== undefined ? (
+        <PageHeader title="Leads" count={`${total} total`}>
+          <Button variant="outline" size="sm" onClick={() => exportCsv(filtered)}>
+            ⤓ Export CSV
+          </Button>
+        </PageHeader>
+      ) : (
+        <div className="flex justify-end mb-5">
+          <Button variant="outline" size="sm" onClick={() => exportCsv(filtered)}>
+            ⤓ Export CSV
+          </Button>
+        </div>
+      )}
+
+      {/* Per-special performance cards */}
+      {campaigns.length > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-5">
           {campaigns.map((c) => (
-            <div key={c.name} className="bg-arqud-night border border-arqud-ink px-4 py-4">
-              <p className="text-xs uppercase tracking-widest text-arqud-muted mb-2 truncate">{c.name}</p>
-              <p className="font-display text-2xl text-arqud-bone mb-1">{c.leads}</p>
-              <p className="text-xs text-arqud-muted">
-                {c.converted} converted · <span className="text-green-400">{c.rate}%</span>
-              </p>
-            </div>
+            <Card key={c.name} className="relative gold-topedge overflow-hidden">
+              <p className="text-[11px] text-arqud-bone font-semibold truncate">{c.name}</p>
+              <p className="stat-number text-[26px] my-2.5">{c.leads}</p>
+              <p className="text-[10px] text-arqud-green">{c.rate}% converted</p>
+            </Card>
           ))}
         </div>
       )}
 
       {/* Brand Tabs */}
-      <div className="flex gap-0 mb-5 border-b border-arqud-ink">
-        {(["all", "Sparkling", "We Wash"] as const).map((b) => (
-          <button
-            key={b}
-            onClick={() => { setBrandFilter(b); setBranchFilter("all"); }}
-            className={`px-5 py-2.5 text-xs uppercase tracking-widest border-b-2 transition-colors -mb-px ${
-              brandFilter === b
-                ? b === "Sparkling"
-                  ? "border-blue-400 text-blue-400"
-                  : b === "We Wash"
-                  ? "border-arqud-gold text-arqud-gold"
-                  : "border-arqud-gold text-arqud-gold"
-                : "border-transparent text-arqud-muted hover:text-arqud-bone"
-            }`}
-          >
-            {b === "all" ? "All Leads" : b}
-          </button>
-        ))}
-        <span className="ml-auto flex items-center text-xs text-arqud-muted pr-1">
-          {brandFilter !== "all" && (
-            <span className={`text-xs border px-2 py-0.5 ${BRAND_STYLES[brandFilter]}`}>
-              {leads.filter(l => getBrand(l) === brandFilter).length} leads
-            </span>
-          )}
-        </span>
+      <div className="flex items-center justify-between mb-5">
+        <Tabs
+          tabs={BRAND_TABS.map((t) => t.label)}
+          value={BRAND_TABS.find((t) => t.value === brandFilter)!.label}
+          onChange={(label) => {
+            const tab = BRAND_TABS.find((t) => t.label === label)!;
+            setBrandFilter(tab.value);
+            setBranchFilter("all");
+          }}
+        />
+        {brandFilter !== "all" && (
+          <Pill tone={BRAND_TONE[brandFilter]}>
+            {leads.filter((l) => getBrand(l) === brandFilter).length} leads
+          </Pill>
+        )}
       </div>
 
-      {/* Filters + Export */}
+      {/* Branch filter pills */}
+      {branches.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3.5">
+          <FilterPill active={branchFilter === "all"} onClick={() => setBranchFilter("all")}>
+            All branches
+          </FilterPill>
+          {branches.map((b) => (
+            <FilterPill key={b} active={branchFilter === b} onClick={() => setBranchFilter(b)}>
+              {b}
+            </FilterPill>
+          ))}
+        </div>
+      )}
+
+      {/* Search + status + date filters */}
       <div className="flex flex-wrap items-center gap-2 mb-5">
-        {/* Search */}
         <input
           type="text"
           placeholder="Search name, phone, branch…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="bg-arqud-night border border-arqud-ink px-3 py-1.5 text-xs text-arqud-bone placeholder-arqud-muted focus:border-arqud-gold focus:outline-none w-52"
+          className="bg-arqud-panel border border-arqud-line-2 rounded-control px-3.5 py-2 text-xs text-arqud-bone placeholder:text-arqud-muted focus:outline-none focus:ring-1 focus:ring-arqud-gold/40 w-52"
         />
 
-        {/* Status */}
         <div className="flex gap-1">
           {["all", ...STATUS_OPTIONS].map((s) => (
             <button key={s} onClick={() => setStatusFilter(s)} className={filterBtn(statusFilter === s)}>
@@ -209,32 +212,6 @@ export function LeadsClient({ leads: initial }: { leads: Lead[] }) {
           ))}
         </div>
 
-        {/* Branch */}
-        {branches.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            <button
-              onClick={() => setBranchFilter("all")}
-              className={filterBtn(branchFilter === "all")}
-            >
-              All branches
-            </button>
-            {branches.map((b) => (
-              <button
-                key={b}
-                onClick={() => setBranchFilter(b)}
-                className={`px-3 py-1.5 text-xs uppercase tracking-widest border transition-colors ${
-                  branchFilter === b
-                    ? "border-arqud-gold bg-arqud-gold/10 text-arqud-gold"
-                    : "border-arqud-ink text-arqud-muted hover:border-arqud-gold/50 hover:text-arqud-bone"
-                }`}
-              >
-                {b}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Date */}
         <div className="flex gap-1">
           {([["today", "Today"], ["week", "7 days"], ["month", "30 days"], ["all", "All time"]] as const).map(([val, label]) => (
             <button key={val} onClick={() => setDateFilter(val)} className={filterBtn(dateFilter === val)}>
@@ -242,114 +219,77 @@ export function LeadsClient({ leads: initial }: { leads: Lead[] }) {
             </button>
           ))}
         </div>
-
-        {/* Export */}
-        <button
-          onClick={() => exportCsv(filtered)}
-          className="ml-auto px-3 py-1.5 text-xs uppercase tracking-widest border border-arqud-ink text-arqud-muted hover:border-arqud-gold hover:text-arqud-gold transition-colors"
-        >
-          Export CSV
-        </button>
       </div>
 
       {/* Count */}
       <p className="text-xs text-arqud-muted mb-3">{filtered.length} lead{filtered.length !== 1 ? "s" : ""}</p>
 
       {/* Table */}
-      <div className="border border-arqud-ink overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-arqud-night border-b border-arqud-ink">
-              {["Date", "Name", "Contact", "Branch", "Brand", "Follow-up", "Status", ""].map((h) => (
-                <th key={h} className="text-left text-xs uppercase tracking-widest text-arqud-muted px-4 py-3 font-normal whitespace-nowrap">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={8} className="text-center py-10 text-arqud-muted text-xs uppercase tracking-widest">
-                  No leads match your filters
-                </td>
-              </tr>
-            )}
-            {filtered.map((lead) => {
-              const e164 = lead.phone ? toE164(lead.phone) : null;
-              const isOverdue = lead.follow_up_date && new Date(lead.follow_up_date) < new Date(new Date().toDateString());
-              return (
-                <tr key={lead.id} className="border-b border-arqud-ink/50 hover:bg-arqud-night/60 transition-colors">
-                  <td className="px-4 py-3 text-arqud-muted text-xs whitespace-nowrap">{formatDate(lead.created_at)}</td>
-                  <td className="px-4 py-3 text-arqud-bone font-medium whitespace-nowrap">{lead.full_name ?? "—"}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      {e164 && (
-                        <>
-                          <a
-                            href={`https://wa.me/${e164}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="WhatsApp"
-                            className="flex items-center justify-center w-7 h-7 border border-green-700/60 text-green-400 hover:bg-green-900/30 transition-colors text-xs"
-                          >
-                            WA
-                          </a>
-                          <a
-                            href={`tel:${lead.phone}`}
-                            title="Call"
-                            className="flex items-center justify-center w-7 h-7 border border-arqud-ink text-arqud-muted hover:border-arqud-gold/60 hover:text-arqud-gold transition-colors text-xs"
-                          >
-                            ☎
-                          </a>
-                        </>
-                      )}
-                      <span className="text-arqud-muted text-xs">{lead.phone ?? "—"}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    {lead.branch ? (
-                      <span className="text-xs border border-arqud-gold/50 bg-arqud-gold/10 text-arqud-gold px-2 py-0.5 uppercase tracking-widest">
-                        {lead.branch}
-                      </span>
-                    ) : (
-                      <span className="text-xs border border-red-500/50 bg-red-500/10 text-red-400 px-2 py-0.5 uppercase tracking-widest">
-                        No branch
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs whitespace-nowrap">
-                    <span className={`text-xs border px-2 py-0.5 uppercase tracking-widest ${BRAND_STYLES[getBrand(lead)]}`}>
-                      {getBrand(lead)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs whitespace-nowrap">
-                    {lead.follow_up_date ? (
-                      <span className={isOverdue ? "text-red-400" : "text-arqud-bone"}>
-                        {new Date(lead.follow_up_date).toLocaleDateString("en-ZA", { day: "2-digit", month: "short" })}
-                        {isOverdue && " ⚠"}
-                      </span>
-                    ) : (
-                      <span className="text-arqud-muted/40">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`text-xs uppercase tracking-widest border px-2 py-0.5 ${STATUS_STYLES[lead.status]}`}>
-                      {lead.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right whitespace-nowrap">
-                    <button
-                      onClick={() => setSelected(lead)}
-                      className="text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-gold transition-colors"
-                    >
-                      Update
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <Tr header>
+          <Td className="basis-[70px] grow-0 shrink-0">Date</Td>
+          <Td className="basis-[1.3fr] grow">Name</Td>
+          <Td className="basis-[1fr] grow">Branch</Td>
+          <Td className="basis-[1.1fr] grow">Brand</Td>
+          <Td className="basis-[0.9fr] grow">Status</Td>
+          <Td className="basis-[0.9fr] grow text-right">Action</Td>
+        </Tr>
+
+        {filtered.length === 0 && (
+          <div className="py-10 text-center text-arqud-muted text-xs uppercase tracking-widest">
+            No leads match your filters
+          </div>
+        )}
+
+        {filtered.map((lead) => {
+          const e164 = lead.phone ? toE164(lead.phone) : null;
+          const isOverdue = lead.follow_up_date && new Date(lead.follow_up_date) < new Date(new Date().toDateString());
+          return (
+            <Tr key={lead.id} className="cursor-pointer" onClick={() => setSelected(lead)}>
+              <Td className="basis-[70px] grow-0 shrink-0 text-arqud-muted">{formatDate(lead.created_at)}</Td>
+              <Td className="basis-[1.3fr] grow">
+                <div className="flex items-center gap-2.5 text-arqud-bone">
+                  <Avatar initials={initialsOf(lead.full_name)} />
+                  <span className="truncate">{lead.full_name ?? "Unnamed lead"}</span>
+                </div>
+              </Td>
+              <Td className="basis-[1fr] grow">
+                {lead.branch ? (
+                  <Pill tone="branch">{lead.branch}</Pill>
+                ) : (
+                  <Pill tone="neutral">No branch</Pill>
+                )}
+              </Td>
+              <Td className="basis-[1.1fr] grow">
+                <Pill tone={BRAND_TONE[getBrand(lead)]}>{getBrand(lead)}</Pill>
+              </Td>
+              <Td className="basis-[0.9fr] grow flex items-center gap-2">
+                <Pill tone={STATUS_TONE[lead.status] ?? "neutral"}>{lead.status}</Pill>
+                {lead.follow_up_date && (
+                  <span className={`text-[10px] ${isOverdue ? "text-red-400" : "text-arqud-muted"}`} title="Follow-up date">
+                    {isOverdue && "⚠ "}
+                    {new Date(lead.follow_up_date).toLocaleDateString("en-ZA", { day: "2-digit", month: "short" })}
+                  </span>
+                )}
+              </Td>
+              <Td className="basis-[0.9fr] grow text-right" onClick={(e) => e.stopPropagation()}>
+                {e164 ? (
+                  <a
+                    href={`https://wa.me/${e164}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-arqud-green text-[12px] font-medium hover:underline"
+                  >
+                    WhatsApp →
+                  </a>
+                ) : (
+                  <span className="text-arqud-muted text-[12px]">—</span>
+                )}
+              </Td>
+            </Tr>
+          );
+        })}
+      </Table>
 
       {selected && (
         <LeadModal lead={selected} onClose={() => setSelected(null)} onUpdated={handleUpdated} />
@@ -379,30 +319,30 @@ function LeadModal({ lead, onClose, onUpdated }: { lead: Lead; onClose: () => vo
     });
   }
 
-  const inputCls = "w-full bg-arqud-black border border-arqud-ink px-4 py-3 text-arqud-bone focus:border-arqud-gold focus:outline-none text-sm";
+  const inputCls = "w-full bg-arqud-bg border border-arqud-line-2 rounded-control px-4 py-3 text-arqud-bone focus:border-arqud-gold focus:outline-none text-sm";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-      <div className="w-full max-w-md bg-arqud-night border border-arqud-ink p-8 space-y-5">
+      <div className="w-full max-w-md panel-gradient border border-arqud-line rounded-card p-8 space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-2xl text-arqud-gold">{lead.full_name ?? "Lead"}</h2>
           <button onClick={onClose} className="text-arqud-muted hover:text-arqud-bone text-xl leading-none">✕</button>
         </div>
 
         {/* Contact info */}
-        <div className="space-y-2 border border-arqud-ink p-4">
+        <div className="space-y-2 border border-arqud-line rounded-control p-4">
           {lead.phone && (
             <div className="flex items-center justify-between">
               <span className="text-arqud-bone text-sm">{lead.phone}</span>
               <div className="flex gap-2">
                 {e164 && (
                   <a href={`https://wa.me/${e164}`} target="_blank" rel="noopener noreferrer"
-                    className="px-3 py-1 text-xs border border-green-700/60 text-green-400 hover:bg-green-900/30 transition-colors uppercase tracking-widest">
+                    className="px-3 py-1 text-xs border border-green-700/60 text-arqud-green hover:bg-green-900/30 transition-colors uppercase tracking-widest rounded-control">
                     WhatsApp
                   </a>
                 )}
                 <a href={`tel:${lead.phone}`}
-                  className="px-3 py-1 text-xs border border-arqud-ink text-arqud-muted hover:border-arqud-gold hover:text-arqud-gold transition-colors uppercase tracking-widest">
+                  className="px-3 py-1 text-xs border border-arqud-line-2 text-arqud-muted hover:border-arqud-gold hover:text-arqud-gold transition-colors uppercase tracking-widest rounded-control">
                   Call
                 </a>
               </div>
@@ -412,9 +352,7 @@ function LeadModal({ lead, onClose, onUpdated }: { lead: Lead; onClose: () => vo
           {lead.branch && (
             <div className="flex items-center gap-2 mt-1">
               <span className="text-arqud-muted text-xs uppercase tracking-widest">Branch:</span>
-              <span className="text-xs border border-arqud-gold/50 bg-arqud-gold/10 text-arqud-gold px-2 py-0.5 uppercase tracking-widest">
-                {lead.branch}
-              </span>
+              <Pill tone="branch">{lead.branch}</Pill>
             </div>
           )}
           {lead.meta_campaign_name && <p className="text-arqud-muted text-xs">Campaign: {lead.meta_campaign_name}</p>}
@@ -459,13 +397,13 @@ function LeadModal({ lead, onClose, onUpdated }: { lead: Lead; onClose: () => vo
           <button
             onClick={save}
             disabled={isPending}
-            className="flex-1 bg-arqud-gold py-3 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:opacity-90 disabled:opacity-50"
+            className="flex-1 bg-arqud-gold py-3 text-sm font-semibold uppercase tracking-widest text-arqud-bg hover:opacity-90 disabled:opacity-50 rounded-control"
           >
             {isPending ? "Saving…" : "Save"}
           </button>
           <button
             onClick={onClose}
-            className="flex-1 border border-arqud-ink py-3 text-sm uppercase tracking-widest text-arqud-muted hover:text-arqud-bone"
+            className="flex-1 border border-arqud-line-2 py-3 text-sm uppercase tracking-widest text-arqud-muted hover:text-arqud-bone rounded-control"
           >
             Cancel
           </button>

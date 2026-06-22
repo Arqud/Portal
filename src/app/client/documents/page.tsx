@@ -1,6 +1,10 @@
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getSignedUrl } from "@/lib/storage";
+import { Card, PageHeader, Table, Tr, Td } from "@/components/ui";
+
+// Button is a <button>; this mirrors its outline-sm classes for real <a> downloads (no asChild support).
+const BTN_OUTLINE_SM = "inline-flex items-center gap-2 font-semibold tracking-wide rounded-control transition-all text-[11px] px-3.5 py-2 text-arqud-gold-soft border border-arqud-gold/40 hover:border-arqud-gold/70 hover:bg-arqud-gold/5";
 
 const CATEGORY_LABELS: Record<string, string> = {
   brand_assets: "Brand Assets",
@@ -38,66 +42,47 @@ export default async function ClientDocumentsPage() {
   }, {});
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-10 animate-fade-up">
-      <div>
-        <p className="text-xs uppercase tracking-widest text-arqud-muted mb-1">
-          {list.length} {list.length === 1 ? "file" : "files"} shared
-        </p>
-        <h1 className="font-display text-5xl font-normal" style={{ letterSpacing: "-0.02em" }}>
-          Documents
-        </h1>
-      </div>
+    <main className="min-h-screen px-8 py-10 space-y-8 animate-fade-up">
+      <PageHeader title="Documents" count={`${list.length} ${list.length === 1 ? "file" : "files"} shared`} />
 
       {list.length === 0 ? (
-        <div className="card p-12 text-center space-y-3">
-          <p className="font-display text-2xl text-arqud-gold">No documents shared yet</p>
-          <p className="text-arqud-muted text-sm max-w-md mx-auto">
-            Files shared by your agency — contracts, brand assets, ad creatives — will appear here.
-          </p>
-        </div>
+        <Card>
+          <div className="py-6 text-center space-y-3">
+            <p className="font-display text-2xl text-arqud-gold">No documents shared yet</p>
+            <p className="text-arqud-muted text-sm max-w-md mx-auto">
+              Files shared by your agency — contracts, brand assets, ad creatives — will appear here.
+            </p>
+          </div>
+        </Card>
       ) : (
         <div className="space-y-6">
           {Object.entries(grouped).map(([category, categoryFiles]) => (
-            <div key={category} className="card">
-              <div
-                className="px-6 py-4"
-                style={{ borderBottom: "1px solid var(--color-arqud-ink)" }}
-              >
-                <p className="text-xs uppercase tracking-widest text-arqud-gold">
-                  {CATEGORY_LABELS[category] ?? category}
-                </p>
-              </div>
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>File Name</th>
-                    <th>Date Added</th>
-                    <th>Download</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {categoryFiles.map((file) => (
-                    <tr key={file.id}>
-                      <td className="text-arqud-bone">{file.name}</td>
-                      <td>{new Date(file.uploaded_at).toLocaleDateString("en-ZA")}</td>
-                      <td>
-                        {signedUrls[file.id] ? (
-                          <a
-                            href={signedUrls[file.id]}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs uppercase tracking-widest text-arqud-gold hover:text-arqud-gold-soft transition-colors"
-                          >
-                            Download →
-                          </a>
-                        ) : (
-                          <span className="text-xs text-arqud-muted">Unavailable</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div key={category} className="space-y-3">
+              <p className="text-xs uppercase tracking-widest text-arqud-gold">
+                {CATEGORY_LABELS[category] ?? category}
+              </p>
+              <Table>
+                <Tr header>
+                  <Td className="basis-[1.8fr] grow">File Name</Td>
+                  <Td className="basis-[1fr] grow">Date Added</Td>
+                  <Td className="basis-[0.8fr] grow text-right">Download</Td>
+                </Tr>
+                {categoryFiles.map((file) => (
+                  <Tr key={file.id}>
+                    <Td className="basis-[1.8fr] grow text-arqud-bone truncate">{file.name}</Td>
+                    <Td className="basis-[1fr] grow">{new Date(file.uploaded_at).toLocaleDateString("en-ZA")}</Td>
+                    <Td className="basis-[0.8fr] grow text-right">
+                      {signedUrls[file.id] ? (
+                        <a href={signedUrls[file.id]} target="_blank" rel="noopener noreferrer" className={BTN_OUTLINE_SM}>
+                          Download →
+                        </a>
+                      ) : (
+                        <span className="text-xs text-arqud-muted">Unavailable</span>
+                      )}
+                    </Td>
+                  </Tr>
+                ))}
+              </Table>
             </div>
           ))}
         </div>

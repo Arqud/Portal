@@ -1,3 +1,4 @@
+import { Card, Input, Button } from "@/components/ui";
 import { requestPasswordReset } from "./actions";
 
 type SearchParams = Promise<{ sent?: string }>;
@@ -11,21 +12,24 @@ export default async function ForgotPasswordPage({
 
   if (params.sent) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-arqud-black px-4">
-        <div className="w-full max-w-sm space-y-6 text-center">
+      <div
+        className="relative flex min-h-screen items-center justify-center px-4"
+        style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, var(--color-arqud-bg-2), var(--color-arqud-bg))" }}
+      >
+        <div className="relative w-full max-w-sm space-y-6 text-center animate-fade-up">
           <p className="font-display text-4xl tracking-[0.25em] text-arqud-gold">
             ARQUD
           </p>
-          <div className="border border-arqud-ink bg-arqud-night p-8 space-y-4">
+          <Card className="p-8 space-y-4">
             <p className="text-arqud-bone">Check your inbox</p>
             <p className="text-sm text-arqud-muted">
               If that email is registered, a reset link has been sent. Check
               your spam folder too.
             </p>
-          </div>
+          </Card>
           <a
             href="/login"
-            className="block text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-gold"
+            className="block text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-gold transition-colors"
           >
             Back to sign in
           </a>
@@ -35,8 +39,11 @@ export default async function ForgotPasswordPage({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-arqud-black px-4">
-      <div className="w-full max-w-sm space-y-8">
+    <div
+      className="relative flex min-h-screen items-center justify-center px-4"
+      style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, var(--color-arqud-bg-2), var(--color-arqud-bg))" }}
+    >
+      <div className="relative w-full max-w-sm space-y-8 animate-fade-up">
         <div className="text-center">
           <p className="font-display text-4xl tracking-[0.25em] text-arqud-gold">
             ARQUD
@@ -46,36 +53,35 @@ export default async function ForgotPasswordPage({
           </p>
         </div>
 
-        <form action={requestPasswordReset} className="space-y-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-1 block text-xs uppercase tracking-widest text-arqud-muted"
-            >
-              Your email address
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              autoComplete="email"
-              className="w-full border border-arqud-ink bg-arqud-night px-4 py-3 text-arqud-bone placeholder-arqud-muted focus:border-arqud-gold focus:outline-none"
-              placeholder="your@email.com"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-arqud-gold py-3 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft"
-          >
-            Send reset link
-          </button>
-        </form>
+        <Card className="p-6 space-y-4">
+          <form action={requestPasswordReset} className="space-y-4">
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-1.5 block text-xs uppercase tracking-widest text-arqud-muted"
+              >
+                Your email address
+              </label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                className="w-full"
+                placeholder="your@email.com"
+              />
+            </div>
+            <Button type="submit" className="w-full justify-center">
+              Send reset link
+            </Button>
+          </form>
+        </Card>
 
         <p className="text-center">
           <a
             href="/login"
-            className="text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-gold"
+            className="text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-gold transition-colors"
           >
             Back to sign in
           </a>

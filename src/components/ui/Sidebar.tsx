@@ -73,7 +73,7 @@ export function Sidebar({ variant, brandName, user }: SidebarProps) {
       {/* Mobile header bar with drawer toggle */}
       <div className="md:hidden flex items-center justify-between px-4 h-14 bg-arqud-bg border-b border-arqud-line sticky top-0 z-50">
         <Link href={homeHref} className="font-display text-lg tracking-[0.28em] text-arqud-gold">
-          {variant === "client" ? brandName : "ARQUD"}
+          ARQUD
         </Link>
         <button
           type="button"
@@ -105,11 +105,15 @@ export function Sidebar({ variant, brandName, user }: SidebarProps) {
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <Link
-          href={homeHref}
-          className="font-display text-[22px] tracking-[0.28em] text-arqud-gold px-2 pb-[22px] hover:text-arqud-gold-soft transition-colors duration-150"
-        >
-          {variant === "client" ? brandName : "ARQUD"}
+        <Link href={homeHref} className="group block px-2 pb-[22px]">
+          <span className="block font-display text-[20px] tracking-[0.3em] text-arqud-gold group-hover:text-arqud-gold-soft transition-colors duration-150">
+            ARQUD
+          </span>
+          {variant === "client" && (
+            <span className="mt-2 block text-[10px] uppercase tracking-[0.12em] text-arqud-muted leading-snug line-clamp-2">
+              {brandName}
+            </span>
+          )}
         </Link>
 
         {navList}

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { updateClient } from "./editActions";
+import { Button, Input, Select } from "@/components/ui";
 
 type Client = {
   id: string; name: string; company: string | null; email: string;
@@ -27,73 +28,69 @@ export function EditClientForm({ client, onClose }: { client: Client; onClose: (
     });
   }
 
-  const inputCls = "w-full bg-arqud-black border border-arqud-ink px-4 py-3 text-arqud-bone focus:border-arqud-gold focus:outline-none text-sm";
-
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 pt-8 pb-8 px-4">
-      <div className="w-full max-w-xl bg-arqud-night border border-arqud-ink p-8 space-y-5">
+      <div className="w-full max-w-xl panel-gradient border border-arqud-line rounded-card p-8 space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-2xl text-arqud-gold">Edit Client</h2>
-          <button onClick={onClose} className="text-arqud-muted hover:text-arqud-bone text-xl">✕</button>
+          <button onClick={onClose} className="text-arqud-muted hover:text-arqud-bone text-xl leading-none">✕</button>
         </div>
         {err && <p className="text-red-400 text-sm">{err}</p>}
 
         <form onSubmit={handle} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Contact Name *</label>
-              <input name="name" required defaultValue={client.name} className={inputCls} />
+              <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Contact Name *</label>
+              <Input name="name" required defaultValue={client.name} />
             </div>
             <div>
-              <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Company Name</label>
-              <input name="company" defaultValue={client.company ?? ""} className={inputCls} />
+              <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Company Name</label>
+              <Input name="company" defaultValue={client.company ?? ""} />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Email Address *</label>
-            <input name="email" type="email" required defaultValue={client.email} className={inputCls} />
+            <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Email Address *</label>
+            <Input name="email" type="email" required defaultValue={client.email} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Contact Person</label>
-              <input name="contact_person" defaultValue={client.contact_person ?? ""} className={inputCls} />
+              <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Contact Person</label>
+              <Input name="contact_person" defaultValue={client.contact_person ?? ""} />
             </div>
             <div>
-              <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Physical Address</label>
-              <input name="address" defaultValue={client.address ?? ""} className={inputCls} />
+              <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Physical Address</label>
+              <Input name="address" defaultValue={client.address ?? ""} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Company Reg No</label>
-              <input name="reg_number" defaultValue={client.reg_number ?? ""} className={inputCls} />
+              <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Company Reg No</label>
+              <Input name="reg_number" defaultValue={client.reg_number ?? ""} />
             </div>
             <div>
-              <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">VAT Number</label>
-              <input name="vat_number" defaultValue={client.vat_number ?? ""} className={inputCls} />
+              <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">VAT Number</label>
+              <Input name="vat_number" defaultValue={client.vat_number ?? ""} />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Status</label>
-            <select name="status" defaultValue={client.status} className={inputCls}>
+            <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Status</label>
+            <Select name="status" defaultValue={client.status}>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
-            </select>
+            </Select>
           </div>
 
-          <div className="flex gap-4 pt-2">
-            <button type="submit" disabled={isPending}
-              className="flex-1 bg-arqud-gold py-3 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft disabled:opacity-50">
-              {isPending ? "Saving..." : "Save Changes"}
-            </button>
-            <button type="button" onClick={onClose}
-              className="flex-1 border border-arqud-ink py-3 text-sm uppercase tracking-widest text-arqud-muted hover:text-arqud-bone">
+          <div className="flex gap-3 pt-2">
+            <Button type="submit" disabled={isPending} className="flex-1 justify-center">
+              {isPending ? "Saving…" : "Save Changes"}
+            </Button>
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1 justify-center">
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       </div>

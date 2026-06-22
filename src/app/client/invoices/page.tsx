@@ -9,7 +9,7 @@ const BTN_OUTLINE_SM = "inline-flex items-center gap-2 font-semibold tracking-wi
 const STATUS_TONE: Record<string, string> = {
   paid: "converted",
   pending: "contacted",
-  overdue: "neutral",
+  overdue: "danger",
 };
 
 export default async function ClientInvoicesPage() {

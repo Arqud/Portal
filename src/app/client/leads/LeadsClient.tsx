@@ -3,6 +3,7 @@
 import { useState, useTransition, useMemo } from "react";
 import { updateLeadStatus } from "./actions";
 import { Button, Card, FilterPill, Pill, Tabs, Table, Tr, Td, Avatar, PageHeader } from "@/components/ui";
+import { getBrand, BRAND_TONE, STATUS_TONE, initialsOf } from "@/lib/leads/brand";
 
 export type Lead = {
   id: string;
@@ -18,13 +19,6 @@ export type Lead = {
   created_at: string;
 };
 
-const STATUS_TONE: Record<string, string> = {
-  new: "new",
-  contacted: "contacted",
-  converted: "converted",
-  lost: "neutral",
-};
-
 const STATUS_OPTIONS = ["new", "contacted", "converted", "lost"] as const;
 
 type DateFilter = "today" | "week" | "month" | "all";
@@ -35,26 +29,6 @@ const BRAND_TABS: { value: BrandFilter; label: string }[] = [
   { value: "Sparkling", label: "Sparkling" },
   { value: "We Wash", label: "We Wash" },
 ];
-
-function getBrand(lead: Lead): "Sparkling" | "We Wash" | "Other" {
-  const name = (lead.meta_campaign_name ?? lead.meta_ad_name ?? "").toLowerCase();
-  if (name.includes("sparkling")) return "Sparkling";
-  if (name.includes("we wash") || name.includes("wewash") || name.includes("wwcars")) return "We Wash";
-  return "Other";
-}
-
-const BRAND_TONE: Record<string, string> = {
-  Sparkling: "spark",
-  "We Wash": "wash",
-  Other: "neutral",
-};
-
-function initialsOf(name: string | null) {
-  if (!name) return "—";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-}
 
 function toE164(phone: string) {
   const digits = phone.replace(/\D/g, "");
@@ -161,12 +135,18 @@ export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: 
 
   return (
     <>
-      {total !== undefined && (
+      {total !== undefined ? (
         <PageHeader title="Leads" count={`${total} total`}>
           <Button variant="outline" size="sm" onClick={() => exportCsv(filtered)}>
             ⤓ Export CSV
           </Button>
         </PageHeader>
+      ) : (
+        <div className="flex justify-end mb-5">
+          <Button variant="outline" size="sm" onClick={() => exportCsv(filtered)}>
+            ⤓ Export CSV
+          </Button>
+        </div>
       )}
 
       {/* Per-special performance cards */}

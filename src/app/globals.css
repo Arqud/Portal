@@ -20,6 +20,11 @@
   --color-arqud-amber: #f0c674;   /* contacted */
   --color-arqud-blue: #6fa0f0;    /* Sparkling brand */
 
+  --color-arqud-black: #080808;
+  --color-arqud-night: #111520;
+  --color-arqud-ink: #1a1f2e;
+  --color-arqud-gold-glow: rgba(200, 169, 110, 0.12);
+
   --font-display: var(--font-display-loaded), Georgia, serif;
   --font-body: var(--font-body-loaded), system-ui, sans-serif;
 

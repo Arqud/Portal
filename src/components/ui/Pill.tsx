@@ -8,6 +8,7 @@ const tones: Record<string, string> = {
   converted: "text-arqud-green bg-arqud-green/10 border-arqud-green/30",
   branch:    "text-arqud-bone-dim bg-white/5 border-arqud-line-2",
   neutral:   "text-arqud-muted bg-white/5 border-arqud-line-2",
+  danger:    "text-red-400 bg-red-400/10 border-red-400/30",
 };
 
 export function Pill({ tone, children }: { tone: keyof typeof tones | string; children: React.ReactNode }) {

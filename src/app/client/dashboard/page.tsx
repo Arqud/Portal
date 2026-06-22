@@ -2,37 +2,11 @@ import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { LeadsClient } from "../leads/LeadsClient";
 import { Card, KpiCard, Pill, AreaChart, Avatar } from "@/components/ui";
+import { getBrand, BRAND_TONE, STATUS_TONE, initialsOf } from "@/lib/leads/brand";
 
 // Button is a <button>; these mirror its visual classes for real <a> navigation (no asChild support).
 const BTN_PRIMARY = "inline-flex items-center gap-2 font-semibold tracking-wide rounded-control transition-all text-xs px-[18px] py-[11px] text-arqud-bg bg-gradient-to-r from-arqud-gold to-arqud-gold-soft shadow-[0_8px_22px_rgba(200,169,110,0.28)] hover:-translate-y-px";
 const BTN_OUTLINE_SM = "inline-flex items-center gap-2 font-semibold tracking-wide rounded-control transition-all text-[11px] px-3.5 py-2 text-arqud-gold-soft border border-arqud-gold/40 hover:border-arqud-gold/70 hover:bg-arqud-gold/5";
-
-function getBrand(lead: { meta_campaign_name: string | null; meta_ad_name: string | null }): "Sparkling" | "We Wash" | "Other" {
-  const name = (lead.meta_campaign_name ?? lead.meta_ad_name ?? "").toLowerCase();
-  if (name.includes("sparkling")) return "Sparkling";
-  if (name.includes("we wash") || name.includes("wewash") || name.includes("wwcars")) return "We Wash";
-  return "Other";
-}
-
-const BRAND_TONE: Record<string, string> = {
-  Sparkling: "spark",
-  "We Wash": "wash",
-  Other: "neutral",
-};
-
-const STATUS_TONE: Record<string, string> = {
-  new: "new",
-  contacted: "contacted",
-  converted: "converted",
-  lost: "neutral",
-};
-
-function initialsOf(name: string | null) {
-  if (!name) return "—";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-}
 
 export default async function ClientDashboardPage() {
   const { profile } = await verifySession("client");

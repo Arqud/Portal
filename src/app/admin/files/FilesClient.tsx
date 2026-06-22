@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { Card, Table, Tr, Td, Pill, Button, Input, Select } from "@/components/ui";
 import { uploadAdminFile, removeAdminFile, toggleFileSharing } from "./actions";
 
 const CATEGORIES = [
@@ -60,14 +61,12 @@ export function FilesClient({
     });
   }
 
-  const inputCls = "w-full bg-arqud-black border border-arqud-ink px-4 py-3 text-arqud-bone focus:border-arqud-gold focus:outline-none text-sm";
-
   return (
-    <div>
+    <div className="space-y-6">
       {/* Upload modal */}
       {showUpload && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-          <div className="w-full max-w-md bg-arqud-night border border-arqud-ink p-8 space-y-5">
+          <div className="w-full max-w-md panel-gradient border border-arqud-line rounded-card p-8 shadow-[var(--shadow-card)] space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-2xl text-arqud-gold">Upload File</h2>
               <button onClick={() => setShowUpload(false)} className="text-arqud-muted hover:text-arqud-bone text-xl">✕</button>
@@ -76,41 +75,39 @@ export function FilesClient({
             <form ref={formRef} onSubmit={handleUpload} className="space-y-4">
               <div>
                 <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Client</label>
-                <select name="clientId" required className={inputCls}>
+                <Select name="clientId" required className="w-full">
                   <option value="">Select client…</option>
                   {clients.map((c) => (
                     <option key={c.id} value={c.id}>{c.company ?? c.name}</option>
                   ))}
-                </select>
+                </Select>
               </div>
               <div>
                 <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">File Name</label>
-                <input name="name" required placeholder="Brand Guidelines 2026" className={inputCls} />
+                <Input name="name" required placeholder="Brand Guidelines 2026" className="w-full" />
               </div>
               <div>
                 <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Category</label>
-                <select name="category" className={inputCls}>
+                <Select name="category" className="w-full">
                   {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-                </select>
+                </Select>
               </div>
               <div>
                 <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">File</label>
                 <input name="file" type="file" required accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,application/pdf,image/*"
-                  className="w-full text-arqud-bone text-sm file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-arqud-gold file:text-arqud-black file:text-xs file:uppercase file:tracking-widest file:cursor-pointer" />
+                  className="w-full text-arqud-bone text-sm file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-arqud-gold file:text-arqud-bg file:text-xs file:uppercase file:tracking-widest file:cursor-pointer file:rounded-control" />
               </div>
               <div className="flex items-center gap-3">
                 <input type="checkbox" name="shared_with_client" id="shared" className="w-4 h-4 accent-arqud-gold" defaultChecked />
                 <label htmlFor="shared" className="text-sm text-arqud-bone cursor-pointer">Share with client immediately</label>
               </div>
               <div className="flex gap-4 pt-2">
-                <button type="submit" disabled={pending}
-                  className="flex-1 bg-arqud-gold py-3 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft disabled:opacity-50">
+                <Button type="submit" disabled={pending} className="flex-1 justify-center">
                   {pending ? "Uploading..." : "Upload"}
-                </button>
-                <button type="button" onClick={() => setShowUpload(false)}
-                  className="flex-1 border border-arqud-ink py-3 text-sm uppercase tracking-widest text-arqud-muted hover:text-arqud-bone">
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setShowUpload(false)} className="flex-1 justify-center">
                   Cancel
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -118,69 +115,63 @@ export function FilesClient({
       )}
 
       {/* Filters + upload button */}
-      <div className="flex items-center gap-4 mb-6">
-        <select value={filterClient} onChange={(e) => setFilterClient(e.target.value)}
-          className="bg-arqud-night border border-arqud-ink px-4 py-2 text-arqud-bone text-sm focus:border-arqud-gold focus:outline-none">
+      <div className="flex items-center gap-4">
+        <Select value={filterClient} onChange={(e) => setFilterClient(e.target.value)} className="w-auto">
           <option value="all">All Clients</option>
           {clients.map((c) => <option key={c.id} value={c.id}>{c.company ?? c.name}</option>)}
-        </select>
-        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
-          className="bg-arqud-night border border-arqud-ink px-4 py-2 text-arqud-bone text-sm focus:border-arqud-gold focus:outline-none">
+        </Select>
+        <Select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="w-auto">
           <option value="all">All Categories</option>
           {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-        </select>
+        </Select>
         <div className="flex-1" />
-        <button onClick={() => setShowUpload(true)}
-          className="bg-arqud-gold px-6 py-2 text-sm font-semibold uppercase tracking-widest text-arqud-black hover:bg-arqud-gold-soft">
-          + Upload File
-        </button>
+        <Button onClick={() => setShowUpload(true)}>+ Upload File</Button>
       </div>
 
       {filtered.length === 0 ? (
-        <div className="border border-arqud-ink bg-arqud-night p-12 text-center space-y-3">
+        <Card className="p-12 text-center space-y-3">
           <p className="font-display text-2xl text-arqud-gold">No files yet</p>
-          <p className="text-arqud-bone text-sm">Upload contracts, brand assets, ad creatives and share them with clients.</p>
-        </div>
+          <p className="text-arqud-bone-dim text-sm">Upload contracts, brand assets, ad creatives and share them with clients.</p>
+        </Card>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-arqud-ink">
-              {["Name", "Client", "Category", "Shared", "Uploaded", "Actions"].map((h) => (
-                <th key={h} className="text-left text-xs uppercase tracking-widest text-arqud-muted pb-3 pr-4">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((f) => (
-              <tr key={f.id} className="border-b border-arqud-ink/50 hover:bg-arqud-night/50">
-                <td className="py-3 pr-4 text-arqud-bone">{f.name}</td>
-                <td className="py-3 pr-4 text-arqud-muted">{f.client?.company ?? f.client?.name ?? "—"}</td>
-                <td className="py-3 pr-4 text-arqud-muted">{CATEGORY_LABELS[f.category] ?? f.category}</td>
-                <td className="py-3 pr-4">
-                  <button disabled={pending}
-                    onClick={() => start(() => toggleFileSharing(f.id, !f.shared_with_client))}
-                    className={`text-xs uppercase tracking-widest border px-2 py-0.5 transition-colors ${
-                      f.shared_with_client
-                        ? "text-green-400 border-green-400"
-                        : "text-arqud-muted border-arqud-muted hover:border-arqud-gold hover:text-arqud-gold"
-                    }`}>
+        <Table>
+          <Tr header>
+            <Td className="basis-[1.3fr] grow">Name</Td>
+            <Td className="basis-[1fr] grow">Client</Td>
+            <Td className="basis-[0.9fr] grow">Category</Td>
+            <Td className="basis-[0.7fr] grow">Shared</Td>
+            <Td className="basis-[0.8fr] grow">Uploaded</Td>
+            <Td className="basis-[0.9fr] grow">Actions</Td>
+          </Tr>
+          {filtered.map((f) => (
+            <Tr key={f.id}>
+              <Td className="basis-[1.3fr] grow text-arqud-bone">{f.name}</Td>
+              <Td className="basis-[1fr] grow">{f.client?.company ?? f.client?.name ?? "—"}</Td>
+              <Td className="basis-[0.9fr] grow">{CATEGORY_LABELS[f.category] ?? f.category}</Td>
+              <Td className="basis-[0.7fr] grow">
+                <button disabled={pending}
+                  onClick={() => start(() => toggleFileSharing(f.id, !f.shared_with_client))}
+                  className="inline-flex">
+                  <Pill tone={f.shared_with_client ? "converted" : "neutral"}>
                     {f.shared_with_client ? "Shared" : "Private"}
-                  </button>
-                </td>
-                <td className="py-3 pr-4 text-arqud-muted">{new Date(f.uploaded_at).toLocaleDateString("en-ZA")}</td>
-                <td className="py-3 flex gap-3 items-center">
+                  </Pill>
+                </button>
+              </Td>
+              <Td className="basis-[0.8fr] grow">{new Date(f.uploaded_at).toLocaleDateString("en-ZA")}</Td>
+              <Td className="basis-[0.9fr] grow">
+                <div className="flex gap-3 items-center">
                   {signedUrls[f.id] && (
                     <a href={signedUrls[f.id]} target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-arqud-gold hover:text-arqud-gold-soft uppercase tracking-widest">Download</a>
+                      className="text-xs text-arqud-gold hover:text-arqud-gold-soft uppercase tracking-widest transition-colors">Download</a>
                   )}
                   <button disabled={pending}
                     onClick={() => { if (confirm("Delete this file?")) start(() => removeAdminFile(f.id, f.storage_path)); }}
-                    className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50 uppercase tracking-widest">Delete</button>
+                </div>
+              </Td>
+            </Tr>
+          ))}
+        </Table>
       )}
     </div>
   );

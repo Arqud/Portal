@@ -7,8 +7,6 @@ export const metadata: Metadata = {
     "How ARQUD (PTY) LTD collects, uses, and protects personal information submitted through lead forms and the ARQUD client portal.",
 };
 
-const UPDATED = "23 June 2026";
-
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
@@ -30,7 +28,6 @@ export default function PrivacyPolicyPage() {
             ARQUD
           </Link>
           <h1 className="font-display text-4xl text-arqud-bone">Privacy Policy</h1>
-          <p className="text-xs uppercase tracking-widest text-arqud-muted">Last updated {UPDATED}</p>
         </header>
 
         <Section title="Who we are">

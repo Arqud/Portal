@@ -86,6 +86,14 @@ h4 {
   background: linear-gradient(90deg, transparent, rgba(200,169,110,.5), transparent);
 }
 
+.blue-topedge::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(111,160,240,.5), transparent);
+}
+
 .stat-number {
   font-family: var(--font-display);
   font-style: italic;

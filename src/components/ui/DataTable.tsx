@@ -1,6 +1,10 @@
 import { cn } from "@/lib/cn";
 export function Table({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn("panel-gradient border border-arqud-line rounded-card px-4 py-1.5", className)}>{children}</div>;
+  return (
+    <div className={cn("panel-gradient border border-arqud-line rounded-card overflow-x-auto", className)}>
+      <div className="min-w-[520px] px-4 py-1.5">{children}</div>
+    </div>
+  );
 }
 export function Tr({ children, header, className, onClick }: { children: React.ReactNode; header?: boolean; className?: string; onClick?: () => void }) {
   return <div onClick={onClick} className={cn("flex items-center gap-2.5 py-3", header ? "text-[9.5px] tracking-[0.13em] uppercase text-arqud-muted" : "border-t border-arqud-line/60 text-[12.5px] text-arqud-bone-dim hover:bg-arqud-gold/[0.025]", className)}>{children}</div>;

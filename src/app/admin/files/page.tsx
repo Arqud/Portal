@@ -24,7 +24,7 @@ export default async function AdminFilesPage() {
   );
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-8 animate-fade-up">
+    <main className="min-h-screen px-4 sm:px-8 py-8 sm:py-10 space-y-8 animate-fade-up">
       <PageHeader title="Files" count={`${files.length} ${files.length === 1 ? "file" : "files"}`} />
       <FilesClient files={files} clients={clients} signedUrls={signedUrls} />
     </main>

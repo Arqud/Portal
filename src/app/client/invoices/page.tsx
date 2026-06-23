@@ -17,7 +17,7 @@ export default async function ClientInvoicesPage() {
 
   if (!profile.client_id) {
     return (
-      <main className="min-h-screen px-8 py-10 animate-fade-up">
+      <main className="min-h-screen px-4 sm:px-8 py-8 sm:py-10 animate-fade-up">
         <PageHeader title="Invoices" />
         <Card>
           <p className="text-arqud-muted text-sm">No client account linked. Contact your agency.</p>
@@ -41,7 +41,7 @@ export default async function ClientInvoicesPage() {
   const fmt = (n: number) => `R ${n.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-8 animate-fade-up">
+    <main className="min-h-screen px-4 sm:px-8 py-8 sm:py-10 space-y-8 animate-fade-up">
       <PageHeader title="Invoices" count={`${invoices.length} ${invoices.length === 1 ? "invoice" : "invoices"}`} />
 
       {invoices.length > 0 && (

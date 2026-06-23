@@ -15,7 +15,7 @@ export default async function ClientCampaignsPage() {
   const list = campaigns ?? [];
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-8 animate-fade-up">
+    <main className="min-h-screen px-4 sm:px-8 py-8 sm:py-10 space-y-8 animate-fade-up">
       <PageHeader title="Campaigns" count={list.length > 0 ? `${list.length} active` : undefined} />
 
       {list.length === 0 ? (

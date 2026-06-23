@@ -37,7 +37,7 @@ export default async function AdminClientsPage() {
   }
 
   return (
-    <main className="min-h-screen px-8 py-10 animate-fade-up">
+    <main className="min-h-screen px-4 sm:px-8 py-8 sm:py-10 animate-fade-up">
       <PageHeader title="Clients" count={`${activeCount} active · ${list.length} total`}>
         <Link href="/admin/clients/new" className={BTN_PRIMARY}>+ Add Client</Link>
       </PageHeader>

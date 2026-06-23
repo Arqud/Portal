@@ -46,13 +46,13 @@ export default async function OverviewPage() {
   const monthName = now.toLocaleString("en-ZA", { month: "long" });
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-8 animate-fade-up">
+    <main className="min-h-screen px-4 sm:px-8 py-8 sm:py-10 space-y-8 animate-fade-up">
       <PageHeader title="Overview" count={`${monthName} ${now.getFullYear()}`}>
         <Link href="/admin/clients/new" className={BTN_PRIMARY}>+ New Client</Link>
       </PageHeader>
 
       {/* Money KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <KpiCard label={`Invoiced ${monthName}`} value={fmt(invoicedThisMonth)} />
         <KpiCard label="Collected" value={fmt(collectedThisMonth)} />
         <KpiCard

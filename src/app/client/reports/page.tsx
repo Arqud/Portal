@@ -26,7 +26,7 @@ export default async function ClientReportsPage() {
   );
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-8 animate-fade-up">
+    <main className="min-h-screen px-4 sm:px-8 py-8 sm:py-10 space-y-8 animate-fade-up">
       <PageHeader title="Reports" count={`${list.length} ${list.length === 1 ? "report" : "reports"}`} />
 
       {list.length === 0 ? (

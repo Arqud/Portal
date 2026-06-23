@@ -17,7 +17,7 @@ export default async function ClientLeadsPage() {
   const total = list.length;
 
   return (
-    <main className="min-h-screen px-8 py-10">
+    <main className="min-h-screen px-4 sm:px-8 py-8 sm:py-10">
       {list.length === 0 ? (
         <>
           <PageHeader title="Leads" />

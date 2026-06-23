@@ -54,7 +54,7 @@ export default async function FinancesPage() {
   const monthName = now.toLocaleString("en-ZA", { month: "long" });
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-8 animate-fade-up">
+    <main className="min-h-screen px-4 sm:px-8 py-8 sm:py-10 space-y-8 animate-fade-up">
       <PageHeader title="Finances" count={`${monthName} ${now.getFullYear()}`} />
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">

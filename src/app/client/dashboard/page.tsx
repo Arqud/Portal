@@ -65,7 +65,7 @@ export default async function ClientDashboardPage() {
   };
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-8 animate-fade-up">
+    <main className="min-h-screen px-4 sm:px-8 py-8 sm:py-10 space-y-8 animate-fade-up">
       {/* Greeting header */}
       <div className="flex justify-between items-start gap-4 flex-wrap">
         <div>

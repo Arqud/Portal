@@ -67,7 +67,7 @@ export default async function ClientDetailPage({
   }
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-5 animate-fade-up">
+    <main className="min-h-screen px-4 sm:px-8 py-8 sm:py-10 space-y-5 animate-fade-up">
       {/* Breadcrumb */}
       <Link href="/admin/clients" className="text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-gold transition-colors">
         ← Clients

@@ -42,7 +42,7 @@ export default async function ClientDocumentsPage() {
   }, {});
 
   return (
-    <main className="min-h-screen px-8 py-10 space-y-8 animate-fade-up">
+    <main className="min-h-screen px-4 sm:px-8 py-8 sm:py-10 space-y-8 animate-fade-up">
       <PageHeader title="Documents" count={`${list.length} ${list.length === 1 ? "file" : "files"} shared`} />
 
       {list.length === 0 ? (

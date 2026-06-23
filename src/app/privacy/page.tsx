@@ -102,8 +102,8 @@ export default function PrivacyPolicyPage() {
         <Section title="Contact us">
           <p>
             For any privacy questions or requests, email{" "}
-            <a href="mailto:info@arqud.com" className="text-arqud-gold hover:text-arqud-gold-soft transition-colors">
-              info@arqud.com
+            <a href="mailto:Morne@arqud.com" className="text-arqud-gold hover:text-arqud-gold-soft transition-colors">
+              Morne@arqud.com
             </a>
             .
           </p>

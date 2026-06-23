@@ -84,7 +84,7 @@ export default async function AdminClientsPage() {
                 <Td className="basis-[0.7fr] grow">
                   <Pill tone={client.status === "active" ? "converted" : "neutral"}>{client.status}</Pill>
                 </Td>
-                <Td className="basis-[0.5fr] grow-0 shrink-0 text-right" onClick={(e) => e.stopPropagation()}>
+                <Td className="basis-[0.5fr] grow-0 shrink-0 text-right">
                   <Link href={`/admin/clients/${client.id}`} className="text-arqud-gold text-[12px] font-medium hover:underline">
                     Manage →
                   </Link>

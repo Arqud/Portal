@@ -1,6 +1,7 @@
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { Card, KpiCard, PageHeader, Table, Tr, Td } from "@/components/ui";
+import { Card, KpiCard, PageHeader } from "@/components/ui";
+import { CampaignsBrandView } from "./CampaignsBrandView";
 
 export default async function ClientCampaignsPage() {
   const { profile } = await verifySession("client");
@@ -35,38 +36,7 @@ export default async function ClientCampaignsPage() {
           </div>
         </Card>
       ) : (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
-            <KpiCard label="Total Leads" value={list.reduce((s, c) => s + c.leads, 0).toLocaleString()} />
-            <KpiCard label="Avg CPL" value={`R ${(list.reduce((s, c) => s + c.cpl, 0) / list.length).toFixed(2)}`} />
-            <KpiCard label="Total Spend" value={`R ${list.reduce((s, c) => s + c.spend, 0).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`} />
-            <KpiCard label="Total Reach" value={list.reduce((s, c) => s + c.reach, 0).toLocaleString()} />
-            <KpiCard label="Active Campaigns" value={list.length.toString()} />
-          </div>
-
-          <Table>
-            <Tr header>
-              <Td className="basis-[1.6fr] grow">Campaign</Td>
-              <Td className="basis-[0.8fr] grow">Leads</Td>
-              <Td className="basis-[0.8fr] grow">CPL</Td>
-              <Td className="basis-[1fr] grow">Spend</Td>
-              <Td className="basis-[0.9fr] grow">Reach</Td>
-              <Td className="basis-[0.7fr] grow">CTR</Td>
-              <Td className="basis-[1fr] grow text-right">Last Synced</Td>
-            </Tr>
-            {list.map((c) => (
-              <Tr key={c.id}>
-                <Td className="basis-[1.6fr] grow text-arqud-bone truncate">{c.name}</Td>
-                <Td className="basis-[0.8fr] grow">{c.leads.toLocaleString()}</Td>
-                <Td className="basis-[0.8fr] grow">R {Number(c.cpl).toFixed(2)}</Td>
-                <Td className="basis-[1fr] grow">R {Number(c.spend).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</Td>
-                <Td className="basis-[0.9fr] grow">{c.reach.toLocaleString()}</Td>
-                <Td className="basis-[0.7fr] grow">{(Number(c.ctr) * 100).toFixed(2)}%</Td>
-                <Td className="basis-[1fr] grow text-right text-arqud-muted">{c.synced_at ? new Date(c.synced_at).toLocaleDateString("en-ZA") : "—"}</Td>
-              </Tr>
-            ))}
-          </Table>
-        </div>
+        <CampaignsBrandView campaigns={list} />
       )}
     </main>
   );

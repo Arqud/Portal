@@ -2,6 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { syncClientCampaigns, saveMetaCredentials } from "./actions";
+import { getBrand } from "@/lib/leads/brand";
+
+type BrandFilter = "all" | "Sparkling" | "We Wash";
+// Campaigns carry the brand in their name (e.g. "Sparkling — Auto Detail R799").
+const brandOf = (name: string) => getBrand({ meta_campaign_name: name, meta_ad_name: null });
 
 type Client = {
   id: string; company: string | null; name: string;
@@ -20,6 +25,7 @@ function fmt(n: number) {
 
 export function CampaignsClient({ clients, campaigns }: { clients: Client[]; campaigns: Campaign[] }) {
   const [selectedClient, setSelectedClient] = useState(clients[0]?.id ?? "");
+  const [brandFilter, setBrandFilter] = useState<BrandFilter>("all");
   const [showSetup, setShowSetup] = useState(false);
   const [adAccountId, setAdAccountId] = useState("");
   const [accessToken, setAccessToken] = useState("");
@@ -31,10 +37,22 @@ export function CampaignsClient({ clients, campaigns }: { clients: Client[]; cam
   const clientCampaigns = campaigns.filter((c) => c.client_id === selectedClient);
   const hasCredentials = Boolean(client?.meta_ad_account_id && client?.meta_access_token);
 
-  const totalLeads = clientCampaigns.reduce((s, c) => s + c.leads, 0);
-  const totalSpend = clientCampaigns.reduce((s, c) => s + c.spend, 0);
-  const totalReach = clientCampaigns.reduce((s, c) => s + c.reach, 0);
+  // Brand split — same routing rule as the Leads page (getBrand on the campaign name).
+  const brandCampaigns = clientCampaigns.filter(
+    (c) => brandFilter === "all" || brandOf(c.name) === brandFilter,
+  );
+
+  const totalLeads = brandCampaigns.reduce((s, c) => s + c.leads, 0);
+  const totalSpend = brandCampaigns.reduce((s, c) => s + c.spend, 0);
+  const totalReach = brandCampaigns.reduce((s, c) => s + c.reach, 0);
   const avgCpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
+
+  const brandBtn = (active: boolean) =>
+    `px-4 py-2 text-xs uppercase tracking-widest border transition-colors ${
+      active
+        ? "border-arqud-gold text-arqud-gold bg-arqud-gold/10"
+        : "border-arqud-ink text-arqud-muted hover:border-arqud-gold hover:text-arqud-gold"
+    }`;
 
   function handleSync() {
     setErr(""); setMsg("");
@@ -155,6 +173,15 @@ export function CampaignsClient({ clients, campaigns }: { clients: Client[]; cam
         </div>
       ) : (
         <>
+          {/* Brand split — mirrors the Leads page tabs */}
+          <div className="flex gap-2 mb-6">
+            {(["all", "Sparkling", "We Wash"] as const).map((b) => (
+              <button key={b} onClick={() => setBrandFilter(b)} className={brandBtn(brandFilter === b)}>
+                {b === "all" ? "All" : b}
+              </button>
+            ))}
+          </div>
+
           {/* Summary */}
           <div className="grid grid-cols-4 gap-px bg-arqud-ink border border-arqud-ink mb-8">
             {[
@@ -174,31 +201,47 @@ export function CampaignsClient({ clients, campaigns }: { clients: Client[]; cam
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-arqud-ink">
-                {["Campaign", "Leads", "CPL", "Spend", "Reach", "CTR", "Last Synced"].map((h) => (
+                {["Campaign", "Brand", "Leads", "CPL", "Spend", "Reach", "CTR", "Last Synced"].map((h) => (
                   <th key={h} className="text-left text-xs uppercase tracking-widest text-arqud-muted pb-3 pr-4">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {clientCampaigns.map((c) => (
-                <tr key={c.id} className="border-b border-arqud-ink/50 hover:bg-arqud-night/50">
-                  <td className="py-3 pr-4 text-arqud-bone">{c.name}</td>
-                  <td className="py-3 pr-4 text-arqud-bone">{c.leads.toLocaleString()}</td>
-                  <td className="py-3 pr-4 text-arqud-bone">{fmt(c.cpl)}</td>
-                  <td className="py-3 pr-4 text-arqud-bone">{fmt(c.spend)}</td>
-                  <td className="py-3 pr-4 text-arqud-bone">{c.reach.toLocaleString()}</td>
-                  <td className="py-3 pr-4 text-arqud-bone">{(c.ctr * 100).toFixed(2)}%</td>
-                  <td className="py-3 pr-4 text-arqud-muted">
-                    {c.synced_at ? new Date(c.synced_at).toLocaleDateString("en-ZA") : "—"}
+              {brandCampaigns.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-8 text-center text-xs uppercase tracking-widest text-arqud-muted">
+                    No campaigns for this brand yet
                   </td>
                 </tr>
-              ))}
+              ) : (
+                brandCampaigns.map((c) => {
+                  const brand = brandOf(c.name);
+                  return (
+                    <tr key={c.id} className="border-b border-arqud-ink/50 hover:bg-arqud-night/50">
+                      <td className="py-3 pr-4 text-arqud-bone">{c.name}</td>
+                      <td className="py-3 pr-4">
+                        <span className={
+                          brand === "Sparkling" ? "text-arqud-blue" : brand === "We Wash" ? "text-arqud-gold" : "text-arqud-muted"
+                        }>{brand}</span>
+                      </td>
+                      <td className="py-3 pr-4 text-arqud-bone">{c.leads.toLocaleString()}</td>
+                      <td className="py-3 pr-4 text-arqud-bone">{fmt(c.cpl)}</td>
+                      <td className="py-3 pr-4 text-arqud-bone">{fmt(c.spend)}</td>
+                      <td className="py-3 pr-4 text-arqud-bone">{c.reach.toLocaleString()}</td>
+                      <td className="py-3 pr-4 text-arqud-bone">{(c.ctr * 100).toFixed(2)}%</td>
+                      <td className="py-3 pr-4 text-arqud-muted">
+                        {c.synced_at ? new Date(c.synced_at).toLocaleDateString("en-ZA") : "—"}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
 
-          {clientCampaigns[0]?.synced_at && (
+          {brandCampaigns[0]?.synced_at && (
             <p className="text-xs text-arqud-muted mt-4">
-              Last synced: {new Date(clientCampaigns[0].synced_at).toLocaleString("en-ZA")}
+              Last synced: {new Date(brandCampaigns[0].synced_at).toLocaleString("en-ZA")}
             </p>
           )}
         </>

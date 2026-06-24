@@ -65,7 +65,7 @@ const S = StyleSheet.create({
   th: { fontSize: 7, letterSpacing: 2.5, color: "rgba(200,169,110,0.65)" },
   thRight: { fontSize: 7, letterSpacing: 2.5, color: "rgba(200,169,110,0.65)", textAlign: "right" },
   tableRow: { flexDirection: "row", backgroundColor: WHITE, paddingHorizontal: "5mm", paddingVertical: "4.5mm", borderBottomWidth: 1, borderBottomColor: BORDER, alignItems: "center" },
-  tdDesc: { flex: 3, fontSize: 10, color: TEXT, letterSpacing: 0.3 },
+  tdDesc: { fontSize: 10, color: TEXT, letterSpacing: 0.3 },
   tdSub: { fontSize: 8, color: TEXT_DIM, marginTop: 2, letterSpacing: 0.5 },
   tdNum: { flex: 1, fontSize: 10, color: TEXT, textAlign: "right" },
   colDesc: { flex: 3 },

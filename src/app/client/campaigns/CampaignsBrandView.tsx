@@ -42,15 +42,22 @@ export function CampaignsBrandView({ campaigns }: { campaigns: Campaign[] }) {
   return (
     <div className="space-y-6">
       {/* Brand tabs — mirrors the Leads page so the split is consistent everywhere */}
-      <div className="flex items-center justify-between">
-        <Tabs
-          tabs={BRAND_TABS.map((t) => t.label)}
-          value={BRAND_TABS.find((t) => t.value === brand)!.label}
-          onChange={(label) => setBrand(BRAND_TABS.find((t) => t.label === label)!.value)}
-        />
-        <Pill tone={brand === "all" ? "neutral" : BRAND_TONE[brand]}>
-          {filtered.length} campaign{filtered.length !== 1 ? "s" : ""}
-        </Pill>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Tabs
+            tabs={BRAND_TABS.map((t) => t.label)}
+            value={BRAND_TABS.find((t) => t.value === brand)!.label}
+            onChange={(label) => setBrand(BRAND_TABS.find((t) => t.label === label)!.value)}
+          />
+          <Pill tone={brand === "all" ? "neutral" : BRAND_TONE[brand]}>
+            {filtered.length} campaign{filtered.length !== 1 ? "s" : ""}
+          </Pill>
+        </div>
+        <p className="text-[10.5px] text-arqud-muted">
+          {brand === "all"
+            ? "All campaigns across both brands. The figures below update with the selected brand."
+            : `${brand} campaigns only — KPIs and the table below are scoped to this brand.`}
+        </p>
       </div>
 
       {/* KPIs recompute for the selected brand */}

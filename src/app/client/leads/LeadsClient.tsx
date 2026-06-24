@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useTransition, useMemo } from "react";
-import { updateLeadStatus } from "./actions";
+import { updateLeadStatus, deleteLead } from "./actions";
 import { Button, Card, FilterPill, Pill, Tabs, Table, Tr, Td, Avatar, PageHeader } from "@/components/ui";
 import { getBrand, BRAND_TONE, STATUS_TONE, initialsOf } from "@/lib/leads/brand";
+import { WE_WASH_BRANCHES, SPARKLING_BRANCHES, branchesForBrand, type BrandName } from "@/lib/leads/branches";
 
 export type Lead = {
   id: string;
@@ -21,8 +22,16 @@ export type Lead = {
 
 const STATUS_OPTIONS = ["new", "contacted", "converted", "lost"] as const;
 
+// ── Archive trigger ──────────────────────────────────────────────────────────
+// SINGLE source of truth for which statuses move a lead from Active → Archive.
+// Default = B (resolved): converted | lost. To switch to "archive on contacted",
+// change this one line (e.g. ["contacted", "converted", "lost"]).
+const ARCHIVE_STATUSES: ReadonlyArray<Lead["status"]> = ["converted", "lost"];
+const isArchived = (l: Lead) => ARCHIVE_STATUSES.includes(l.status);
+
 type DateFilter = "today" | "week" | "month" | "all";
 type BrandFilter = "all" | "Sparkling" | "We Wash";
+type ViewMode = "active" | "archive";
 
 const BRAND_TABS: { value: BrandFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -38,6 +47,24 @@ function toE164(phone: string) {
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("en-ZA", { day: "2-digit", month: "short" });
+}
+
+// Newest-first month key + label for archive grouping.
+function monthKey(d: string) {
+  const date = new Date(d);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+function monthLabel(d: string) {
+  return new Date(d).toLocaleDateString("en-ZA", { month: "long", year: "numeric" });
+}
+
+// Brand-qualified branch label, e.g. "We Wash — Sunward (Boksburg)". Two branches
+// share "Faerie Glen" across brands, so the prefix disambiguates at a glance.
+function qualifiedBranch(lead: Lead) {
+  const brand = getBrand(lead);
+  if (!lead.branch) return null;
+  if (brand === "Other") return lead.branch;
+  return `${brand} — ${lead.branch}`;
 }
 
 function exportCsv(leads: Lead[]) {
@@ -66,6 +93,7 @@ function exportCsv(leads: Lead[]) {
 export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: number }) {
   const [leads, setLeads] = useState(initial);
   const [selected, setSelected] = useState<Lead | null>(null);
+  const [view, setView] = useState<ViewMode>("active");
   const [brandFilter, setBrandFilter] = useState<BrandFilter>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [branchFilter, setBranchFilter] = useState<string>("all");
@@ -75,10 +103,34 @@ export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // Branch pills: show the FULL roster for the selected brand tab (even with zero
+  // leads), then append any branch seen in the data that isn't in the roster.
+  // Scoped to the selected brand — fixes the old bug where pills came from ALL
+  // leads regardless of the active brand tab.
   const branches = useMemo(() => {
-    const b = new Set(leads.map((l) => l.branch).filter(Boolean) as string[]);
-    return Array.from(b).sort();
-  }, [leads]);
+    const ordered: string[] = [];
+    const seen = new Set<string>();
+    const push = (b: string) => {
+      if (!seen.has(b)) { seen.add(b); ordered.push(b); }
+    };
+
+    if (brandFilter === "all") {
+      WE_WASH_BRANCHES.forEach(push);
+      SPARKLING_BRANCHES.forEach(push);
+    } else {
+      branchesForBrand(brandFilter as BrandName).forEach(push);
+    }
+
+    // Defensive: append branches present in leads (for the active brand scope)
+    // that aren't part of the canonical roster.
+    leads.forEach((l) => {
+      if (!l.branch) return;
+      if (brandFilter !== "all" && getBrand(l) !== brandFilter) return;
+      push(l.branch);
+    });
+
+    return ordered;
+  }, [leads, brandFilter]);
 
   // Per-special performance cards — grouped from the real leads data, no new query.
   const campaigns = useMemo(() => {
@@ -96,8 +148,14 @@ export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: 
       .sort((a, b) => b.leads - a.leads);
   }, [leads]);
 
+  const activeCount = useMemo(() => leads.filter((l) => !isArchived(l)).length, [leads]);
+  const archiveCount = useMemo(() => leads.filter((l) => isArchived(l)).length, [leads]);
+
   const filtered = useMemo(() => {
     return leads.filter((l) => {
+      // Active vs Archive split — status-derived, never destructive.
+      if (view === "active" && isArchived(l)) return false;
+      if (view === "archive" && !isArchived(l)) return false;
       if (brandFilter !== "all" && getBrand(l) !== brandFilter) return false;
       if (statusFilter !== "all" && l.status !== statusFilter) return false;
       if (branchFilter !== "all" && l.branch !== branchFilter) return false;
@@ -121,10 +179,30 @@ export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: 
       }
       return true;
     });
-  }, [leads, brandFilter, statusFilter, branchFilter, dateFilter, search, today]);
+  }, [leads, view, brandFilter, statusFilter, branchFilter, dateFilter, search, today]);
+
+  // Archive view: group filtered leads by month (from created_at), newest first.
+  const monthGroups = useMemo(() => {
+    if (view !== "archive") return [];
+    const map = new Map<string, { label: string; leads: Lead[] }>();
+    filtered.forEach((l) => {
+      const key = monthKey(l.created_at);
+      const group = map.get(key) ?? { label: monthLabel(l.created_at), leads: [] };
+      group.leads.push(l);
+      map.set(key, group);
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1)) // newest month first
+      .map(([key, group]) => ({ key, ...group }));
+  }, [filtered, view]);
 
   function handleUpdated(updated: Lead) {
     setLeads((prev) => prev.map((l) => l.id === updated.id ? updated : l));
+    setSelected(null);
+  }
+
+  function handleDeleted(id: string) {
+    setLeads((prev) => prev.filter((l) => l.id !== id));
     setSelected(null);
   }
 
@@ -148,6 +226,30 @@ export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: 
           </Button>
         </div>
       )}
+
+      {/* Active / Archive segment — Archive is a status-derived view (converted/lost),
+          never a destructive move. Leads are never auto-deleted. */}
+      <div className="flex items-center gap-1.5 mb-5">
+        {([["active", "Active", activeCount], ["archive", "Archive", archiveCount]] as const).map(([val, label, count]) => (
+          <button
+            key={val}
+            onClick={() => { setView(val); setBranchFilter("all"); setStatusFilter("all"); }}
+            className={`flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-widest rounded-control border transition-colors ${
+              view === val
+                ? "border-arqud-gold text-arqud-gold-soft bg-arqud-gold/10"
+                : "border-arqud-line-2 text-arqud-muted hover:border-arqud-gold/50 hover:text-arqud-bone"
+            }`}
+          >
+            {label}
+            <span className={`text-[10px] ${view === val ? "text-arqud-gold-soft/70" : "text-arqud-muted"}`}>{count}</span>
+          </button>
+        ))}
+        <p className="ml-2 text-[10.5px] text-arqud-muted">
+          {view === "active"
+            ? "New & contacted leads to work."
+            : "Resolved leads (converted / lost), grouped by month — kept for re-engagement."}
+        </p>
+      </div>
 
       {/* Per-special performance cards */}
       {campaigns.length > 0 && (
@@ -175,12 +277,12 @@ export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: 
         />
         {brandFilter !== "all" && (
           <Pill tone={BRAND_TONE[brandFilter]}>
-            {leads.filter((l) => getBrand(l) === brandFilter).length} leads
+            {filtered.filter((l) => getBrand(l) === brandFilter).length} leads
           </Pill>
         )}
       </div>
 
-      {/* Branch filter pills */}
+      {/* Branch filter pills — full roster for the selected brand, always visible */}
       {branches.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3.5">
           <FilterPill active={branchFilter === "all"} onClick={() => setBranchFilter("all")}>
@@ -229,83 +331,108 @@ export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: 
         <Tr header>
           <Td className="basis-[70px] grow-0 shrink-0">Date</Td>
           <Td className="basis-[1.3fr] grow">Name</Td>
-          <Td className="basis-[1fr] grow">Branch</Td>
-          <Td className="basis-[1.1fr] grow">Brand</Td>
+          <Td className="basis-[1.4fr] grow">Branch</Td>
           <Td className="basis-[0.9fr] grow">Status</Td>
-          <Td className="basis-[0.9fr] grow text-right">Action</Td>
+          <Td className="basis-[1fr] grow text-right">Action</Td>
         </Tr>
 
         {filtered.length === 0 && (
           <div className="py-10 text-center text-arqud-muted text-xs uppercase tracking-widest">
-            No leads match your filters
+            {view === "archive" ? "No archived leads yet" : "No leads match your filters"}
           </div>
         )}
 
-        {filtered.map((lead) => {
-          const e164 = lead.phone ? toE164(lead.phone) : null;
-          const isOverdue = lead.follow_up_date && new Date(lead.follow_up_date) < new Date(new Date().toDateString());
-          return (
-            <Tr key={lead.id} className="cursor-pointer" onClick={() => setSelected(lead)}>
-              <Td className="basis-[70px] grow-0 shrink-0 text-arqud-muted">{formatDate(lead.created_at)}</Td>
-              <Td className="basis-[1.3fr] grow">
-                <div className="flex items-center gap-2.5 text-arqud-bone">
-                  <Avatar initials={initialsOf(lead.full_name)} />
-                  <span className="truncate">{lead.full_name ?? "Unnamed lead"}</span>
+        {/* Archive: month-grouped sections, newest first */}
+        {view === "archive"
+          ? monthGroups.map((group) => (
+              <div key={group.key}>
+                <div className="flex items-center gap-3 pt-4 pb-1.5">
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-arqud-gold-dim">{group.label}</span>
+                  <span className="text-[10px] text-arqud-muted">{group.leads.length}</span>
+                  <span className="flex-1 h-px bg-arqud-line/60" />
                 </div>
-              </Td>
-              <Td className="basis-[1fr] grow">
-                {lead.branch ? (
-                  <Pill tone="branch">{lead.branch}</Pill>
-                ) : (
-                  <Pill tone="neutral">No branch</Pill>
-                )}
-              </Td>
-              <Td className="basis-[1.1fr] grow">
-                <Pill tone={BRAND_TONE[getBrand(lead)]}>{getBrand(lead)}</Pill>
-              </Td>
-              <Td className="basis-[0.9fr] grow flex items-center gap-2">
-                <Pill tone={STATUS_TONE[lead.status] ?? "neutral"}>{lead.status}</Pill>
-                {lead.follow_up_date && (
-                  <span className={`text-[10px] ${isOverdue ? "text-red-400" : "text-arqud-muted"}`} title="Follow-up date">
-                    {isOverdue && "⚠ "}
-                    {new Date(lead.follow_up_date).toLocaleDateString("en-ZA", { day: "2-digit", month: "short" })}
-                  </span>
-                )}
-              </Td>
-              <Td className="basis-[0.9fr] grow text-right" onClick={(e) => e.stopPropagation()}>
-                {e164 ? (
-                  <a
-                    href={`https://wa.me/${e164}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-arqud-green text-[12px] font-medium hover:underline"
-                  >
-                    WhatsApp →
-                  </a>
-                ) : (
-                  <span className="text-arqud-muted text-[12px]">—</span>
-                )}
-              </Td>
-            </Tr>
-          );
-        })}
+                {group.leads.map((lead) => (
+                  <LeadRow key={lead.id} lead={lead} onSelect={() => setSelected(lead)} />
+                ))}
+              </div>
+            ))
+          : filtered.map((lead) => (
+              <LeadRow key={lead.id} lead={lead} onSelect={() => setSelected(lead)} />
+            ))}
       </Table>
 
       {selected && (
-        <LeadModal lead={selected} onClose={() => setSelected(null)} onUpdated={handleUpdated} />
+        <LeadModal lead={selected} onClose={() => setSelected(null)} onUpdated={handleUpdated} onDeleted={handleDeleted} />
       )}
     </>
   );
 }
 
-function LeadModal({ lead, onClose, onUpdated }: { lead: Lead; onClose: () => void; onUpdated: (l: Lead) => void }) {
+function LeadRow({ lead, onSelect }: { lead: Lead; onSelect: () => void }) {
+  const e164 = lead.phone ? toE164(lead.phone) : null;
+  const isOverdue = lead.follow_up_date && new Date(lead.follow_up_date) < new Date(new Date().toDateString());
+  const branchLabel = qualifiedBranch(lead);
+  return (
+    <Tr className="cursor-pointer" onClick={onSelect}>
+      <Td className="basis-[70px] grow-0 shrink-0 text-arqud-muted">{formatDate(lead.created_at)}</Td>
+      <Td className="basis-[1.3fr] grow">
+        <div className="flex items-center gap-2.5 text-arqud-bone">
+          <Avatar initials={initialsOf(lead.full_name)} />
+          <span className="truncate">{lead.full_name ?? "Unnamed lead"}</span>
+        </div>
+      </Td>
+      <Td className="basis-[1.4fr] grow">
+        {branchLabel ? (
+          <Pill tone={BRAND_TONE[getBrand(lead)] ?? "branch"}>{branchLabel}</Pill>
+        ) : (
+          <Pill tone="neutral">No branch</Pill>
+        )}
+      </Td>
+      <Td className="basis-[0.9fr] grow flex items-center gap-2">
+        <Pill tone={STATUS_TONE[lead.status] ?? "neutral"}>{lead.status}</Pill>
+        {lead.follow_up_date && (
+          <span className={`text-[10px] ${isOverdue ? "text-red-400" : "text-arqud-muted"}`} title="Follow-up date">
+            {isOverdue && "⚠ "}
+            {new Date(lead.follow_up_date).toLocaleDateString("en-ZA", { day: "2-digit", month: "short" })}
+          </span>
+        )}
+      </Td>
+      <Td className="basis-[1fr] grow text-right" onClick={(e) => e.stopPropagation()}>
+        {e164 ? (
+          <a
+            href={`https://wa.me/${e164}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-arqud-green text-[12px] font-medium hover:underline"
+          >
+            WhatsApp →
+          </a>
+        ) : (
+          <span className="text-arqud-muted text-[12px]">—</span>
+        )}
+      </Td>
+    </Tr>
+  );
+}
+
+function LeadModal({
+  lead, onClose, onUpdated, onDeleted,
+}: {
+  lead: Lead;
+  onClose: () => void;
+  onUpdated: (l: Lead) => void;
+  onDeleted: (id: string) => void;
+}) {
   const [status, setStatus] = useState(lead.status);
   const [notes, setNotes] = useState(lead.notes ?? "");
   const [followUpDate, setFollowUpDate] = useState(lead.follow_up_date ?? "");
   const [isPending, start] = useTransition();
+  const [isDeleting, startDelete] = useTransition();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [err, setErr] = useState("");
 
   const e164 = lead.phone ? toE164(lead.phone) : null;
+  const branchLabel = qualifiedBranch(lead);
 
   function save() {
     setErr("");
@@ -315,6 +442,18 @@ function LeadModal({ lead, onClose, onUpdated }: { lead: Lead; onClose: () => vo
         onUpdated({ ...lead, status, notes: notes.trim() || null, follow_up_date: followUpDate || null });
       } catch {
         setErr("Could not save. Please try again.");
+      }
+    });
+  }
+
+  function remove() {
+    setErr("");
+    startDelete(async () => {
+      try {
+        await deleteLead(lead.id);
+        onDeleted(lead.id);
+      } catch {
+        setErr("Could not delete. Please try again.");
       }
     });
   }
@@ -349,10 +488,10 @@ function LeadModal({ lead, onClose, onUpdated }: { lead: Lead; onClose: () => vo
             </div>
           )}
           {lead.email && <p className="text-arqud-muted text-xs">{lead.email}</p>}
-          {lead.branch && (
+          {branchLabel && (
             <div className="flex items-center gap-2 mt-1">
               <span className="text-arqud-muted text-xs uppercase tracking-widest">Branch:</span>
-              <Pill tone="branch">{lead.branch}</Pill>
+              <Pill tone={BRAND_TONE[getBrand(lead)] ?? "branch"}>{branchLabel}</Pill>
             </div>
           )}
           {lead.meta_campaign_name && <p className="text-arqud-muted text-xs">Campaign: {lead.meta_campaign_name}</p>}
@@ -396,7 +535,7 @@ function LeadModal({ lead, onClose, onUpdated }: { lead: Lead; onClose: () => vo
         <div className="flex gap-3">
           <button
             onClick={save}
-            disabled={isPending}
+            disabled={isPending || isDeleting}
             className="flex-1 bg-arqud-gold py-3 text-sm font-semibold uppercase tracking-widest text-arqud-bg hover:opacity-90 disabled:opacity-50 rounded-control"
           >
             {isPending ? "Saving…" : "Save"}
@@ -407,6 +546,38 @@ function LeadModal({ lead, onClose, onUpdated }: { lead: Lead; onClose: () => vo
           >
             Cancel
           </button>
+        </div>
+
+        {/* Delete — junk/test leads only. Confirm before hard-deleting. */}
+        <div className="pt-2 border-t border-arqud-line/60">
+          {confirmDelete ? (
+            <div className="space-y-2.5">
+              <p className="text-xs text-red-400">Delete permanently? This can&apos;t be undone.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={remove}
+                  disabled={isDeleting}
+                  className="flex-1 border border-red-400/40 bg-red-400/10 py-2.5 text-xs font-semibold uppercase tracking-widest text-red-400 hover:bg-red-400/20 disabled:opacity-50 rounded-control"
+                >
+                  {isDeleting ? "Deleting…" : "Yes, delete"}
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={isDeleting}
+                  className="flex-1 border border-arqud-line-2 py-2.5 text-xs uppercase tracking-widest text-arqud-muted hover:text-arqud-bone disabled:opacity-50 rounded-control"
+                >
+                  Keep
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="text-[11px] uppercase tracking-widest text-arqud-muted hover:text-red-400 transition-colors"
+            >
+              Delete lead
+            </button>
+          )}
         </div>
       </div>
     </div>

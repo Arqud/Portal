@@ -64,7 +64,7 @@ const S = StyleSheet.create({
   tableHead: { flexDirection: "row", backgroundColor: DARK, paddingHorizontal: "5mm", paddingVertical: "3mm" },
   th: { fontSize: 7, letterSpacing: 2.5, color: "rgba(200,169,110,0.65)" },
   thRight: { fontSize: 7, letterSpacing: 2.5, color: "rgba(200,169,110,0.65)", textAlign: "right" },
-  tableRow: { flexDirection: "row", backgroundColor: WHITE, paddingHorizontal: "5mm", paddingVertical: "4.5mm", borderBottomWidth: 1, borderBottomColor: BORDER, alignItems: "center" },
+  tableRow: { flexDirection: "row", backgroundColor: WHITE, paddingHorizontal: "5mm", paddingVertical: "3mm", borderBottomWidth: 1, borderBottomColor: BORDER, alignItems: "center" },
   tdDesc: { fontSize: 10, color: TEXT, letterSpacing: 0.3 },
   tdSub: { fontSize: 8, color: TEXT_DIM, marginTop: 2, letterSpacing: 0.5 },
   tdNum: { flex: 1, fontSize: 10, color: TEXT, textAlign: "right" },
@@ -79,7 +79,7 @@ const S = StyleSheet.create({
   totalsGrandLabel: { fontSize: 8, letterSpacing: 2.5, color: "rgba(200,169,110,0.6)", fontFamily: "Helvetica-Bold" },
   totalsGrandVal: { fontFamily: "Helvetica-BoldOblique", fontSize: 20, color: GOLD_LIGHT },
   // Banking
-  bankingRow: { flexDirection: "row", gap: "5mm", marginTop: "auto" },
+  bankingRow: { flexDirection: "row", gap: "5mm", marginTop: "5mm" },
   bankingBox: { flex: 1, backgroundColor: BG_ALT, borderWidth: 1, borderColor: BORDER, padding: "4.5mm 5mm" },
   bankingLabel: { fontSize: 7, letterSpacing: 2.8, color: GOLD_DIM, marginBottom: "3.5mm" },
   bankingDetail: { fontSize: 8.5, lineHeight: 1.8, color: TEXT_MID },
@@ -209,7 +209,7 @@ export function InvoicePDF({ invoice, arqudVatNumber }: { invoice: InvoiceWithIt
           </View>
 
           {/* Banking + Note */}
-          <View style={S.bankingRow}>
+          <View style={S.bankingRow} wrap={false}>
             <View style={S.bankingBox}>
               <Text style={S.bankingLabel}>BANKING DETAILS</Text>
               <Text style={S.bankingStrong}>FNB Gold Business Account</Text>

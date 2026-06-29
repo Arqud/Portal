@@ -5,7 +5,8 @@ import * as pdfjsLib from "pdfjs-dist";
 
 // Render PDFs ourselves (canvas) so display never depends on the browser's
 // built-in PDF handler (some browsers force-download embedded PDFs).
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+// Worker is self-hosted (same-origin) so Brave Shields / CSP can't block it.
+pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 const BTN_PRIMARY =
   "inline-flex items-center gap-1.5 font-semibold tracking-wide rounded-control transition-all text-[11px] px-3.5 py-2 text-arqud-bg bg-gradient-to-r from-arqud-gold to-arqud-gold-soft hover:-translate-y-px";
@@ -25,6 +26,7 @@ export function PdfViewerModal({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [errMsg, setErrMsg] = useState("");
 
   // Close on Escape; lock background scroll while open.
   useEffect(() => {
@@ -88,8 +90,11 @@ export function PdfViewerModal({
           container.appendChild(canvas);
         }
         setStatus("ready");
-      } catch {
-        if (!cancelled) setStatus("error");
+      } catch (e) {
+        if (!cancelled) {
+          setErrMsg(e instanceof Error ? e.message : String(e));
+          setStatus("error");
+        }
       }
     })();
 
@@ -139,8 +144,9 @@ export function PdfViewerModal({
             </div>
           )}
           {status === "error" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 text-center">
               <p className="text-xs uppercase tracking-widest text-arqud-muted">Couldn&apos;t render preview.</p>
+              {errMsg && <p className="max-w-md text-[11px] text-red-400/80 break-words">{errMsg}</p>}
               <a href={downloadHref} className={BTN_PRIMARY}>
                 ↓ Download instead
               </a>

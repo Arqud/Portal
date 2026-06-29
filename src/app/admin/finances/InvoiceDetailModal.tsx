@@ -2,7 +2,7 @@
 
 import { useTransition, useState } from "react";
 import { markInvoicePaid, deleteInvoice } from "./actions";
-import { Pill, Button } from "@/components/ui";
+import { Pill, Button, PdfViewerModal } from "@/components/ui";
 import type { InvoiceWithItems } from "@/lib/invoices/types";
 
 const STATUS_TONE: Record<string, string> = {
@@ -22,6 +22,7 @@ function fmtDate(d: string) {
 export function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceWithItems; onClose: () => void }) {
   const [pending, start] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showPdf, setShowPdf] = useState(false);
   const client = invoice.client;
   const pdfUrl = `/api/invoices/${invoice.id}/pdf`;
   const sorted = [...(invoice.line_items ?? [])].sort((a, b) => a.sort_order - b.sort_order);
@@ -44,6 +45,9 @@ export function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceWithI
             <a href={mailtoUrl} className="text-xs text-arqud-gold hover:text-arqud-gold-soft uppercase tracking-widest">
               Send Email
             </a>
+            <button onClick={() => setShowPdf(true)} className="text-xs text-arqud-gold hover:text-arqud-gold-soft uppercase tracking-widest">
+              View PDF
+            </button>
             <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
               <Button size="sm">Download PDF</Button>
             </a>
@@ -201,6 +205,15 @@ export function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceWithI
           </div>
         </div>
       </div>
+
+      {showPdf && (
+        <PdfViewerModal
+          src={`${pdfUrl}?inline=1`}
+          downloadHref={pdfUrl}
+          title={`Invoice ${invoice.invoice_number}`}
+          onClose={() => setShowPdf(false)}
+        />
+      )}
     </div>
   );
 }

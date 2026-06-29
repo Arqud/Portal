@@ -188,7 +188,7 @@ export default async function ClientDashboardPage() {
                 Once your Meta ads go live, every lead that fills in your form will appear here
                 in real time — with their name, number, branch, and which ad they came from.
               </p>
-              <p className="text-xs text-arqud-muted">Expected: 25 May 2026</p>
+              <p className="text-xs text-arqud-muted">Live the moment your ads are approved.</p>
             </div>
           </Card>
         )}

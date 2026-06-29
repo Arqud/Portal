@@ -5,7 +5,7 @@ import { UploadReportForm } from "../UploadReportForm";
 import { UploadDocumentForm } from "../UploadDocumentForm";
 import { deleteReport, deleteDocument } from "../actions";
 import { LeadsTab } from "./LeadsTab";
-import { Button, Card, Tabs, Table, Tr, Td, Pill } from "@/components/ui";
+import { Button, Card, Tabs, Table, Tr, Td, Pill, PdfViewerModal } from "@/components/ui";
 
 type Invoice = { id: string; invoice_number: string; amount: number; status: string; issue_date: string; due_date: string };
 type Quote = { id: string; quote_number: string; total: number; status: string; issue_date: string };
@@ -53,10 +53,12 @@ export function ClientDetailClient({
   const [tab, setTab] = useState("Invoices");
   const [showReport, setShowReport] = useState(false);
   const [showDoc, setShowDoc] = useState(false);
+  const [pdfView, setPdfView] = useState<{ src: string; downloadHref: string; title: string } | null>(null);
   const [pending, start] = useTransition();
 
   return (
     <div className="space-y-5">
+      {pdfView && <PdfViewerModal {...pdfView} onClose={() => setPdfView(null)} />}
       {showReport && <UploadReportForm clientId={clientId} onClose={() => setShowReport(false)} />}
       {showDoc && <UploadDocumentForm clientId={clientId} onClose={() => setShowDoc(false)} />}
 
@@ -99,8 +101,9 @@ export function ClientDetailClient({
                   <Pill tone={STATUS_TONE[inv.status] ?? "neutral"}>{inv.status}</Pill>
                 </Td>
                 <Td className="basis-[0.6fr] grow-0 shrink-0 text-right">
-                  <a href={`/api/invoices/${inv.id}/pdf`} target="_blank" rel="noopener noreferrer"
-                    className="text-arqud-gold text-[12px] font-medium hover:underline">PDF →</a>
+                  <button
+                    onClick={() => setPdfView({ src: `/api/invoices/${inv.id}/pdf?inline=1`, downloadHref: `/api/invoices/${inv.id}/pdf`, title: `Invoice ${inv.invoice_number}` })}
+                    className="text-arqud-gold text-[12px] font-medium hover:underline">View →</button>
                 </Td>
               </Tr>
             ))}
@@ -130,8 +133,9 @@ export function ClientDetailClient({
                   <Pill tone={STATUS_TONE[q.status] ?? "neutral"}>{q.status}</Pill>
                 </Td>
                 <Td className="basis-[0.6fr] grow-0 shrink-0 text-right">
-                  <a href={`/api/quotes/${q.id}/pdf`} target="_blank" rel="noopener noreferrer"
-                    className="text-arqud-gold text-[12px] font-medium hover:underline">PDF →</a>
+                  <button
+                    onClick={() => setPdfView({ src: `/api/quotes/${q.id}/pdf?inline=1`, downloadHref: `/api/quotes/${q.id}/pdf`, title: `Quote ${q.quote_number}` })}
+                    className="text-arqud-gold text-[12px] font-medium hover:underline">View →</button>
                 </Td>
               </Tr>
             ))}

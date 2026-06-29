@@ -32,9 +32,9 @@ export function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceWithI
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 pt-6 pb-8 px-4">
       {/* Action bar */}
       <div className="w-full max-w-[210mm]">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-y-2 mb-3">
           <Pill tone={STATUS_TONE[invoice.status] ?? "neutral"}>{invoice.status}</Pill>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             {(invoice.status === "pending" || invoice.status === "overdue") && (
               <button disabled={pending}
                 onClick={() => start(() => markInvoicePaid(invoice.id, new Date().toISOString().split("T")[0]).then(onClose))}

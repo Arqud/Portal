@@ -9,3 +9,4 @@ export { Table, Tr, Td, Avatar } from "./DataTable";
 export { PageHeader } from "./PageHeader";
 export { AreaChart } from "./AreaChart";
 export { Sidebar } from "./Sidebar";
+export { PdfViewerModal } from "./PdfViewerModal";

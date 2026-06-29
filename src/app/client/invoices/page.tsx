@@ -2,9 +2,7 @@ import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { InvoiceWithItems } from "@/lib/invoices/types";
 import { Card, KpiCard, PageHeader, Table, Tr, Td, Pill } from "@/components/ui";
-
-// Button is a <button>; this mirrors its outline-sm classes for real <a> downloads (no asChild support).
-const BTN_OUTLINE_SM = "inline-flex items-center gap-2 font-semibold tracking-wide rounded-control transition-all text-[11px] px-3.5 py-2 text-arqud-gold-soft border border-arqud-gold/40 hover:border-arqud-gold/70 hover:bg-arqud-gold/5";
+import { InvoiceViewerButton } from "./InvoiceViewerButton";
 
 const STATUS_TONE: Record<string, string> = {
   paid: "converted",
@@ -66,7 +64,7 @@ export default async function ClientInvoicesPage() {
             <Td className="basis-[0.9fr] grow">Due Date</Td>
             <Td className="basis-[0.9fr] grow">Amount</Td>
             <Td className="basis-[0.8fr] grow">Status</Td>
-            <Td className="basis-[0.7fr] grow text-right">Download</Td>
+            <Td className="basis-[0.7fr] grow text-right">Invoice</Td>
           </Tr>
           {invoices.map((inv) => (
             <Tr key={inv.id}>
@@ -78,9 +76,7 @@ export default async function ClientInvoicesPage() {
                 <Pill tone={STATUS_TONE[inv.status] ?? "neutral"}>{inv.status}</Pill>
               </Td>
               <Td className="basis-[0.7fr] grow text-right">
-                <a href={`/api/invoices/${inv.id}/pdf`} target="_blank" rel="noopener noreferrer" className={BTN_OUTLINE_SM}>
-                  PDF →
-                </a>
+                <InvoiceViewerButton id={inv.id} number={inv.invoice_number} />
               </Td>
             </Tr>
           ))}

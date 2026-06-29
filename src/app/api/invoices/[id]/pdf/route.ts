@@ -11,6 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const inline = request.nextUrl.searchParams.get("inline") === "1";
 
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -52,7 +53,7 @@ export async function GET(
   return new NextResponse(buffer, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${invoice.invoice_number}.pdf"`,
+      "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${invoice.invoice_number}.pdf"`,
     },
   });
 }

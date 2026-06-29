@@ -17,31 +17,31 @@ const TEXT_DIM = "#9A9590";
 const WHITE = "#FFFFFF";
 
 const S = StyleSheet.create({
-  page: { fontFamily: "Helvetica", fontSize: 9, backgroundColor: BG, flexDirection: "column" },
-  header: { backgroundColor: DARK, padding: "10mm 14mm 9mm", flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  page: { fontFamily: "Helvetica", fontSize: 9, backgroundColor: BG, flexDirection: "column", paddingBottom: "14mm" },
+  header: { backgroundColor: DARK, padding: "8mm 14mm 7mm", flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   brandName: { fontFamily: "Helvetica-Bold", fontSize: 16, color: GOLD_LIGHT, letterSpacing: 4 },
   brandTag: { fontSize: 7, color: "rgba(200,169,110,0.45)", letterSpacing: 2.5, marginTop: 3 },
   titleBlock: { alignItems: "flex-end" },
   docWord: { fontFamily: "Helvetica-Bold", fontSize: 28, color: WHITE },
   docNum: { fontSize: 8, color: "rgba(200,169,110,0.6)", letterSpacing: 2.5, marginTop: 4 },
   rule: { height: 2, backgroundColor: GOLD },
-  metaRow: { backgroundColor: NAVY, flexDirection: "row", paddingHorizontal: "14mm", paddingVertical: "4.5mm" },
+  metaRow: { backgroundColor: NAVY, flexDirection: "row", paddingHorizontal: "14mm", paddingVertical: "3.5mm" },
   metaItemFirst: { flex: 1, borderRightWidth: 1, borderRightColor: "rgba(200,169,110,0.12)", paddingRight: "8mm", paddingLeft: 0 },
   metaItem: { flex: 1, borderRightWidth: 1, borderRightColor: "rgba(200,169,110,0.12)", paddingRight: "8mm", paddingLeft: "8mm" },
   metaItemLast: { flex: 1, paddingLeft: "8mm" },
   metaKey: { fontSize: 7, color: "rgba(200,169,110,0.5)", letterSpacing: 2, marginBottom: 2 },
   metaVal: { fontFamily: "Helvetica-Bold", fontSize: 10, color: "rgba(253,251,248,0.9)", letterSpacing: 0.5 },
   metaValHighlight: { fontFamily: "Helvetica-BoldOblique", fontSize: 14, color: GOLD_LIGHT },
-  body: { padding: "9mm 14mm", flex: 1, flexDirection: "column", gap: "7mm" },
-  partiesRow: { flexDirection: "row", gap: "5mm" },
+  body: { padding: "7mm 14mm", flexDirection: "column" },
+  partiesRow: { flexDirection: "row", gap: "5mm", marginBottom: "6mm" },
   partyBox: { flex: 1, backgroundColor: WHITE, borderWidth: 1, borderColor: BORDER, borderLeftWidth: 3, borderLeftColor: GOLD, padding: "5mm" },
   partyLabel: { fontSize: 7, letterSpacing: 2.8, color: GOLD_DIM, marginBottom: "4mm", paddingLeft: "4mm" },
   partyName: { fontFamily: "Helvetica-Bold", fontSize: 11, color: DARK, letterSpacing: 0.5, marginBottom: "1.5mm", paddingLeft: "4mm" },
-  partyDetail: { fontSize: 8.5, lineHeight: 1.7, color: TEXT_MID, paddingLeft: "4mm" },
+  partyDetail: { fontSize: 8.5, lineHeight: 1.45, color: TEXT_MID, paddingLeft: "4mm" },
   tableHead: { flexDirection: "row", backgroundColor: DARK, paddingHorizontal: "5mm", paddingVertical: "3mm" },
   th: { fontSize: 7, letterSpacing: 2.5, color: "rgba(200,169,110,0.65)" },
   thRight: { fontSize: 7, letterSpacing: 2.5, color: "rgba(200,169,110,0.65)", textAlign: "right" },
-  tableRow: { flexDirection: "row", backgroundColor: WHITE, paddingHorizontal: "5mm", paddingVertical: "4.5mm", borderBottomWidth: 1, borderBottomColor: BORDER, alignItems: "center" },
+  tableRow: { flexDirection: "row", backgroundColor: WHITE, paddingHorizontal: "5mm", paddingVertical: "2.5mm", borderBottomWidth: 1, borderBottomColor: BORDER, alignItems: "center" },
   tdDesc: { fontSize: 10, color: TEXT, letterSpacing: 0.3 },
   tdSub: { fontSize: 8, color: TEXT_DIM, marginTop: 2, letterSpacing: 0.5 },
   tdNum: { flex: 1, fontSize: 10, color: TEXT, textAlign: "right" },
@@ -54,13 +54,12 @@ const S = StyleSheet.create({
   totalsGrandRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: "5mm", paddingVertical: "4mm", backgroundColor: DARK },
   totalsGrandLabel: { fontSize: 8, letterSpacing: 2.5, color: "rgba(200,169,110,0.6)", fontFamily: "Helvetica-Bold" },
   totalsGrandVal: { fontFamily: "Helvetica-BoldOblique", fontSize: 20, color: GOLD_LIGHT },
-  vatNote: { alignSelf: "flex-end", paddingRight: "5mm" },
+  vatNote: { alignSelf: "flex-end", paddingRight: "5mm", marginTop: "2mm", marginBottom: "6mm" },
   vatNoteText: { fontSize: 7.5, color: TEXT_DIM, fontFamily: "Helvetica-Oblique" },
-  bankingRow: { flexDirection: "row", gap: "5mm", marginTop: "auto" },
-  noteBox: { flex: 1, backgroundColor: BG_ALT, borderWidth: 1, borderColor: BORDER, padding: "4.5mm 5mm" },
-  noteLabel: { fontSize: 7, letterSpacing: 2.8, color: GOLD_DIM, marginBottom: "3.5mm" },
-  noteText: { fontFamily: "Helvetica-Oblique", fontSize: 10, lineHeight: 1.65, color: TEXT_MID },
-  footer: { backgroundColor: DARK, paddingHorizontal: "14mm", paddingVertical: "4mm", flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  noteBox: { backgroundColor: BG_ALT, borderWidth: 1, borderColor: BORDER, padding: "3.5mm 5mm" },
+  noteLabel: { fontSize: 7, letterSpacing: 2.8, color: GOLD_DIM, marginBottom: "2.5mm" },
+  noteText: { fontFamily: "Helvetica-Oblique", fontSize: 9.5, lineHeight: 1.45, color: TEXT_MID },
+  footer: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: DARK, paddingHorizontal: "14mm", paddingVertical: "4mm", flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   footerLeft: { fontSize: 7.5, color: "rgba(253,251,248,0.3)", letterSpacing: 1.5 },
   footerRight: { fontSize: 7.5, color: "rgba(200,169,110,0.4)", letterSpacing: 2 },
 });
@@ -122,7 +121,7 @@ export function QuotePDF({ quote }: { quote: QuoteWithItems }) {
               {client?.address ? <Text style={S.partyDetail}>{client.address}</Text> : null}
             </View>
           </View>
-          <View>
+          <View style={{ marginBottom: "6mm" }}>
             <View style={S.tableHead}>
               <Text style={[S.th, S.colDesc]}>DESCRIPTION</Text>
               <Text style={[S.thRight, S.colNum]}>RATE</Text>
@@ -155,7 +154,7 @@ export function QuotePDF({ quote }: { quote: QuoteWithItems }) {
             </View>
           ) : null}
         </View>
-        <View style={S.footer}>
+        <View style={S.footer} fixed>
           <Text style={S.footerLeft}>Morne@arqud.com · ARQUD (PTY) LTD · Reg: 2025/074398/07</Text>
           <Text style={S.footerRight}>Thank you for your business</Text>
         </View>

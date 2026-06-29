@@ -100,3 +100,47 @@ h4 {
   color: var(--color-arqud-gold);
   line-height: 1;
 }
+
+/* ---- Light theme overrides (dark is the default) ---- */
+[data-theme="light"] {
+  --color-arqud-bg: #F5F4F0;
+  --color-arqud-bg-2: #FBFAF7;
+  --color-arqud-panel: #FFFFFF;
+  --color-arqud-panel-2: #FBFAF7;
+  --color-arqud-line: #ECE8E0;
+  --color-arqud-line-2: #F2EFE9;
+
+  --color-arqud-gold: #B0883F;
+  --color-arqud-gold-soft: #CBA968;
+  --color-arqud-gold-dim: #9A7B3F;
+
+  --color-arqud-bone: #16140F;       /* primary text -> ink */
+  --color-arqud-bone-dim: #56524A;   /* secondary text */
+  --color-arqud-muted: #9A948A;
+
+  --color-arqud-green: #3E9D73;
+  --color-arqud-amber: #C9743E;
+  --color-arqud-blue: #4F7BC4;
+
+  /* legacy aliases used by older files */
+  --color-arqud-black: #FFFFFF;
+  --color-arqud-night: #F5F4F0;
+  --color-arqud-ink: #FBFAF7;
+  --color-arqud-gold-glow: rgba(176, 136, 63, 0.10);
+
+  --shadow-card: 0 1px 2px rgba(20, 16, 10, .04), 0 12px 34px rgba(20, 16, 10, .06);
+}
+
+[data-theme="light"] body {
+  background-color: var(--color-arqud-bg);
+  color: var(--color-arqud-bone);
+}
+
+/* drop the dark film-grain overlay on light */
+[data-theme="light"] body::before { opacity: 0; }
+
+/* on light, panels read as solid white cards, not the dark translucent gradient */
+[data-theme="light"] .panel-gradient {
+  background: var(--color-arqud-panel);
+  box-shadow: var(--shadow-card);
+}

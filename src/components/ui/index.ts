@@ -11,3 +11,8 @@ export { AreaChart } from "./AreaChart";
 export { Sidebar } from "./Sidebar";
 export { PdfViewerModal } from "./PdfViewerModal";
 export { ThemeToggle } from "./ThemeToggle";
+export { Sparkline } from "./Sparkline";
+export { Donut } from "./Donut";
+export { ProgressTrack } from "./ProgressTrack";
+export { StatCard } from "./StatCard";
+export { TeaserTile } from "./TeaserTile";

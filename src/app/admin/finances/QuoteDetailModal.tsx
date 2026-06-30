@@ -55,7 +55,7 @@ export function QuoteDetailModal({ quote, onClose }: { quote: QuoteWithItems; on
             <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
               <Button size="sm">Download PDF</Button>
             </a>
-            <button onClick={onClose} className="text-arqud-muted hover:text-white text-xl ml-1">✕</button>
+            <button onClick={onClose} className="text-arqud-muted hover:text-arqud-bone text-xl ml-1">✕</button>
           </div>
         </div>
 

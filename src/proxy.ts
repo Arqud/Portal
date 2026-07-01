@@ -58,6 +58,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/admin/overview", request.url));
   }
 
+  // Cross-device theme: on a device with no theme cookie yet, seed it from the
+  // user's saved profile.theme. Guarded so a missing column never breaks auth.
+  if (!request.cookies.get("theme")?.value) {
+    try {
+      const { data: pref } = await supabase.from("profiles").select("theme").eq("id", user.id).single();
+      const t = pref?.theme === "light" ? "light" : "dark";
+      response.cookies.set("theme", t, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+    } catch {
+      /* profiles.theme column may not exist yet; ignore */
+    }
+  }
+
   return response;
 }
 

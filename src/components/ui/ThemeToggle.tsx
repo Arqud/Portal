@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { saveThemePreference } from "@/app/actions/theme";
 
 // Persists via a cookie (read server-side in the root layout for no-flash SSR)
-// plus localStorage. Default is dark; only an explicit toggle opts into light.
+// plus localStorage, and to the user's profile for cross-device sync.
+// Default is dark; only an explicit toggle opts into light.
 export function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
 
@@ -22,6 +24,7 @@ export function ThemeToggle() {
       /* ignore */
     }
     setTheme(next);
+    void saveThemePreference(next);
   }
 
   return (

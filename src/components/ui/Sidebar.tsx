@@ -37,7 +37,7 @@ const ADMIN_GROUPS: readonly NavGroup[] = [
     heading: "Run the business",
     items: [
       { label: "Tasks", href: "/admin/tasks" },
-      { label: "Calendar", href: "/admin/calendar", soon: true },
+      { label: "Calendar", href: "/admin/calendar" },
       { label: "Proposals", href: "/admin/proposals", soon: true },
       { label: "Finances", href: "/admin/finances" },
       { label: "Files", href: "/admin/files" },

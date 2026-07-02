@@ -13,7 +13,7 @@ describe("parseICS", () => {
         "DTSTART:20260702T040000Z",
         "DTEND:20260702T060000Z",
         "SUMMARY:Content block\\, film",
-        " & post",
+        "  & post",
         "END:VEVENT",
       ].join("\r\n")
     );

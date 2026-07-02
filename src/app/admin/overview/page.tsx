@@ -6,7 +6,30 @@ import { getBrand, BRAND_TONE, STATUS_TONE as LEAD_TONE } from "@/lib/leads/bran
 import { outstandingTotal, collectedYTD, revenueByMonth, cashflowYTD, pipeline, leadStats } from "@/lib/dashboard/metrics";
 import { getTasks } from "@/lib/tasks/query";
 import { todayTasks, sortForToday } from "@/lib/tasks/logic";
+import { getSetting } from "@/lib/settings/query";
+import { parseICS } from "@/lib/calendar/ics";
+import { expandOccurrences } from "@/lib/calendar/expand";
 import { TodayTile } from "./TodayTile";
+
+const two = (n: number) => String(n).padStart(2, "0");
+
+async function todaysGoogleEvents(): Promise<{ time: string; title: string }[]> {
+  try {
+    const url = await getSetting("google_calendar_ics_url");
+    if (!url) return [];
+    const res = await fetch(url, { next: { revalidate: 900 } });
+    if (!res.ok) return [];
+    const now = new Date();
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+    return expandOccurrences(parseICS(await res.text()), dayStart, dayEnd).map((o) => ({
+      time: o.allDay ? "All day" : `${two(o.start.getHours())}:${two(o.start.getMinutes())}–${two(o.end.getHours())}:${two(o.end.getMinutes())}`,
+      title: o.summary,
+    }));
+  } catch {
+    return [];
+  }
+}
 
 const BTN_PRIMARY =
   "inline-flex items-center gap-2 font-semibold tracking-wide rounded-control transition-all text-xs px-[18px] py-[11px] text-arqud-bg bg-gradient-to-r from-arqud-gold to-arqud-gold-soft shadow-[0_8px_22px_rgba(200,169,110,0.28)] hover:-translate-y-px";
@@ -39,6 +62,7 @@ export default async function CommandCenterPage() {
     admin.from("transactions").select("amount, date"),
     getTasks(),
   ]);
+  const gcalToday = await todaysGoogleEvents();
 
   const clients = clientsRes.data ?? [];
   const invoices = invoicesRes.data ?? [];
@@ -113,7 +137,7 @@ export default async function CommandCenterPage() {
             <div className="py-16 text-center text-xs uppercase tracking-widest text-arqud-muted">No collected revenue recorded yet</div>
           )}
         </Card>
-        <TodayTile tasks={today} labelFor={labelFor} />
+        <TodayTile tasks={today} labelFor={labelFor} events={gcalToday} />
       </div>
 
       {/* Row 2: pipeline + campaigns + cashflow */}

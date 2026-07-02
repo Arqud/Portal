@@ -5,7 +5,11 @@ import type { Task } from "@/lib/tasks/types";
 import { dueBucket } from "@/lib/tasks/logic";
 import { toggleComplete, createTask } from "@/app/actions/tasks";
 
-export function TodayTile({ tasks, labelFor }: { tasks: Task[]; labelFor: Record<string, string> }) {
+export function TodayTile({ tasks, labelFor, events = [] }: {
+  tasks: Task[];
+  labelFor: Record<string, string>;
+  events?: { time: string; title: string }[];
+}) {
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [pending, start] = useTransition();
@@ -38,7 +42,18 @@ export function TodayTile({ tasks, labelFor }: { tasks: Task[]; labelFor: Record
           />
         </form>
       )}
-      {tasks.length === 0 && !adding ? (
+      {events.length > 0 && (
+        <div className="mb-2">
+          {events.map((e, i) => (
+            <div key={i} className="flex items-baseline gap-3 py-[5px]">
+              <span className="w-[76px] shrink-0 text-[10.5px] text-arqud-muted">{e.time}</span>
+              <span className="min-w-0 truncate text-[12.5px] text-arqud-bone">{e.title}</span>
+            </div>
+          ))}
+          <div className="mt-2 h-px bg-arqud-line/60" />
+        </div>
+      )}
+      {tasks.length === 0 && events.length === 0 && !adding ? (
         <p className="py-6 text-center text-xs uppercase tracking-widest text-arqud-muted">Nothing due — you&apos;re clear</p>
       ) : (
         tasks.map((t) => {

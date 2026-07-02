@@ -6,6 +6,8 @@ import { UploadDocumentForm } from "../UploadDocumentForm";
 import { deleteReport, deleteDocument } from "../actions";
 import { LeadsTab } from "./LeadsTab";
 import { Button, Card, Tabs, Table, Tr, Td, Pill, PdfViewerModal } from "@/components/ui";
+import { TasksBoard } from "../../tasks/TasksBoard";
+import type { Task } from "@/lib/tasks/types";
 
 type Invoice = { id: string; invoice_number: string; amount: number; status: string; issue_date: string; due_date: string };
 type Quote = { id: string; quote_number: string; total: number; status: string; issue_date: string };
@@ -36,17 +38,19 @@ function fmt(n: number) {
   return `R ${n.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
 }
 
-const TAB_LABELS = ["Invoices", "Quotes", "Leads", "Reports", "Documents"];
+const TAB_LABELS = ["Invoices", "Quotes", "Tasks", "Leads", "Reports", "Documents"];
 
 export function ClientDetailClient({
-  clientId, invoices, quotes, leads, reports, documents, reportUrls, documentUrls,
+  clientId, clientLabel, invoices, quotes, leads, reports, documents, tasks, reportUrls, documentUrls,
 }: {
   clientId: string;
+  clientLabel: string;
   invoices: Invoice[];
   quotes: Quote[];
   leads: Lead[];
   reports: Report[];
   documents: Document[];
+  tasks: Task[];
   reportUrls: Record<string, string>;
   documentUrls: Record<string, string>;
 }) {
@@ -141,6 +145,11 @@ export function ClientDetailClient({
             ))}
           </Table>
         )
+      )}
+
+      {/* Tasks */}
+      {tab === "Tasks" && (
+        <TasksBoard tasks={tasks} clients={[{ id: clientId, label: clientLabel }]} lockedClientId={clientId} />
       )}
 
       {/* Leads */}

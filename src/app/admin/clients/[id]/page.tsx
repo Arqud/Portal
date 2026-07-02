@@ -19,7 +19,7 @@ export default async function ClientDetailPage({
   const { data: client } = await admin.from("clients").select("*").eq("id", id).single();
   if (!client) notFound();
 
-  const [invoicesRes, quotesRes, reportsRes, docsRes, leadsRes] = await Promise.all([
+  const [invoicesRes, quotesRes, reportsRes, docsRes, leadsRes, tasksRes] = await Promise.all([
     admin.from("invoices")
       .select("id, invoice_number, amount, status, issue_date, due_date")
       .eq("client_id", id).neq("status", "draft")
@@ -37,6 +37,9 @@ export default async function ClientDetailPage({
     admin.from("leads")
       .select("*").eq("client_id", id)
       .order("created_at", { ascending: false }),
+    admin.from("tasks")
+      .select("*").eq("client_id", id)
+      .order("sort_order", { ascending: true }),
   ]);
 
   const invoices = invoicesRes.data ?? [];
@@ -44,6 +47,7 @@ export default async function ClientDetailPage({
   const reports = reportsRes.data ?? [];
   const documents = docsRes.data ?? [];
   const leads = leadsRes.data ?? [];
+  const tasks = tasksRes.data ?? [];
 
   // Generate signed URLs for reports and documents
   const reportUrls: Record<string, string> = {};
@@ -105,11 +109,13 @@ export default async function ClientDetailPage({
       {/* Tabs: Invoices / Quotes / Leads / Reports / Documents */}
       <ClientDetailClient
         clientId={id}
+        clientLabel={client.company ?? client.name}
         invoices={invoices}
         quotes={quotes}
         leads={leads}
         reports={reports}
         documents={documents}
+        tasks={tasks}
         reportUrls={reportUrls}
         documentUrls={documentUrls}
       />

@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { PageHeader, Card, Table, Tr, Td, Pill, Avatar, StatCard, AreaChart, Donut, ProgressTrack, TeaserTile } from "@/components/ui";
+import { PageHeader, Card, Table, Tr, Td, Pill, Avatar, StatCard, AreaChart, Donut, ProgressTrack } from "@/components/ui";
 import { getBrand, BRAND_TONE, STATUS_TONE as LEAD_TONE } from "@/lib/leads/brand";
 import { outstandingTotal, collectedYTD, revenueByMonth, cashflowYTD, pipeline, leadStats } from "@/lib/dashboard/metrics";
+import { getTasks } from "@/lib/tasks/query";
+import { todayTasks, sortForToday } from "@/lib/tasks/logic";
+import { TodayTile } from "./TodayTile";
 
 const BTN_PRIMARY =
   "inline-flex items-center gap-2 font-semibold tracking-wide rounded-control transition-all text-xs px-[18px] py-[11px] text-arqud-bg bg-gradient-to-r from-arqud-gold to-arqud-gold-soft shadow-[0_8px_22px_rgba(200,169,110,0.28)] hover:-translate-y-px";
@@ -27,13 +30,14 @@ export default async function CommandCenterPage() {
   const admin = createSupabaseAdminClient();
   const now = new Date();
 
-  const [clientsRes, invoicesRes, campaignsRes, quotesRes, leadsRes, txRes] = await Promise.all([
+  const [clientsRes, invoicesRes, campaignsRes, quotesRes, leadsRes, txRes, tasksRes] = await Promise.all([
     admin.from("clients").select("id, company, name, status, subdomain_slug"),
     admin.from("invoices").select("client_id, amount, status, issue_date, paid_at, invoice_number, due_date").neq("status", "draft"),
     admin.from("campaigns").select("*"),
     admin.from("quotes").select("quote_number, total, status, client_id"),
     admin.from("leads").select("full_name, branch, meta_campaign_name, meta_ad_name, status, created_at").order("created_at", { ascending: false }),
     admin.from("transactions").select("amount, date"),
+    getTasks(),
   ]);
 
   const clients = clientsRes.data ?? [];
@@ -67,6 +71,9 @@ export default async function CommandCenterPage() {
   }
 
   const recentLeads = leads.slice(0, 5);
+  const { tasks } = tasksRes;
+  const today = sortForToday(todayTasks(tasks, now));
+  const labelFor: Record<string, string> = Object.fromEntries(clients.map((c) => [c.id, c.company ?? c.name]));
   const year = now.getFullYear();
   const hour = now.getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
@@ -106,7 +113,7 @@ export default async function CommandCenterPage() {
             <div className="py-16 text-center text-xs uppercase tracking-widest text-arqud-muted">No collected revenue recorded yet</div>
           )}
         </Card>
-        <TeaserTile title="Today" note="Your daily agenda — tasks, deadlines and bookings — lands here in the next update (Tasks & Calendar)." />
+        <TodayTile tasks={today} labelFor={labelFor} />
       </div>
 
       {/* Row 2: pipeline + campaigns + cashflow */}

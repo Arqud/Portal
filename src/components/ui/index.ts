@@ -16,3 +16,4 @@ export { Donut } from "./Donut";
 export { ProgressTrack } from "./ProgressTrack";
 export { StatCard } from "./StatCard";
 export { TeaserTile } from "./TeaserTile";
+export { TaskCard } from "./TaskCard";

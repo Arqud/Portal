@@ -3,7 +3,7 @@ import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { PageHeader, Card, Table, Tr, Td, Pill, Avatar, StatCard, AreaChart, Donut, ProgressTrack, TeaserTile } from "@/components/ui";
 import { getBrand, BRAND_TONE, STATUS_TONE as LEAD_TONE } from "@/lib/leads/brand";
-import { outstandingTotal, collectedInMonth, revenueByMonth, cashflow, pipeline, leadStats } from "@/lib/dashboard/metrics";
+import { outstandingTotal, collectedYTD, revenueByMonth, cashflowYTD, pipeline, leadStats } from "@/lib/dashboard/metrics";
 
 const BTN_PRIMARY =
   "inline-flex items-center gap-2 font-semibold tracking-wide rounded-control transition-all text-xs px-[18px] py-[11px] text-arqud-bg bg-gradient-to-r from-arqud-gold to-arqud-gold-soft shadow-[0_8px_22px_rgba(200,169,110,0.28)] hover:-translate-y-px";
@@ -45,11 +45,11 @@ export default async function CommandCenterPage() {
 
   const clientName = (id: string) => clients.find((c) => c.id === id)?.company ?? clients.find((c) => c.id === id)?.name ?? "—";
 
-  // Metrics
-  const collected = collectedInMonth(invoices, now);
+  // Metrics — money shown year-to-date so a fresh month never reads as empty.
+  const collected = collectedYTD(invoices, now);
   const outstanding = outstandingTotal(invoices);
   const revenue = revenueByMonth(invoices, now, 7);
-  const cash = cashflow(transactions, now);
+  const cash = cashflowYTD(transactions, now);
   const ls = leadStats(leads, now);
   const pipe = pipeline(quotes.map((q) => ({ quote_number: q.quote_number, total: q.total, status: q.status, client_label: clientName(q.client_id) })));
   const activeClients = clients.filter((c) => c.status === "active").length;
@@ -67,7 +67,7 @@ export default async function CommandCenterPage() {
   }
 
   const recentLeads = leads.slice(0, 5);
-  const monthName = now.toLocaleString("en-ZA", { month: "long" });
+  const year = now.getFullYear();
   const hour = now.getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const fmt0 = (n: number) => `R ${Math.round(n).toLocaleString("en-ZA")}`;
@@ -84,11 +84,11 @@ export default async function CommandCenterPage() {
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        <StatCard label={`Revenue · ${monthName}`} value={fmt0(collected)} trend={collected > 0 ? "collected" : undefined} points={revenue.map((r) => r.collected)} />
+        <StatCard label={`Revenue · ${year}`} value={fmt0(collected)} trend={collected > 0 ? "collected YTD" : undefined} points={revenue.map((r) => r.collected)} />
         <StatCard label="Outstanding" value={fmt0(outstanding)} trend={outstanding > 0 ? "needs follow-up" : "all clear"} trendTone={outstanding > 0 ? "neg" : "pos"} />
-        <StatCard label={`New Leads · ${monthName}`} value={ls.month.toString()} trend={`+${ls.week} this week`} points={leadsByMonth} />
+        <StatCard label="New Leads · 30d" value={ls.d30.toString()} trend={`+${ls.week} this week`} points={leadsByMonth} />
         <StatCard label="Active Clients" value={activeClients.toString()} trend={`${clients.length} total`} />
-        <StatCard label={`Net Profit · ${monthName}`} value={fmt0(cash.net)} trend={cash.income > 0 ? `${cash.marginPct}% margin` : "no data yet"} trendTone={cash.net >= 0 ? "pos" : "neg"} />
+        <StatCard label={`Net Profit · ${year}`} value={fmt0(cash.net)} trend={cash.income > 0 ? `${cash.marginPct}% margin` : "no data yet"} trendTone={cash.net >= 0 ? "pos" : "neg"} />
       </div>
 
       {/* Row 1: revenue chart + today teaser */}
@@ -158,8 +158,8 @@ export default async function CommandCenterPage() {
           )}
         </Card>
 
-        <Card title={`Cashflow · ${monthName}`}>
-          <p className="-mt-1 mb-3 text-[11px] text-arqud-muted">Income vs expenses</p>
+        <Card title={`Cashflow · ${year}`}>
+          <p className="-mt-1 mb-3 text-[11px] text-arqud-muted">Income vs expenses (year to date)</p>
           {cash.income === 0 && cash.expenses === 0 ? (
             <div className="py-8 text-center text-xs uppercase tracking-widest text-arqud-muted">Import transactions to see cashflow</div>
           ) : (

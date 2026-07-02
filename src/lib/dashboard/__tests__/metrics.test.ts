@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { outstandingTotal, collectedInMonth, revenueByMonth, cashflow, pipeline, leadStats } from "@/lib/dashboard/metrics";
+import { outstandingTotal, collectedInMonth, collectedYTD, revenueByMonth, cashflow, cashflowYTD, pipeline, leadStats } from "@/lib/dashboard/metrics";
 
 const ref = new Date("2026-06-15T00:00:00");
 
@@ -71,16 +71,50 @@ describe("pipeline", () => {
 });
 
 describe("leadStats", () => {
-  it("counts leads in month and last 7 days", () => {
+  it("counts leads in month, last 7 days, and last 30 days", () => {
     const s = leadStats(
       [
         { created_at: "2026-06-14T10:00:00" },
-        { created_at: "2026-06-01T10:00:00" },
-        { created_at: "2026-05-30T10:00:00" },
+        { created_at: "2026-05-20T10:00:00" },
+        { created_at: "2026-05-10T10:00:00" },
       ],
       ref
     );
-    expect(s.month).toBe(2);
+    expect(s.month).toBe(1);
     expect(s.week).toBe(1);
+    expect(s.d30).toBe(2);
+  });
+});
+
+describe("collectedYTD", () => {
+  it("sums paid invoices paid this year up to ref", () => {
+    expect(
+      collectedYTD(
+        [
+          { amount: 200, status: "paid", issue_date: "2026-06-01", paid_at: "2026-06-03" },
+          { amount: 100, status: "paid", issue_date: "2026-03-01", paid_at: "2026-03-01" },
+          { amount: 50, status: "paid", issue_date: "2025-12-01", paid_at: "2025-12-01" },
+          { amount: 9, status: "pending", issue_date: "2026-06-01" },
+        ],
+        ref
+      )
+    ).toBe(300);
+  });
+});
+
+describe("cashflowYTD", () => {
+  it("splits year-to-date signed amounts and computes margin", () => {
+    const c = cashflowYTD(
+      [
+        { amount: 1000, date: "2026-06-02" },
+        { amount: -300, date: "2026-05-05" },
+        { amount: 50, date: "2025-12-01" },
+      ],
+      ref
+    );
+    expect(c.income).toBe(1000);
+    expect(c.expenses).toBe(300);
+    expect(c.net).toBe(700);
+    expect(c.marginPct).toBe(70);
   });
 });

@@ -22,6 +22,15 @@ export function collectedInMonth(invoices: InvoiceLite[], ref: Date): number {
     .reduce((s, i) => s + i.amount, 0);
 }
 
+export function collectedYTD(invoices: InvoiceLite[], ref: Date): number {
+  return invoices
+    .filter((i) => {
+      const p = parse(i.paid_at);
+      return i.status === "paid" && p && p.getFullYear() === ref.getFullYear() && p <= ref;
+    })
+    .reduce((s, i) => s + i.amount, 0);
+}
+
 export function invoicedInMonth(invoices: InvoiceLite[], ref: Date): number {
   return invoices
     .filter((i) => {
@@ -65,6 +74,18 @@ export function cashflow(tx: TxLite[], ref: Date) {
   return { income, expenses, net, marginPct };
 }
 
+export function cashflowYTD(tx: TxLite[], ref: Date) {
+  const inYear = tx.filter((t) => {
+    const d = parse(t.date);
+    return d && d.getFullYear() === ref.getFullYear() && d <= ref;
+  });
+  const income = inYear.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const expenses = inYear.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const net = income - expenses;
+  const marginPct = income > 0 ? Math.round((net / income) * 100) : 0;
+  return { income, expenses, net, marginPct };
+}
+
 export function pipeline(quotes: QuoteLite[]) {
   const live = quotes.filter((q) => q.status !== "rejected");
   const open = live.reduce((s, q) => s + q.total, 0);
@@ -83,5 +104,11 @@ export function leadStats(leads: LeadLite[], ref: Date) {
     const d = parse(l.created_at);
     return d && d >= weekAgo && d <= ref;
   }).length;
-  return { month, week };
+  const d30Start = new Date(ref);
+  d30Start.setDate(d30Start.getDate() - 30);
+  const d30 = leads.filter((l) => {
+    const d = parse(l.created_at);
+    return d && d >= d30Start && d <= ref;
+  }).length;
+  return { month, week, d30 };
 }

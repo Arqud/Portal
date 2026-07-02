@@ -33,7 +33,7 @@ export function FinancesClient({ invoices, quotes, clients, transactions }: Prop
   const [showQuote, setShowQuote] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth()); // 0-based
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
-  const [showAllTime, setShowAllTime] = useState(false);
+  const [showAllTime, setShowAllTime] = useState(true);
 
   // Get available years from data
   const availableYears = useMemo(() => {

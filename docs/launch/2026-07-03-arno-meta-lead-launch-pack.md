@@ -226,3 +226,37 @@ Only after all 4 pass → **launch the ads live.**
 - Morne sets up Make scenario (§4).
 - Morne pastes Settings values (§6).
 - End-to-end test (§7), then launch.
+
+---
+
+## 9. Pipeline audit — fixes applied + must-verify (2026-07-03)
+
+An independent audit of the full pipeline (commit `d74ae15`) fixed three issues and
+surfaced items only Morne can confirm against live state.
+
+**Fixed in code (`d74ae15`):**
+- **CRITICAL — no more silent lead drops.** The webhook used to require `meta_access_token`
+  *before* reading the inline `field_data` Make sends, so a lead was dropped whenever the
+  client's token was empty. Now field_data is read first; the token is only needed for the
+  (rare) Graph fallback when no field_data is present.
+- **Brand net is now authoritative on page_id.** A misnamed campaign (no "We Wash"/"Sparkling"
+  in the name) is auto-prefixed with the page brand label — it can never resolve to "Other".
+- **Insert failures are logged** (duplicates ignored), so a lead can't vanish without a trace.
+- Field values trimmed on ingest; only textable leads (phone present) are forwarded to Duan.
+
+**DEFERRED hard gate — single Meta client only.** The webhook attributes every lead to "the
+first client with a `meta_ad_account_id`". Correct today (Arno is the only one). **Before
+onboarding a 2nd client with Meta creds, the client lookup MUST be changed to resolve by
+`page_id`** (needs a `page_id`→client mapping) or leads will misroute across tenants.
+
+**VERIFY MANUALLY before go-live (can't be checked from code):**
+1. **`clients.meta_ad_account_id` is NON-NULL on Arno's record** — if null, 100% of leads drop at
+   the client lookup. (Highest-priority setup dependency.)
+2. **`META_APP_SECRET` is UNSET in Vercel prod.** Leads arrive via Make, not Meta directly, so
+   Make does not send Meta's `x-hub-signature-256`. If this secret IS set, every real lead 401s.
+   (Inbound is currently unauthenticated by design; hardening a Make-side shared secret is a
+   future task.)
+3. Env vars present: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
+   `META_WEBHOOK_VERIFY_TOKEN`.
+4. `app_settings` table exists (Morne ran the SQL — confirm).
+5. Make.com actually sends `field_data` inline in the webhook body (per §4 template).

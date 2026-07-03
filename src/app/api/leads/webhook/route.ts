@@ -105,39 +105,39 @@ export async function POST(request: NextRequest) {
 
       if (!client) continue;
 
-      // Fetch the actual lead data from Meta
-      const accessTokenRes = await admin
-        .from("clients")
-        .select("meta_access_token, meta_ad_account_id")
-        .eq("id", client.id)
-        .single();
-
-      const accessToken = accessTokenRes.data?.meta_access_token;
-      if (!accessToken) continue;
-
-      // Try to get field_data from payload directly first (test payloads include it)
+      // Seed lead data from the payload's own field_data FIRST. Make.com delivers
+      // field_data inline, so a valid lead must never hinge on having a Graph token —
+      // requiring one here previously dropped every inline lead when the token was unset.
       const payloadFieldData: { name: string; values: string[] }[] =
         (value as { field_data?: { name: string; values: string[] }[] }).field_data ?? [];
 
-      let leadData: Record<string, string> = {};
-
-      // Seed from payload field_data if present
+      const leadData: Record<string, string> = {};
       for (const f of payloadFieldData) {
-        leadData[f.name] = f.values?.[0] ?? "";
+        leadData[f.name] = (f.values?.[0] ?? "").trim();
       }
 
-      // If no field_data in payload, fetch from Graph API
-      if (Object.keys(leadData).length === 0 && accessToken) {
-        try {
-          const res = await fetch(
-            `https://graph.facebook.com/v19.0/${metaLeadId}?fields=field_data&access_token=${accessToken}`,
-          );
-          const json = await res.json();
-          for (const f of json.field_data ?? []) {
-            leadData[f.name] = f.values?.[0] ?? "";
+      // Only when the payload carried NO field_data do we fall back to the Graph API,
+      // which needs the client's access token. A missing token skips only the fallback,
+      // never the lead itself.
+      if (Object.keys(leadData).length === 0) {
+        const tokenRes = await admin
+          .from("clients")
+          .select("meta_access_token")
+          .eq("id", client.id)
+          .single();
+        const accessToken = tokenRes.data?.meta_access_token;
+        if (accessToken) {
+          try {
+            const res = await fetch(
+              `https://graph.facebook.com/v19.0/${metaLeadId}?fields=field_data&access_token=${accessToken}`,
+            );
+            const json = await res.json();
+            for (const f of json.field_data ?? []) {
+              leadData[f.name] = (f.values?.[0] ?? "").trim();
+            }
+          } catch {
+            // Keep whatever we have (at least meta_lead_id) even if the fetch fails.
           }
-        } catch {
-          // Store what we have even if field fetch fails
         }
       }
 
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
       const branch = extractBranch(leadData);
       const contact = mapContact(leadData);
 
-      const { data: inserted } = await admin
+      const { data: inserted, error: insertError } = await admin
         .from("leads")
         .insert({
           client_id: client.id,
@@ -165,8 +165,24 @@ export async function POST(request: NextRequest) {
         .select("id")
         .single();
 
-      // Real-time forward to Duan (speed-to-lead SMS). Guarded — never blocks/breaks ingestion.
-      if (inserted?.id) {
+      // A duplicate (unique meta_lead_id) is the expected result of a retry/race and is
+      // safe to ignore. Any other insert error is a genuine failure we must surface —
+      // a lead should never disappear without a trace.
+      if (insertError) {
+        if (insertError.code !== "23505") {
+          console.error("[leads/webhook] lead insert failed", {
+            metaLeadId,
+            code: insertError.code,
+            message: insertError.message,
+          });
+        }
+        continue;
+      }
+
+      // Real-time forward to Duan (speed-to-lead SMS). Guarded — never blocks/breaks
+      // ingestion. Only forward textable leads; a phone-less lead still lands in the CRM
+      // for visibility but there is nothing for the SMS step to act on.
+      if (inserted?.id && contact.phone) {
         const brand = getBrand({ meta_campaign_name: campaignName, meta_ad_name: adName });
         await forwardLead(
           buildForwardPayload({

@@ -2,6 +2,8 @@
 // getting brand/branch wrong at launch is the highest-cost failure in the CRM
 // (Duan's speed-to-lead SMS depends on correct brand + branch routing).
 
+import { getBrand } from "@/lib/leads/brand";
+
 // page_id is always present in Meta leadgen payloads and — unlike the campaign
 // name — doesn't depend on naming discipline, so it is the reliable brand signal.
 export const WE_WASH_PAGE_ID = "1147234435130456";
@@ -21,9 +23,21 @@ export function resolveCampaignName(
   campaignName: string | null | undefined,
   pageId: string | null | undefined,
 ): string | null {
-  if (campaignName && campaignName.trim()) return campaignName;
-  if (pageId && PAGE_BRAND_LABEL[pageId]) return PAGE_BRAND_LABEL[pageId];
-  return null;
+  const name = campaignName?.trim() || "";
+  const pageLabel = pageId ? PAGE_BRAND_LABEL[pageId] : undefined;
+
+  if (name) {
+    // A real campaign name wins — but if it lacks a brand token (would resolve to
+    // "Other") and page_id tells us the brand, prefix the page brand label so a
+    // misnamed campaign can never strip the brand off the lead. page_id is the
+    // authoritative brand signal.
+    if (pageLabel && getBrand({ meta_campaign_name: name, meta_ad_name: null }) === "Other") {
+      return `${pageLabel} — ${name}`;
+    }
+    return name;
+  }
+  // No campaign name: fall back to the page-derived brand label.
+  return pageLabel ?? null;
 }
 
 // Known Meta field slugs for the branch question, plus a fuzzy fallback so we

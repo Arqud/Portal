@@ -24,6 +24,24 @@ describe("resolveCampaignName", () => {
   it("has a configured Sparkling page id (brand safety net is live)", () => {
     expect(SPARKLING_PAGE_ID).toBe("459272044104015");
   });
+  it("prefixes the page brand when a real name lacks a brand token (page_id is authoritative)", () => {
+    // Misnamed campaign (no 'sparkling'/'we wash') must NOT strip the brand.
+    expect(resolveCampaignName("Four of a Kind R599", SPARKLING_PAGE_ID)).toBe(
+      "Sparkling Auto Care — Four of a Kind R599",
+    );
+    expect(resolveCampaignName("Winter Special", WE_WASH_PAGE_ID)).toBe("We Wash Cars — Winter Special");
+  });
+  it("a misnamed campaign still routes to the right brand via getBrand", () => {
+    const spark = resolveCampaignName("Four of a Kind R599", SPARKLING_PAGE_ID);
+    expect(getBrand({ meta_campaign_name: spark, meta_ad_name: null })).toBe("Sparkling");
+    const wash = resolveCampaignName("Winter Special", WE_WASH_PAGE_ID);
+    expect(getBrand({ meta_campaign_name: wash, meta_ad_name: null })).toBe("We Wash");
+  });
+  it("leaves a correctly brand-named campaign untouched", () => {
+    expect(resolveCampaignName("Sparkling — Full Monty R1750", SPARKLING_PAGE_ID)).toBe(
+      "Sparkling — Full Monty R1750",
+    );
+  });
 });
 
 describe("extractBranch", () => {

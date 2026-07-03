@@ -5,7 +5,7 @@
 // page_id is always present in Meta leadgen payloads and — unlike the campaign
 // name — doesn't depend on naming discipline, so it is the reliable brand signal.
 export const WE_WASH_PAGE_ID = "1147234435130456";
-export const SPARKLING_PAGE_ID = ""; // TODO: set once Morne sends the Sparkling Page ID
+export const SPARKLING_PAGE_ID = "459272044104015"; // "Sparkling Auto Care Centres" FB Page (confirmed 2026-07-03)
 
 const PAGE_BRAND_LABEL: Record<string, string> = {
   [WE_WASH_PAGE_ID]: "We Wash Cars",

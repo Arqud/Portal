@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveCampaignName, extractBranch, mapContact, WE_WASH_PAGE_ID } from "@/lib/leads/ingest";
+import { resolveCampaignName, extractBranch, mapContact, WE_WASH_PAGE_ID, SPARKLING_PAGE_ID } from "@/lib/leads/ingest";
 import { getBrand } from "@/lib/leads/brand";
 
 describe("resolveCampaignName", () => {
@@ -9,13 +9,20 @@ describe("resolveCampaignName", () => {
   it("falls back to a page-derived brand label when campaign name is missing", () => {
     expect(resolveCampaignName(null, WE_WASH_PAGE_ID)).toBe("We Wash Cars");
     expect(resolveCampaignName("", WE_WASH_PAGE_ID)).toBe("We Wash Cars");
+    expect(resolveCampaignName(null, SPARKLING_PAGE_ID)).toBe("Sparkling Auto Care");
+    expect(resolveCampaignName("", SPARKLING_PAGE_ID)).toBe("Sparkling Auto Care");
   });
   it("returns null for an unknown page with no campaign name", () => {
     expect(resolveCampaignName(null, "999")).toBeNull();
   });
   it("the fallback still routes to the right brand via getBrand", () => {
-    const stored = resolveCampaignName(null, WE_WASH_PAGE_ID);
-    expect(getBrand({ meta_campaign_name: stored, meta_ad_name: null })).toBe("We Wash");
+    const wash = resolveCampaignName(null, WE_WASH_PAGE_ID);
+    expect(getBrand({ meta_campaign_name: wash, meta_ad_name: null })).toBe("We Wash");
+    const spark = resolveCampaignName(null, SPARKLING_PAGE_ID);
+    expect(getBrand({ meta_campaign_name: spark, meta_ad_name: null })).toBe("Sparkling");
+  });
+  it("has a configured Sparkling page id (brand safety net is live)", () => {
+    expect(SPARKLING_PAGE_ID).toBe("459272044104015");
   });
 });
 

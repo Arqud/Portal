@@ -42,11 +42,14 @@ describe("todayTasks", () => {
 
 describe("sortForToday", () => {
   it("puts overdue before non-overdue", () => {
-    const res = sortForToday([
-      t({ id: "todayLow", due_date: "2026-07-02", priority: "low" }),
-      t({ id: "overMed", due_date: "2026-07-01", priority: "med" }),
-      t({ id: "todayHigh", due_date: "2026-07-02", priority: "high" }),
-    ]);
+    const res = sortForToday(
+      [
+        t({ id: "todayLow", due_date: "2026-07-02", priority: "low" }),
+        t({ id: "overMed", due_date: "2026-07-01", priority: "med" }),
+        t({ id: "todayHigh", due_date: "2026-07-02", priority: "high" }),
+      ],
+      ref
+    );
     expect(res[0].id).toBe("overMed");
   });
 });

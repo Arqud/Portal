@@ -20,8 +20,7 @@ export function todayTasks(tasks: Task[], ref: Date): Task[] {
   });
 }
 
-export function sortForToday(tasks: Task[]): Task[] {
-  const ref = new Date();
+export function sortForToday(tasks: Task[], ref: Date = new Date()): Task[] {
   return [...tasks].sort((a, b) => {
     const ba = dueBucket(a.due_date, ref) === "overdue" ? 0 : 1;
     const bb = dueBucket(b.due_date, ref) === "overdue" ? 0 : 1;

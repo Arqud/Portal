@@ -1,5 +1,30 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { resolveCampaignName, extractBranch, mapContact } from "@/lib/leads/ingest";
+import { getBrand } from "@/lib/leads/brand";
+import { buildForwardPayload, signBody } from "@/lib/leads/forward";
+import { getSetting } from "@/lib/settings/query";
+
+// Real-time forward to Duan's speed-to-lead endpoint. Fire-and-forget, fully
+// guarded: it can NEVER throw into or delay-fail the CRM ingestion path.
+async function forwardLead(payloadObj: ReturnType<typeof buildForwardPayload>) {
+  try {
+    const [url, secret] = await Promise.all([
+      getSetting("lead_forward_url"),
+      getSetting("lead_forward_secret"),
+    ]);
+    if (!url) return;
+    const body = JSON.stringify(payloadObj);
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (secret) headers["X-ARQUD-Signature"] = await signBody(body, secret);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    await fetch(url, { method: "POST", headers, body, signal: ctrl.signal }).catch(() => {});
+    clearTimeout(timer);
+  } catch {
+    /* never let the forward affect lead ingestion */
+  }
+}
 
 const META_APP_SECRET = process.env.META_APP_SECRET ?? "";
 
@@ -116,26 +141,44 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Branch field name varies by how the form question was written in Meta
-      const branch =
-        leadData["branch"] ??
-        leadData["which_branch_is_most_convenient_for_you"] ??
-        leadData["preferred_branch"] ??
-        leadData["location"] ??
-        null;
+      // Reliable brand signal: real campaign name if present, else page_id fallback.
+      const pageId = value.page_id ?? null;
+      const adName = (value as { ad_name?: string }).ad_name ?? null;
+      const campaignName = resolveCampaignName((value as { campaign_name?: string }).campaign_name, pageId);
+      const branch = extractBranch(leadData);
+      const contact = mapContact(leadData);
 
-      await admin.from("leads").insert({
-        client_id: client.id,
-        meta_lead_id: metaLeadId,
-        meta_ad_id: metaAdId,
-        meta_ad_name: (value as { ad_name?: string }).ad_name ?? null,
-        meta_campaign_name: (value as { campaign_name?: string }).campaign_name ?? null,
-        full_name: leadData["full_name"] ?? leadData["name"] ?? null,
-        phone: leadData["phone_number"] ?? leadData["phone"] ?? null,
-        email: leadData["email"] ?? null,
-        branch,
-        status: "new",
-      });
+      const { data: inserted } = await admin
+        .from("leads")
+        .insert({
+          client_id: client.id,
+          meta_lead_id: metaLeadId,
+          meta_ad_id: metaAdId,
+          meta_ad_name: adName,
+          meta_campaign_name: campaignName,
+          full_name: contact.full_name,
+          phone: contact.phone,
+          email: contact.email,
+          branch,
+          status: "new",
+        })
+        .select("id")
+        .single();
+
+      // Real-time forward to Duan (speed-to-lead SMS). Guarded — never blocks/breaks ingestion.
+      if (inserted?.id) {
+        const brand = getBrand({ meta_campaign_name: campaignName, meta_ad_name: adName });
+        await forwardLead(
+          buildForwardPayload({
+            id: inserted.id,
+            full_name: contact.full_name,
+            phone: contact.phone,
+            brand,
+            branch,
+            service: campaignName,
+          }),
+        );
+      }
     }
   }
 

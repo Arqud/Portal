@@ -2,27 +2,25 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { resolveCampaignName, extractBranch, mapContact } from "@/lib/leads/ingest";
 import { getBrand } from "@/lib/leads/brand";
-import { buildForwardPayload, signBody } from "@/lib/leads/forward";
+import { buildForwardPayload, sendSignedForward } from "@/lib/leads/forward";
 import { getSetting } from "@/lib/settings/query";
 
-// Real-time forward to Duan's speed-to-lead endpoint. Fire-and-forget, fully
-// guarded: it can NEVER throw into or delay-fail the CRM ingestion path.
-async function forwardLead(payloadObj: ReturnType<typeof buildForwardPayload>) {
+// Forward the lead to Duan's speed-to-lead endpoint. Returns true ONLY when his
+// endpoint accepted it (2xx) so the caller can stamp forwarded_at; any failure
+// leaves it unmarked for the backfill cron to retry. Fully guarded — a forward
+// failure can NEVER throw into or block CRM ingestion.
+async function forwardLead(
+  payloadObj: ReturnType<typeof buildForwardPayload>,
+): Promise<boolean> {
   try {
     const [url, secret] = await Promise.all([
       getSetting("lead_forward_url"),
       getSetting("lead_forward_secret"),
     ]);
-    if (!url) return;
-    const body = JSON.stringify(payloadObj);
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (secret) headers["X-ARQUD-Signature"] = await signBody(body, secret);
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 8000);
-    await fetch(url, { method: "POST", headers, body, signal: ctrl.signal }).catch(() => {});
-    clearTimeout(timer);
+    if (!url) return false;
+    return await sendSignedForward(url, secret, payloadObj);
   } catch {
-    /* never let the forward affect lead ingestion */
+    return false;
   }
 }
 
@@ -179,12 +177,13 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Real-time forward to Duan (speed-to-lead SMS). Guarded — never blocks/breaks
-      // ingestion. Only forward textable leads; a phone-less lead still lands in the CRM
-      // for visibility but there is nothing for the SMS step to act on.
+      // Forward to Duan (speed-to-lead SMS). Only forward textable leads; a phone-less
+      // lead still lands in the CRM for visibility but there is nothing to text. On a
+      // successful forward we stamp forwarded_at; a failure leaves it null so the
+      // backfill cron re-attempts it — a missed SMS is never silently dropped.
       if (inserted?.id && contact.phone) {
         const brand = getBrand({ meta_campaign_name: campaignName, meta_ad_name: adName });
-        await forwardLead(
+        const forwarded = await forwardLead(
           buildForwardPayload({
             id: inserted.id,
             full_name: contact.full_name,
@@ -194,6 +193,12 @@ export async function POST(request: NextRequest) {
             service: campaignName,
           }),
         );
+        if (forwarded) {
+          await admin
+            .from("leads")
+            .update({ forwarded_at: new Date().toISOString() })
+            .eq("id", inserted.id);
+        }
       }
     }
   }

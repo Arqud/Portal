@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/forward-backfill?key=arqud_bf_9Fq2Lx7Rj4Vt",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 3 * * *"
     }
   ]
 }

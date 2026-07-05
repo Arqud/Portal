@@ -41,6 +41,7 @@ const ADMIN_GROUPS: readonly NavGroup[] = [
       { label: "Proposals", href: "/admin/proposals", soon: true },
       { label: "Finances", href: "/admin/finances" },
       { label: "Files", href: "/admin/files" },
+      { label: "Settings", href: "/admin/settings" },
     ],
   },
 ];

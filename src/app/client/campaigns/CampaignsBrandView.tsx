@@ -43,7 +43,7 @@ export function CampaignsBrandView({ campaigns }: { campaigns: Campaign[] }) {
     <div className="space-y-6">
       {/* Brand tabs — mirrors the Leads page so the split is consistent everywhere */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Tabs
             tabs={BRAND_TABS.map((t) => t.label)}
             value={BRAND_TABS.find((t) => t.value === brand)!.label}
@@ -63,8 +63,8 @@ export function CampaignsBrandView({ campaigns }: { campaigns: Campaign[] }) {
       {/* KPIs recompute for the selected brand */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <KpiCard label="Leads" value={totalLeads.toLocaleString()} />
-        <KpiCard label="Avg CPL" value={`R ${avgCpl.toFixed(2)}`} />
-        <KpiCard label="Spend" value={`R ${totalSpend.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`} />
+        <KpiCard label="Avg CPL" value={`R ${avgCpl.toFixed(2)}`} />
+        <KpiCard label="Spend" value={`R ${totalSpend.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`} />
         <KpiCard label="Reach" value={totalReach.toLocaleString()} />
       </div>
 
@@ -73,34 +73,66 @@ export function CampaignsBrandView({ campaigns }: { campaigns: Campaign[] }) {
           No campaigns for this brand yet
         </div>
       ) : (
-        <Table>
-          <Tr header>
-            <Td className="basis-[1.6fr] grow">Campaign</Td>
-            <Td className="basis-[1fr] grow">Brand</Td>
-            <Td className="basis-[0.8fr] grow">Leads</Td>
-            <Td className="basis-[0.8fr] grow">CPL</Td>
-            <Td className="basis-[1fr] grow">Spend</Td>
-            <Td className="basis-[0.9fr] grow">Reach</Td>
-            <Td className="basis-[0.7fr] grow">CTR</Td>
-            <Td className="basis-[1fr] grow text-right">Last Synced</Td>
-          </Tr>
-          {filtered.map((c) => (
-            <Tr key={c.id}>
-              <Td className="basis-[1.6fr] grow text-arqud-bone truncate">{c.name}</Td>
-              <Td className="basis-[1fr] grow">
-                <Pill tone={BRAND_TONE[brandOf(c.name)]}>{brandOf(c.name)}</Pill>
-              </Td>
-              <Td className="basis-[0.8fr] grow">{c.leads.toLocaleString()}</Td>
-              <Td className="basis-[0.8fr] grow">R {Number(c.cpl).toFixed(2)}</Td>
-              <Td className="basis-[1fr] grow">R {Number(c.spend).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</Td>
-              <Td className="basis-[0.9fr] grow">{c.reach.toLocaleString()}</Td>
-              <Td className="basis-[0.7fr] grow">{(Number(c.ctr) * 100).toFixed(2)}%</Td>
-              <Td className="basis-[1fr] grow text-right text-arqud-muted">
-                {c.synced_at ? new Date(c.synced_at).toLocaleDateString("en-ZA") : "—"}
-              </Td>
-            </Tr>
-          ))}
-        </Table>
+        <>
+          {/* Mobile: stacked cards — the wide table would force horizontal scroll */}
+          <div className="sm:hidden space-y-3">
+            {filtered.map((c) => (
+              <div key={c.id} className="panel-gradient border border-arqud-line rounded-card p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[13px] text-arqud-bone truncate">{c.name}</span>
+                  <Pill tone={BRAND_TONE[brandOf(c.name)]}>{brandOf(c.name)}</Pill>
+                </div>
+                <div className="grid grid-cols-3 gap-x-2 gap-y-3">
+                  {[
+                    { label: "Leads", value: c.leads.toLocaleString() },
+                    { label: "CPL", value: `R ${Number(c.cpl).toFixed(2)}` },
+                    { label: "Spend", value: `R ${Number(c.spend).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}` },
+                    { label: "Reach", value: c.reach.toLocaleString() },
+                    { label: "CTR", value: `${(Number(c.ctr) * 100).toFixed(2)}%` },
+                    { label: "Synced", value: c.synced_at ? new Date(c.synced_at).toLocaleDateString("en-ZA") : "—" },
+                  ].map((m) => (
+                    <div key={m.label} className="min-w-0">
+                      <div className="text-[9px] tracking-[0.13em] uppercase text-arqud-muted">{m.label}</div>
+                      <div className="mt-0.5 text-[12.5px] text-arqud-bone-dim truncate">{m.value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: full table */}
+          <div className="hidden sm:block">
+            <Table>
+              <Tr header>
+                <Td className="basis-[1.6fr] grow">Campaign</Td>
+                <Td className="basis-[1fr] grow">Brand</Td>
+                <Td className="basis-[0.8fr] grow">Leads</Td>
+                <Td className="basis-[0.8fr] grow">CPL</Td>
+                <Td className="basis-[1fr] grow">Spend</Td>
+                <Td className="basis-[0.9fr] grow">Reach</Td>
+                <Td className="basis-[0.7fr] grow">CTR</Td>
+                <Td className="basis-[1fr] grow text-right">Last Synced</Td>
+              </Tr>
+              {filtered.map((c) => (
+                <Tr key={c.id}>
+                  <Td className="basis-[1.6fr] grow text-arqud-bone truncate">{c.name}</Td>
+                  <Td className="basis-[1fr] grow">
+                    <Pill tone={BRAND_TONE[brandOf(c.name)]}>{brandOf(c.name)}</Pill>
+                  </Td>
+                  <Td className="basis-[0.8fr] grow">{c.leads.toLocaleString()}</Td>
+                  <Td className="basis-[0.8fr] grow">R {Number(c.cpl).toFixed(2)}</Td>
+                  <Td className="basis-[1fr] grow">R {Number(c.spend).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</Td>
+                  <Td className="basis-[0.9fr] grow">{c.reach.toLocaleString()}</Td>
+                  <Td className="basis-[0.7fr] grow">{(Number(c.ctr) * 100).toFixed(2)}%</Td>
+                  <Td className="basis-[1fr] grow text-right text-arqud-muted">
+                    {c.synced_at ? new Date(c.synced_at).toLocaleDateString("en-ZA") : "—"}
+                  </Td>
+                </Tr>
+              ))}
+            </Table>
+          </div>
+        </>
       )}
     </div>
   );

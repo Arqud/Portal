@@ -3,6 +3,7 @@
 // (Duan's speed-to-lead SMS depends on correct brand + branch routing).
 
 import { getBrand } from "@/lib/leads/brand";
+import { WE_WASH_BRANCHES, SPARKLING_BRANCHES } from "@/lib/leads/branches";
 
 // page_id is always present in Meta leadgen payloads and — unlike the campaign
 // name — doesn't depend on naming discipline, so it is the reliable brand signal.
@@ -56,6 +57,22 @@ export function extractBranch(leadData: Record<string, string>): string | null {
   }
   const fuzzy = Object.keys(leadData).find((k) => k.toLowerCase().includes("branch"));
   return fuzzy ? leadData[fuzzy] || null : null;
+}
+
+// Real Meta forms often send the dropdown VALUE slugged (e.g. "eldo_glen_(centurion)"
+// or "_menlyn_(pretoria)") instead of the clean label. Map it back to the canonical
+// branch string so the CRM displays it correctly AND Duan's exact-match branch filter
+// hits (Sparkling only texts Menlyn/Rustenburg — a slug would silently miss).
+const CANONICAL_BRANCHES: readonly string[] = [...WE_WASH_BRANCHES, ...SPARKLING_BRANCHES];
+const branchKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+export function normalizeBranch(raw: string | null): string | null {
+  if (!raw) return raw;
+  const trimmed = raw.trim();
+  if (CANONICAL_BRANCHES.includes(trimmed)) return trimmed; // already clean
+  const key = branchKey(trimmed);
+  const match = CANONICAL_BRANCHES.find((b) => branchKey(b) === key);
+  return match ?? trimmed; // fall back to raw if it genuinely doesn't match
 }
 
 export function mapContact(leadData: Record<string, string>): {

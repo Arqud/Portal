@@ -5,6 +5,7 @@ import {
   resolveCampaignName,
   extractBranch,
   mapContact,
+  normalizeBranch,
   WE_WASH_PAGE_ID,
   SPARKLING_PAGE_ID,
 } from "@/lib/leads/ingest";
@@ -111,7 +112,7 @@ export async function GET(request: NextRequest) {
         }
 
         const campaignName = resolveCampaignName(lead.campaign_name, form.page_id);
-        const branch = extractBranch(leadData);
+        const branch = normalizeBranch(extractBranch(leadData));
         const contact = mapContact(leadData);
 
         const { data: inserted, error: insertError } = await admin

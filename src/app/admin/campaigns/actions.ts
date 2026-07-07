@@ -29,9 +29,11 @@ export async function syncClientCampaigns(clientId: string) {
     throw new Error("Meta credentials not configured for this client. Add Ad Account ID and Access Token first.");
   }
 
+  // Insights: pull month-to-date ("this_month"). The default "last_30d" window
+  // ends yesterday, so a campaign that launched today reports all zeros.
   const [campaigns, insights] = await Promise.all([
     fetchCampaigns(client.meta_ad_account_id, client.meta_access_token),
-    fetchCampaignInsights(client.meta_ad_account_id, client.meta_access_token),
+    fetchCampaignInsights(client.meta_ad_account_id, client.meta_access_token, "this_month"),
   ]);
 
   // Map insights by campaign ID
@@ -40,7 +42,11 @@ export async function syncClientCampaigns(clientId: string) {
     insightMap[insight.campaign_id] = insight;
   }
 
-  // Upsert campaigns
+  // Upsert campaigns. Previously the write error was swallowed and we returned
+  // the *fetched* count, so the UI reported "synced" while zero rows landed
+  // (e.g. a missing unique constraint makes the onConflict upsert fail). Surface
+  // any write error and count only rows actually written.
+  let written = 0;
   for (const campaign of campaigns) {
     const insight = insightMap[campaign.id];
     const spend = insight ? parseFloat(insight.spend) : 0;
@@ -51,7 +57,7 @@ export async function syncClientCampaigns(clientId: string) {
     const leads = insight ? extractLeads(insight) : 0;
     const cpl = calcCpl(spend, leads);
 
-    await admin.from("campaigns").upsert(
+    const { error } = await admin.from("campaigns").upsert(
       {
         client_id: clientId,
         meta_campaign_id: campaign.id,
@@ -65,6 +71,10 @@ export async function syncClientCampaigns(clientId: string) {
       },
       { onConflict: "meta_campaign_id,client_id" },
     );
+    if (error) {
+      throw new Error(`Failed to save campaign "${campaign.name}": ${error.message}`);
+    }
+    written++;
   }
 
   revalidatePath("/admin/campaigns");
@@ -72,7 +82,7 @@ export async function syncClientCampaigns(clientId: string) {
   revalidatePath("/client/campaigns");
   revalidatePath("/client/dashboard");
 
-  return { synced: campaigns.length };
+  return { synced: written };
 }
 
 export async function saveMetaCredentials(clientId: string, adAccountId: string, accessToken: string) {

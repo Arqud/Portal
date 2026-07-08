@@ -9,8 +9,9 @@ export default async function ClientLayout({ children }: { children: React.React
     <div className="flex min-h-screen">
       <Sidebar
         variant="client"
-        brandName={company ?? "CLIENT PORTAL"}
-        user={{ name: profile.full_name ?? "Client", label: company ?? "Client" }}
+        brandName={profile.brand ? `${profile.brand} — Leads` : company ?? "CLIENT PORTAL"}
+        leadsOnly={!!profile.brand}
+        user={{ name: profile.full_name ?? "Client", label: profile.brand ? `${profile.brand} team` : company ?? "Client" }}
       />
       <main className="flex-1 min-w-0">{children}</main>
     </div>

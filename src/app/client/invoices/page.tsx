@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { InvoiceWithItems } from "@/lib/invoices/types";
@@ -12,6 +13,7 @@ const STATUS_TONE: Record<string, string> = {
 
 export default async function ClientInvoicesPage() {
   const { profile } = await verifySession("client");
+  if (profile.brand) redirect("/client/leads"); // staff logins are Leads-only
 
   if (!profile.client_id) {
     return (

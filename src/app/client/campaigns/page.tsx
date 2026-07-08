@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { Card, KpiCard, PageHeader } from "@/components/ui";
@@ -5,6 +6,7 @@ import { CampaignsBrandView } from "./CampaignsBrandView";
 
 export default async function ClientCampaignsPage() {
   const { profile } = await verifySession("client");
+  if (profile.brand) redirect("/client/leads"); // staff logins are Leads-only
   const admin = createSupabaseAdminClient();
 
   const { data: campaigns } = await admin

@@ -114,7 +114,7 @@ export function Sidebar({ variant, brandName, user, leadsOnly }: SidebarProps) {
   return (
     <>
       {/* Mobile header bar with drawer toggle */}
-      <div className="md:hidden flex items-center justify-between px-4 h-14 bg-arqud-bg border-b border-arqud-line sticky top-0 z-50">
+      <div className="md:hidden flex items-center justify-between px-4 h-14 bg-arqud-bg border-b border-arqud-line fixed top-0 inset-x-0 z-50">
         <Link href={homeHref} className="font-display text-lg tracking-[0.28em] text-arqud-gold">
           ARQUD
         </Link>

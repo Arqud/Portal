@@ -229,7 +229,7 @@ export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: 
 
       {/* Active / Archive segment — Archive is a status-derived view (converted/lost),
           never a destructive move. Leads are never auto-deleted. */}
-      <div className="flex items-center gap-1.5 mb-5">
+      <div className="flex flex-wrap items-center gap-1.5 mb-5">
         {([["active", "Active", activeCount], ["archive", "Archive", archiveCount]] as const).map(([val, label, count]) => (
           <button
             key={val}
@@ -244,7 +244,7 @@ export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: 
             <span className={`text-[10px] ${view === val ? "text-arqud-gold-soft/70" : "text-arqud-muted"}`}>{count}</span>
           </button>
         ))}
-        <p className="ml-2 text-[10.5px] text-arqud-muted">
+        <p className="basis-full sm:basis-auto sm:ml-2 text-[10.5px] text-arqud-muted">
           {view === "active"
             ? "New & contacted leads to work."
             : "Resolved leads (converted / lost), grouped by month — kept for re-engagement."}
@@ -265,7 +265,7 @@ export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: 
       )}
 
       {/* Brand Tabs */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-5">
         <Tabs
           tabs={BRAND_TABS.map((t) => t.label)}
           value={BRAND_TABS.find((t) => t.value === brandFilter)!.label}
@@ -303,10 +303,10 @@ export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: 
           placeholder="Search name, phone, branch…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="bg-arqud-panel border border-arqud-line-2 rounded-control px-3.5 py-2 text-xs text-arqud-bone placeholder:text-arqud-muted focus:outline-none focus:ring-1 focus:ring-arqud-gold/40 w-52"
+          className="bg-arqud-panel border border-arqud-line-2 rounded-control px-3.5 py-2 text-xs text-arqud-bone placeholder:text-arqud-muted focus:outline-none focus:ring-1 focus:ring-arqud-gold/40 w-full sm:w-52"
         />
 
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1">
           {["all", ...STATUS_OPTIONS].map((s) => (
             <button key={s} onClick={() => setStatusFilter(s)} className={filterBtn(statusFilter === s)}>
               {s}
@@ -314,7 +314,7 @@ export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: 
           ))}
         </div>
 
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1">
           {([["today", "Today"], ["week", "7 days"], ["month", "30 days"], ["all", "All time"]] as const).map(([val, label]) => (
             <button key={val} onClick={() => setDateFilter(val)} className={filterBtn(dateFilter === val)}>
               {label}

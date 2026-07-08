@@ -60,6 +60,7 @@ export function CampaignsClient({ clients, campaigns }: { clients: Client[]; cam
       try {
         const result = await syncClientCampaigns(selectedClient);
         setMsg(`✓ Synced ${result.synced} campaigns successfully`);
+        if (result.warning) setErr(result.warning);
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Sync failed.");
       }

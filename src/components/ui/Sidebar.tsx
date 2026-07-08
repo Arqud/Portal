@@ -159,13 +159,23 @@ export function Sidebar({ variant, brandName, user, leadsOnly }: SidebarProps) {
 
         {navList}
 
-        <div className="mt-auto flex items-center gap-2.5 pt-2.5 border-t border-arqud-line">
-          <Avatar initials={initials} />
-          <div className="min-w-0 flex-1">
-            <p className="text-[12.5px] text-arqud-bone leading-tight truncate">{user.name}</p>
-            <p className="text-[10.5px] text-arqud-muted leading-tight truncate">{user.label}</p>
+        <div className="mt-auto pt-2.5 border-t border-arqud-line">
+          <div className="flex items-center gap-2.5">
+            <Avatar initials={initials} />
+            <div className="min-w-0 flex-1">
+              <p className="text-[12.5px] text-arqud-bone leading-tight truncate">{user.name}</p>
+              <p className="text-[10.5px] text-arqud-muted leading-tight truncate">{user.label}</p>
+            </div>
+            <ThemeToggle />
           </div>
-          <ThemeToggle />
+          <form action="/logout" method="post" className="mt-3">
+            <button
+              type="submit"
+              className="w-full text-[11px] uppercase tracking-widest text-arqud-muted hover:text-arqud-bone border border-arqud-line-2 rounded-control py-2 transition-colors"
+            >
+              Sign out
+            </button>
+          </form>
         </div>
       </aside>
     </>

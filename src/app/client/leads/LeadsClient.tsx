@@ -326,40 +326,63 @@ export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: 
       {/* Count */}
       <p className="text-xs text-arqud-muted mb-3">{filtered.length} lead{filtered.length !== 1 ? "s" : ""}</p>
 
-      {/* Table */}
-      <Table>
-        <Tr header>
-          <Td className="basis-[70px] grow-0 shrink-0">Date</Td>
-          <Td className="basis-[1.3fr] grow">Name</Td>
-          <Td className="basis-[1.4fr] grow">Branch</Td>
-          <Td className="basis-[0.9fr] grow">Status</Td>
-          <Td className="basis-[1fr] grow text-right">Action</Td>
-        </Tr>
-
-        {filtered.length === 0 && (
-          <div className="py-10 text-center text-arqud-muted text-xs uppercase tracking-widest">
-            {view === "archive" ? "No archived leads yet" : "No leads match your filters"}
-          </div>
-        )}
-
-        {/* Archive: month-grouped sections, newest first */}
-        {view === "archive"
-          ? monthGroups.map((group) => (
-              <div key={group.key}>
-                <div className="flex items-center gap-3 pt-4 pb-1.5">
-                  <span className="text-[10px] uppercase tracking-[0.18em] text-arqud-gold-dim">{group.label}</span>
-                  <span className="text-[10px] text-arqud-muted">{group.leads.length}</span>
-                  <span className="flex-1 h-px bg-arqud-line/60" />
-                </div>
-                {group.leads.map((lead) => (
-                  <LeadRow key={lead.id} lead={lead} onSelect={() => setSelected(lead)} />
+      {/* CRM — stacked cards on mobile, table on desktop */}
+      {filtered.length === 0 ? (
+        <div className="py-10 text-center text-arqud-muted text-xs uppercase tracking-widest">
+          {view === "archive" ? "No archived leads yet" : "No leads match your filters"}
+        </div>
+      ) : (
+        <>
+          {/* Mobile: cards */}
+          <div className="sm:hidden space-y-2.5">
+            {view === "archive"
+              ? monthGroups.map((group) => (
+                  <div key={group.key} className="space-y-2.5">
+                    <div className="flex items-center gap-3 pt-3 pb-0.5">
+                      <span className="text-[10px] uppercase tracking-[0.18em] text-arqud-gold-dim">{group.label}</span>
+                      <span className="text-[10px] text-arqud-muted">{group.leads.length}</span>
+                      <span className="flex-1 h-px bg-arqud-line/60" />
+                    </div>
+                    {group.leads.map((lead) => (
+                      <LeadCard key={lead.id} lead={lead} onSelect={() => setSelected(lead)} />
+                    ))}
+                  </div>
+                ))
+              : filtered.map((lead) => (
+                  <LeadCard key={lead.id} lead={lead} onSelect={() => setSelected(lead)} />
                 ))}
-              </div>
-            ))
-          : filtered.map((lead) => (
-              <LeadRow key={lead.id} lead={lead} onSelect={() => setSelected(lead)} />
-            ))}
-      </Table>
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden sm:block">
+            <Table>
+              <Tr header>
+                <Td className="basis-[70px] grow-0 shrink-0">Date</Td>
+                <Td className="basis-[1.3fr] grow">Name</Td>
+                <Td className="basis-[1.4fr] grow">Branch</Td>
+                <Td className="basis-[0.9fr] grow">Status</Td>
+                <Td className="basis-[1fr] grow text-right">Action</Td>
+              </Tr>
+              {view === "archive"
+                ? monthGroups.map((group) => (
+                    <div key={group.key}>
+                      <div className="flex items-center gap-3 pt-4 pb-1.5">
+                        <span className="text-[10px] uppercase tracking-[0.18em] text-arqud-gold-dim">{group.label}</span>
+                        <span className="text-[10px] text-arqud-muted">{group.leads.length}</span>
+                        <span className="flex-1 h-px bg-arqud-line/60" />
+                      </div>
+                      {group.leads.map((lead) => (
+                        <LeadRow key={lead.id} lead={lead} onSelect={() => setSelected(lead)} />
+                      ))}
+                    </div>
+                  ))
+                : filtered.map((lead) => (
+                    <LeadRow key={lead.id} lead={lead} onSelect={() => setSelected(lead)} />
+                  ))}
+            </Table>
+          </div>
+        </>
+      )}
 
       {selected && (
         <LeadModal lead={selected} onClose={() => setSelected(null)} onUpdated={handleUpdated} onDeleted={handleDeleted} />
@@ -412,6 +435,50 @@ function LeadRow({ lead, onSelect }: { lead: Lead; onSelect: () => void }) {
         )}
       </Td>
     </Tr>
+  );
+}
+
+function LeadCard({ lead, onSelect }: { lead: Lead; onSelect: () => void }) {
+  const e164 = lead.phone ? toE164(lead.phone) : null;
+  const isOverdue = lead.follow_up_date && new Date(lead.follow_up_date) < new Date(new Date().toDateString());
+  const branchLabel = qualifiedBranch(lead);
+  return (
+    <div
+      onClick={onSelect}
+      className="panel-gradient border border-arqud-line rounded-card p-3.5 cursor-pointer space-y-2.5"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Avatar initials={initialsOf(lead.full_name)} />
+          <span className="text-arqud-bone text-[14px] truncate">{lead.full_name ?? "Unnamed lead"}</span>
+        </div>
+        <Pill tone={STATUS_TONE[lead.status] ?? "neutral"}>{lead.status}</Pill>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        {branchLabel ? (
+          <Pill tone={BRAND_TONE[getBrand(lead)] ?? "branch"}>{branchLabel}</Pill>
+        ) : (
+          <Pill tone="neutral">No branch</Pill>
+        )}
+        <span className="text-arqud-muted text-[11px] shrink-0">{formatDate(lead.created_at)}</span>
+      </div>
+      {lead.follow_up_date && (
+        <p className={`text-[11px] ${isOverdue ? "text-red-400" : "text-arqud-muted"}`}>
+          {isOverdue && "⚠ "}Follow-up {new Date(lead.follow_up_date).toLocaleDateString("en-ZA", { day: "2-digit", month: "short" })}
+        </p>
+      )}
+      {e164 && (
+        <a
+          href={`https://wa.me/${e164}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="block text-center text-arqud-green text-[13px] font-medium border border-green-700/40 rounded-control py-2 hover:bg-green-900/20 transition-colors"
+        >
+          WhatsApp →
+        </a>
+      )}
+    </div>
   );
 }
 

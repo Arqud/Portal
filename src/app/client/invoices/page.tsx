@@ -57,30 +57,52 @@ export default async function ClientInvoicesPage() {
           </div>
         </Card>
       ) : (
-        <Table>
-          <Tr header>
-            <Td className="basis-[1fr] grow">Invoice #</Td>
-            <Td className="basis-[0.9fr] grow">Issue Date</Td>
-            <Td className="basis-[0.9fr] grow">Due Date</Td>
-            <Td className="basis-[0.9fr] grow">Amount</Td>
-            <Td className="basis-[0.8fr] grow">Status</Td>
-            <Td className="basis-[0.7fr] grow text-right">Invoice</Td>
-          </Tr>
-          {invoices.map((inv) => (
-            <Tr key={inv.id}>
-              <Td className="basis-[1fr] grow font-display italic text-arqud-gold">{inv.invoice_number}</Td>
-              <Td className="basis-[0.9fr] grow">{inv.issue_date}</Td>
-              <Td className="basis-[0.9fr] grow">{inv.due_date}</Td>
-              <Td className="basis-[0.9fr] grow text-arqud-bone">{fmt(inv.amount)}</Td>
-              <Td className="basis-[0.8fr] grow">
-                <Pill tone={STATUS_TONE[inv.status] ?? "neutral"}>{inv.status}</Pill>
-              </Td>
-              <Td className="basis-[0.7fr] grow text-right">
-                <InvoiceViewerButton id={inv.id} number={inv.invoice_number} />
-              </Td>
-            </Tr>
-          ))}
-        </Table>
+        <>
+          {/* Mobile: stacked cards */}
+          <div className="sm:hidden space-y-3">
+            {invoices.map((inv) => (
+              <div key={inv.id} className="panel-gradient border border-arqud-line rounded-card p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-display italic text-arqud-gold text-[15px]">{inv.invoice_number}</span>
+                  <Pill tone={STATUS_TONE[inv.status] ?? "neutral"}>{inv.status}</Pill>
+                </div>
+                <p className="stat-number text-[20px] text-arqud-bone">{fmt(inv.amount)}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-arqud-muted">Issued {inv.issue_date} · Due {inv.due_date}</span>
+                  <InvoiceViewerButton id={inv.id} number={inv.invoice_number} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: full table */}
+          <div className="hidden sm:block">
+            <Table>
+              <Tr header>
+                <Td className="basis-[1fr] grow">Invoice #</Td>
+                <Td className="basis-[0.9fr] grow">Issue Date</Td>
+                <Td className="basis-[0.9fr] grow">Due Date</Td>
+                <Td className="basis-[0.9fr] grow">Amount</Td>
+                <Td className="basis-[0.8fr] grow">Status</Td>
+                <Td className="basis-[0.7fr] grow text-right">Invoice</Td>
+              </Tr>
+              {invoices.map((inv) => (
+                <Tr key={inv.id}>
+                  <Td className="basis-[1fr] grow font-display italic text-arqud-gold">{inv.invoice_number}</Td>
+                  <Td className="basis-[0.9fr] grow">{inv.issue_date}</Td>
+                  <Td className="basis-[0.9fr] grow">{inv.due_date}</Td>
+                  <Td className="basis-[0.9fr] grow text-arqud-bone">{fmt(inv.amount)}</Td>
+                  <Td className="basis-[0.8fr] grow">
+                    <Pill tone={STATUS_TONE[inv.status] ?? "neutral"}>{inv.status}</Pill>
+                  </Td>
+                  <Td className="basis-[0.7fr] grow text-right">
+                    <InvoiceViewerButton id={inv.id} number={inv.invoice_number} />
+                  </Td>
+                </Tr>
+              ))}
+            </Table>
+          </div>
+        </>
       )}
     </main>
   );

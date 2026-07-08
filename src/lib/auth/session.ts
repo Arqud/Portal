@@ -7,6 +7,9 @@ export type Profile = {
   role: "admin" | "client";
   full_name: string | null;
   client_id: string | null;
+  // When set ("We Wash" | "Sparkling"), this is a brand-scoped staff login:
+  // leads are filtered to that brand and the portal is locked to the Leads page.
+  brand: string | null;
 };
 
 export async function verifySession(expectedRole: "admin" | "client") {
@@ -19,7 +22,7 @@ export async function verifySession(expectedRole: "admin" | "client") {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, role, full_name, client_id")
+    .select("id, role, full_name, client_id, brand")
     .eq("id", user.id)
     .single();
 
@@ -42,7 +45,7 @@ export async function getSessionProfile(): Promise<Profile | null> {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, role, full_name, client_id")
+    .select("id, role, full_name, client_id, brand")
     .eq("id", user.id)
     .single();
 

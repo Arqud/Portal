@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getSignedUrl } from "@/lib/storage";
@@ -8,6 +9,7 @@ const BTN_OUTLINE_SM = "inline-flex items-center gap-2 font-semibold tracking-wi
 
 export default async function ClientReportsPage() {
   const { profile } = await verifySession("client");
+  if (profile.brand) redirect("/client/leads"); // staff logins are Leads-only
   const admin = createSupabaseAdminClient();
 
   const { data: reports } = await admin

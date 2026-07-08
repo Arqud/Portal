@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getSignedUrl } from "@/lib/storage";
@@ -16,6 +17,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export default async function ClientDocumentsPage() {
   const { profile } = await verifySession("client");
+  if (profile.brand) redirect("/client/leads"); // staff logins are Leads-only
   const admin = createSupabaseAdminClient();
 
   const { data: files } = await admin

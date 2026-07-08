@@ -50,14 +50,19 @@ type SidebarProps = {
   variant: "client" | "admin";
   brandName: string;
   user: { name: string; label: string };
+  // Brand-scoped staff logins get a Leads-only sidebar.
+  leadsOnly?: boolean;
 };
 
-export function Sidebar({ variant, brandName, user }: SidebarProps) {
+export function Sidebar({ variant, brandName, user, leadsOnly }: SidebarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const groups = variant === "client" ? CLIENT_GROUPS : ADMIN_GROUPS;
-  const homeHref = variant === "client" ? "/client/dashboard" : "/admin/overview";
+  const clientGroups: readonly NavGroup[] = leadsOnly
+    ? [{ heading: "Menu", items: [{ label: "Leads", href: "/client/leads" }] }]
+    : CLIENT_GROUPS;
+  const groups = variant === "client" ? clientGroups : ADMIN_GROUPS;
+  const homeHref = variant === "client" ? (leadsOnly ? "/client/leads" : "/client/dashboard") : "/admin/overview";
   const initials = user.name.charAt(0).toUpperCase() || "?";
 
   const itemBox = "flex items-center gap-[11px] text-[13px] px-3 py-[10px] rounded-control transition-colors duration-150";

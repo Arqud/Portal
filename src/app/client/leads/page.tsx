@@ -2,6 +2,7 @@ import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { LeadsClient } from "./LeadsClient";
 import { PageHeader, Card } from "@/components/ui";
+import { getBrand } from "@/lib/leads/brand";
 
 export default async function ClientLeadsPage() {
   const { profile } = await verifySession("client");
@@ -13,7 +14,10 @@ export default async function ClientLeadsPage() {
     .eq("client_id", profile.client_id!)
     .order("created_at", { ascending: false });
 
-  const list = leads ?? [];
+  // Brand-scoped staff (profile.brand set) only ever receive their own brand's
+  // leads — filtered here on the server so other-brand leads never reach them.
+  const all = leads ?? [];
+  const list = profile.brand ? all.filter((l) => getBrand(l) === profile.brand) : all;
   const total = list.length;
 
   return (

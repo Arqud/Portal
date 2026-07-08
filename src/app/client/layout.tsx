@@ -13,7 +13,7 @@ export default async function ClientLayout({ children }: { children: React.React
         leadsOnly={!!profile.brand}
         user={{ name: profile.full_name ?? "Client", label: profile.brand ? `${profile.brand} team` : company ?? "Client" }}
       />
-      <main className="flex-1 min-w-0">{children}</main>
+      <main className="flex-1 min-w-0 pt-14 md:pt-0">{children}</main>
     </div>
   );
 }

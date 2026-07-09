@@ -23,7 +23,7 @@ const BRAND_TABS: { value: BrandFilter; label: string }[] = [
   { value: "We Wash", label: "We Wash" },
 ];
 
-// Campaigns carry the brand in their name (e.g. "We Wash — Four of a Kind R599").
+// Campaigns carry the brand in their name (e.g. "We Wash — Auto Detailing Complete R599").
 const brandOf = (name: string) => getBrand({ meta_campaign_name: name, meta_ad_name: null });
 
 export function CampaignsBrandView({ campaigns }: { campaigns: Campaign[] }) {

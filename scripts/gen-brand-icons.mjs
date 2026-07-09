@@ -67,9 +67,13 @@ for (const { key, src, invert } of BRANDS) {
 // Used on a multi-brand client subdomain (Arno) so the link-preview card shows a
 // plain, brand-agnostic identity instead of ARQUD. Built from inline SVG — a gold
 // ring mark for the icons, ring + wordmark for the OG card — on the same dark tile.
+// The wordmark is STACKED ("CLIENT" over "PORTAL") and the content is kept inside
+// the centre ~600px so it survives WhatsApp's square crop (WhatsApp ignores the
+// large-image hint and shows a small centre-cropped square — a wide single line
+// would get its ends chopped).
 const GOLD = "#c8a96e";
 const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" fill="#0b0b0c"/><circle cx="256" cy="256" r="150" fill="none" stroke="${GOLD}" stroke-width="20"/><circle cx="256" cy="256" r="46" fill="${GOLD}"/></svg>`;
-const ogSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630"><rect width="1200" height="630" fill="#0b0b0c"/><circle cx="600" cy="212" r="34" fill="none" stroke="${GOLD}" stroke-width="3"/><circle cx="600" cy="212" r="6" fill="${GOLD}"/><text x="600" y="356" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="600" letter-spacing="8" fill="#f4efe6">CLIENT PORTAL</text><rect x="540" y="398" width="120" height="2" fill="${GOLD}"/><text x="600" y="452" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="26" letter-spacing="7" fill="#8f8880">LEADS &amp; CAMPAIGN DASHBOARD</text></svg>`;
+const ogSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630"><rect width="1200" height="630" fill="#0b0b0c"/><circle cx="600" cy="150" r="38" fill="none" stroke="${GOLD}" stroke-width="4"/><circle cx="600" cy="150" r="7" fill="${GOLD}"/><text x="600" y="308" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="108" font-weight="600" letter-spacing="10" fill="#f4efe6">CLIENT</text><text x="600" y="422" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="108" font-weight="600" letter-spacing="10" fill="#f4efe6">PORTAL</text><rect x="555" y="462" width="90" height="2" fill="${GOLD}"/><text x="600" y="512" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="23" letter-spacing="4" fill="#8f8880">LEADS &amp; CAMPAIGN DASHBOARD</text></svg>`;
 
 const neutralDir = `${OUT}/neutral`;
 await mkdir(neutralDir, { recursive: true });

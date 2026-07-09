@@ -3,12 +3,12 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: { absolute: "We Wash Cars — Premium Mobile Valet" },
   description:
-    "Premium car valet from We Wash Cars. Choose your nearest branch and we'll call you to book — Four of a Kind (R599) and Royal Flush (R999).",
+    "Premium car valet from We Wash Cars. Choose your nearest branch and we'll call you to book — Auto Detailing Complete (R599) and Royal Flush (R999).",
 };
 
 const PACKAGES = [
   {
-    name: "Four of a Kind",
+    name: "Auto Detailing Complete",
     price: "R599",
     tagline: "The complete valet",
     items: [
@@ -24,7 +24,7 @@ const PACKAGES = [
     price: "R999",
     tagline: "The full detail",
     items: [
-      "Everything in Four of a Kind",
+      "Everything in Auto Detailing Complete",
       "Engine wash",
       "Chassis wash",
       "Showroom finish inside & out",
@@ -67,7 +67,7 @@ export default function WeWashLandingPage() {
           <img src="/wewash-logo.png" alt="We Wash Cars" className="mx-auto mb-8 w-[280px] max-w-[80%] sm:w-[340px]" />
           <p className="text-xs uppercase tracking-[0.28em] text-arqud-muted">Premium Mobile Valet</p>
           <h1 className="mt-4 font-display text-4xl leading-tight text-arqud-bone sm:text-6xl">
-            Your car deserves<br />the <span className="text-arqud-gold">Four of a Kind</span>
+            Your car deserves<br />the <span className="text-arqud-gold">complete detail</span>
           </h1>
           <p className="mx-auto mt-5 max-w-lg text-[15px] leading-relaxed text-arqud-bone-dim">
             A showroom-quality valet from your nearest We Wash branch — inside and out. Pick your branch from our ad

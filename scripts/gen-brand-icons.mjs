@@ -62,3 +62,20 @@ for (const { key, src, invert } of BRANDS) {
   await (await ogCard(buf)).toFile(`${dir}/og.png`);
   console.log("generated", key);
 }
+
+// --- Neutral "Client Portal" identity (no source logo) ---------------------
+// Used on a multi-brand client subdomain (Arno) so the link-preview card shows a
+// plain, brand-agnostic identity instead of ARQUD. Built from inline SVG — a gold
+// ring mark for the icons, ring + wordmark for the OG card — on the same dark tile.
+const GOLD = "#c8a96e";
+const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" fill="#0b0b0c"/><circle cx="256" cy="256" r="150" fill="none" stroke="${GOLD}" stroke-width="20"/><circle cx="256" cy="256" r="46" fill="${GOLD}"/></svg>`;
+const ogSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630"><rect width="1200" height="630" fill="#0b0b0c"/><circle cx="600" cy="212" r="34" fill="none" stroke="${GOLD}" stroke-width="3"/><circle cx="600" cy="212" r="6" fill="${GOLD}"/><text x="600" y="356" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="600" letter-spacing="8" fill="#f4efe6">CLIENT PORTAL</text><rect x="540" y="398" width="120" height="2" fill="${GOLD}"/><text x="600" y="452" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="26" letter-spacing="7" fill="#8f8880">LEADS &amp; CAMPAIGN DASHBOARD</text></svg>`;
+
+const neutralDir = `${OUT}/neutral`;
+await mkdir(neutralDir, { recursive: true });
+for (const size of [32, 192, 512]) {
+  await sharp(Buffer.from(iconSvg)).resize(size, size).png().toFile(`${neutralDir}/icon-${size}.png`);
+}
+await sharp(Buffer.from(iconSvg)).resize(180, 180).png().toFile(`${neutralDir}/apple-touch-icon.png`);
+await sharp(Buffer.from(ogSvg)).png().toFile(`${neutralDir}/og.png`);
+console.log("generated", "neutral");

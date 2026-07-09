@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { Cormorant_Garamond, Jost } from "next/font/google";
 import "./globals.css";
@@ -18,9 +18,29 @@ const jost = Jost({
 });
 
 export const metadata: Metadata = {
-  title: "ARQUD Portal",
+  metadataBase: new URL("https://arqudportal.co.za"),
+  title: { default: "ARQUD Portal", template: "%s · ARQUD" },
   description: "Agency dashboard and client portal for ARQUD (PTY) LTD.",
+  robots: { index: false, follow: false },
+  icons: {
+    icon: [
+      { url: "/brand/arqud/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/brand/arqud/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/brand/arqud/apple-touch-icon.png",
+  },
+  openGraph: {
+    title: "ARQUD Portal",
+    description: "Agency dashboard and client portal.",
+    url: "https://arqudportal.co.za",
+    siteName: "ARQUD",
+    images: ["/brand/arqud/og.png"],
+    type: "website",
+  },
+  twitter: { card: "summary_large_image", title: "ARQUD Portal", description: "Agency dashboard and client portal.", images: ["/brand/arqud/og.png"] },
 };
+
+export const viewport: Viewport = { themeColor: "#0b0b0c" };
 
 export default async function RootLayout({
   children,

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "We Wash Cars — Premium Mobile Valet",
+  title: { absolute: "We Wash Cars — Premium Mobile Valet" },
   description:
     "Premium car valet from We Wash Cars. Choose your nearest branch and we'll call you to book — Four of a Kind (R599) and Royal Flush (R999).",
 };

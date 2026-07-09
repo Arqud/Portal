@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sparkling Auto Care Centres — Premium Auto Detailing",
+  title: { absolute: "Sparkling Auto Care Centres — Premium Auto Detailing" },
   description:
     "Professional auto detailing from Sparkling Auto Care Centres. Choose your nearest branch and we'll call you to book — Auto Detail Complete (R799) and The Full Monty (R1 750).",
 };

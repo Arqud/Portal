@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { resolveCampaignName, extractBranch, mapContact, normalizeBranch } from "@/lib/leads/ingest";
 import { getBrand } from "@/lib/leads/brand";
 import { buildForwardPayload, sendSignedForward } from "@/lib/leads/forward";
+import { sendLeadNotification } from "@/lib/leads/notify";
 import { getSetting } from "@/lib/settings/query";
 
 // Forward the lead to Duan's speed-to-lead endpoint. Returns true ONLY when his
@@ -199,6 +200,21 @@ export async function POST(request: NextRequest) {
             .update({ forwarded_at: new Date().toISOString() })
             .eq("id", inserted.id);
         }
+      }
+
+      // Email the client's brand inbox about the new lead. Runs AFTER the forward
+      // so email latency never delays the speed-to-lead SMS, and only on this
+      // success path — a duplicate delivery bailed out above, so a lead is never
+      // emailed twice. Fully guarded inside sendLeadNotification: a failure can
+      // NEVER throw into or block ingestion.
+      if (inserted?.id) {
+        await sendLeadNotification({
+          full_name: contact.full_name,
+          phone: contact.phone,
+          branch,
+          service: campaignName,
+          brand: getBrand({ meta_campaign_name: campaignName, meta_ad_name: adName }),
+        });
       }
     }
   }

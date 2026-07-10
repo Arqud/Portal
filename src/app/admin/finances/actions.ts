@@ -5,14 +5,21 @@ import { Resend } from "resend";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { nextDocumentNumber } from "@/lib/invoices/numbering";
+import { getResendApiKey } from "@/lib/settings/resend";
 import { calcSubtotal, calcVat, calcTotal, calcLineAmount } from "@/lib/invoices/calculations";
 import type { CreateDocumentInput as CreateInvoiceInput } from "@/lib/invoices/types";
 import type { CreateDocumentInput as CreateQuoteInput } from "@/lib/invoices/types";
 
 async function sendInvoiceEmail(invoiceId: string, invoiceNumber: string, clientEmail: string, clientName: string, amount: number, dueDate: string) {
-  if (!process.env.RESEND_API_KEY) return;
   try {
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    // Env var first, app_settings fallback — Vercel has silently dropped
+    // UI-added env vars before, and invoices must keep emailing regardless.
+    const key = await getResendApiKey();
+    if (!key) {
+      console.error("[finances] invoice email skipped: no Resend API key in runtime env or app_settings");
+      return;
+    }
+    const resend = new Resend(key);
     const portalUrl = `https://arqudportal.co.za/api/invoices/${invoiceId}/pdf`;
     await resend.emails.send({
       from: "ARQUD Portal <noreply@arqudportal.co.za>",

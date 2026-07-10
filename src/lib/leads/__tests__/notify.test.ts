@@ -207,4 +207,38 @@ describe("sendLeadNotification", () => {
     sendMock.mockRejectedValue(new Error("resend 500"));
     await expect(sendLeadNotification(lead)).resolves.toBeUndefined();
   });
+
+  // Vercel has silently dropped UI-added env vars in prod (2026-07-10 incident) —
+  // the app_settings resend_api_key fallback is what keeps emails flowing.
+  it("sends using the app_settings resend_api_key when the env var is missing", async () => {
+    vi.stubEnv("RESEND_API_KEY", "");
+    mockGetSetting.mockImplementation(async (key: string) =>
+      key === "resend_api_key" ? "re_settings_key" : "info@wewash.co.za"
+    );
+    sendMock.mockResolvedValue({ data: { id: "email-2" }, error: null });
+
+    await sendLeadNotification(lead);
+
+    expect(mockGetSetting).toHaveBeenCalledWith("resend_api_key");
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    expect(sendMock.mock.calls[0][0].to).toEqual(["info@wewash.co.za"]);
+  });
+
+  it("skips when the key is in neither the env nor app_settings", async () => {
+    vi.stubEnv("RESEND_API_KEY", "");
+    mockGetSetting.mockResolvedValue(null);
+    await sendLeadNotification(lead);
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("prefers the env key — app_settings is not consulted for the key when env is set", async () => {
+    vi.stubEnv("RESEND_API_KEY", "re_env_key");
+    mockGetSetting.mockResolvedValue("info@wewash.co.za");
+    sendMock.mockResolvedValue({ data: { id: "email-3" }, error: null });
+
+    await sendLeadNotification(lead);
+
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    expect(mockGetSetting).not.toHaveBeenCalledWith("resend_api_key");
+  });
 });

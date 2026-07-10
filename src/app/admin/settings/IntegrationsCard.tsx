@@ -10,12 +10,14 @@ export function IntegrationsCard({
   initialForwardSecret,
   initialNotifyWeWash,
   initialNotifySparkling,
+  initialResendKey,
 }: {
   initialUrl: string | null;
   initialForwardUrl: string | null;
   initialForwardSecret: string | null;
   initialNotifyWeWash: string | null;
   initialNotifySparkling: string | null;
+  initialResendKey: string | null;
 }) {
   const [url, setUrl] = useState(initialUrl ?? "");
   const [gMsg, setGMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -25,6 +27,8 @@ export function IntegrationsCard({
   const [notifyWeWash, setNotifyWeWash] = useState(initialNotifyWeWash ?? "");
   const [notifySparkling, setNotifySparkling] = useState(initialNotifySparkling ?? "");
   const [nMsg, setNMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [resendKey, setResendKey] = useState(initialResendKey ?? "");
+  const [rMsg, setRMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, start] = useTransition();
 
   function saveGoogle() {
@@ -52,6 +56,14 @@ export function IntegrationsCard({
       const b = await saveSetting("lead_notify_email_sparkling", notifySparkling);
       const ok = a.ok && b.ok;
       setNMsg(ok ? { ok: true, text: "Saved — new leads now email the brand inbox." } : { ok: false, text: a.error ?? b.error ?? "Couldn't save." });
+    });
+  }
+
+  function saveResend() {
+    setRMsg(null);
+    start(async () => {
+      const res = await saveSetting("resend_api_key", resendKey);
+      setRMsg(res.ok ? { ok: true, text: "Saved — emails keep sending even if the Vercel env var goes missing." } : { ok: false, text: res.error ?? "Couldn't save." });
     });
   }
 
@@ -117,6 +129,25 @@ export function IntegrationsCard({
           <Button size="sm" onClick={saveNotify} disabled={pending}>{initialNotifyWeWash || initialNotifySparkling ? "Update" : "Save"}</Button>
           {nMsg && <p className={`text-[11.5px] ${nMsg.ok ? "text-arqud-green" : "text-arqud-amber"}`}>{nMsg.text}</p>}
           {(initialNotifyWeWash || initialNotifySparkling) && !nMsg && <p className="text-[11px] text-arqud-green">✓ Lead emails active</p>}
+        </div>
+
+        <div className="h-px bg-arqud-line" />
+
+        {/* Email sending (Resend) */}
+        <div className="space-y-3">
+          <div>
+            <p className="text-[12.5px] font-medium text-arqud-bone">Email sending (Resend)</p>
+            <p className="mt-1 text-[11.5px] leading-relaxed text-arqud-muted">
+              Resend API key used for lead notifications and invoice emails. The Vercel{" "}
+              <span className="text-arqud-bone-dim">RESEND_API_KEY</span> env var takes precedence when present — this key is the fallback.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input value={resendKey} onChange={(e) => setResendKey(e.target.value)} placeholder="re_..." className="flex-1" />
+            <Button size="sm" onClick={saveResend} disabled={pending}>{initialResendKey ? "Update" : "Save"}</Button>
+          </div>
+          {rMsg && <p className={`text-[11.5px] ${rMsg.ok ? "text-arqud-green" : "text-arqud-amber"}`}>{rMsg.text}</p>}
+          {initialResendKey && !rMsg && <p className="text-[11px] text-arqud-green">✓ Fallback key active</p>}
         </div>
       </div>
     </Card>

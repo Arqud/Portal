@@ -8,16 +8,23 @@ export function IntegrationsCard({
   initialUrl,
   initialForwardUrl,
   initialForwardSecret,
+  initialNotifyWeWash,
+  initialNotifySparkling,
 }: {
   initialUrl: string | null;
   initialForwardUrl: string | null;
   initialForwardSecret: string | null;
+  initialNotifyWeWash: string | null;
+  initialNotifySparkling: string | null;
 }) {
   const [url, setUrl] = useState(initialUrl ?? "");
   const [gMsg, setGMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [fwdUrl, setFwdUrl] = useState(initialForwardUrl ?? "");
   const [fwdSecret, setFwdSecret] = useState(initialForwardSecret ?? "");
   const [fMsg, setFMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [notifyWeWash, setNotifyWeWash] = useState(initialNotifyWeWash ?? "");
+  const [notifySparkling, setNotifySparkling] = useState(initialNotifySparkling ?? "");
+  const [nMsg, setNMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, start] = useTransition();
 
   function saveGoogle() {
@@ -35,6 +42,16 @@ export function IntegrationsCard({
       const b = await saveSetting("lead_forward_secret", fwdSecret);
       const ok = a.ok && b.ok;
       setFMsg(ok ? { ok: true, text: "Saved — new leads now forward to Duan in real time." } : { ok: false, text: a.error ?? b.error ?? "Couldn't save." });
+    });
+  }
+
+  function saveNotify() {
+    setNMsg(null);
+    start(async () => {
+      const a = await saveSetting("lead_notify_email_we_wash", notifyWeWash);
+      const b = await saveSetting("lead_notify_email_sparkling", notifySparkling);
+      const ok = a.ok && b.ok;
+      setNMsg(ok ? { ok: true, text: "Saved — new leads now email the brand inbox." } : { ok: false, text: a.error ?? b.error ?? "Couldn't save." });
     });
   }
 
@@ -76,6 +93,30 @@ export function IntegrationsCard({
           </div>
           {fMsg && <p className={`text-[11.5px] ${fMsg.ok ? "text-arqud-green" : "text-arqud-amber"}`}>{fMsg.text}</p>}
           {initialForwardUrl && !fMsg && <p className="text-[11px] text-arqud-green">✓ Forwarding active</p>}
+        </div>
+
+        <div className="h-px bg-arqud-line" />
+
+        {/* Lead email notifications (client brand inboxes) */}
+        <div className="space-y-3">
+          <div>
+            <p className="text-[12.5px] font-medium text-arqud-bone">Lead email notifications</p>
+            <p className="mt-1 text-[11.5px] leading-relaxed text-arqud-muted">
+              Every new lead is emailed to the brand&rsquo;s inbox the moment it lands (name, phone, branch, package).
+              Leave a field blank to disable emails for that brand.
+            </p>
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-2">We Wash lead emails</label>
+            <Input value={notifyWeWash} onChange={(e) => setNotifyWeWash(e.target.value)} placeholder="info@wewash.co.za (comma-separate for multiple)" className="w-full" />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-2">Sparkling lead emails</label>
+            <Input value={notifySparkling} onChange={(e) => setNotifySparkling(e.target.value)} placeholder="admin@sparklingauto.co.za (comma-separate for multiple)" className="w-full" />
+          </div>
+          <Button size="sm" onClick={saveNotify} disabled={pending}>{initialNotifyWeWash || initialNotifySparkling ? "Update" : "Save"}</Button>
+          {nMsg && <p className={`text-[11.5px] ${nMsg.ok ? "text-arqud-green" : "text-arqud-amber"}`}>{nMsg.text}</p>}
+          {(initialNotifyWeWash || initialNotifySparkling) && !nMsg && <p className="text-[11px] text-arqud-green">✓ Lead emails active</p>}
         </div>
       </div>
     </Card>

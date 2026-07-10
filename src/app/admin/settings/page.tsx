@@ -8,11 +8,13 @@ import { getSetting } from "@/lib/settings/query";
 export default async function SettingsPage() {
   const { user, profile } = await verifySession("admin");
   const admin = createSupabaseAdminClient();
-  const [{ data }, gcalUrl, fwdUrl, fwdSecret] = await Promise.all([
+  const [{ data }, gcalUrl, fwdUrl, fwdSecret, notifyWeWash, notifySparkling] = await Promise.all([
     admin.from("profiles").select("avatar_url").eq("id", user.id).single(),
     getSetting("google_calendar_ics_url"),
     getSetting("lead_forward_url"),
     getSetting("lead_forward_secret"),
+    getSetting("lead_notify_email_we_wash"),
+    getSetting("lead_notify_email_sparkling"),
   ]);
 
   return (
@@ -24,7 +26,13 @@ export default async function SettingsPage() {
         fullName={profile.full_name ?? ""}
         avatarUrl={data?.avatar_url ?? null}
       />
-      <IntegrationsCard initialUrl={gcalUrl} initialForwardUrl={fwdUrl} initialForwardSecret={fwdSecret} />
+      <IntegrationsCard
+        initialUrl={gcalUrl}
+        initialForwardUrl={fwdUrl}
+        initialForwardSecret={fwdSecret}
+        initialNotifyWeWash={notifyWeWash}
+        initialNotifySparkling={notifySparkling}
+      />
     </main>
   );
 }

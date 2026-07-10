@@ -11,6 +11,7 @@ import {
 } from "@/lib/leads/ingest";
 import { getBrand } from "@/lib/leads/brand";
 import { buildForwardPayload, sendSignedForward } from "@/lib/leads/forward";
+import { sendLeadNotification } from "@/lib/leads/notify";
 
 // Portal-native lead poller — the Make.com replacement. A free external scheduler
 // (cron-job.org) hits this every ~2 min. It asks the Meta Graph API for recent
@@ -172,6 +173,24 @@ export async function GET(request: NextRequest) {
               .eq("id", inserted.id);
             out.forwarded = (out.forwarded as number) + 1;
           }
+        }
+
+        // Email the client's brand inbox about the new lead — same guarded call as
+        // the webhook, AFTER the forward so it never delays the SMS. Only reached
+        // on a genuinely NEW insert (duplicates bailed out above), so a re-poll
+        // can never email the same lead twice.
+        if (inserted?.id) {
+          await sendLeadNotification({
+            full_name: contact.full_name,
+            phone: contact.phone,
+            branch,
+            service: campaignName,
+            brand: getBrand({
+              meta_campaign_name: campaignName,
+              meta_ad_name: lead.ad_name ?? null,
+            }),
+            created_at: lead.created_time ?? null,
+          });
         }
       }
     } catch (e) {

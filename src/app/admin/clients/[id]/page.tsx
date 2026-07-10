@@ -6,6 +6,7 @@ import { getSignedUrl } from "@/lib/storage";
 import { ClientDetailClient } from "./ClientDetailClient";
 import { ClientDetailActions } from "./ClientDetailActions";
 import { PageHeader, Card, KpiCard, Pill } from "@/components/ui";
+import type { Client, InvoiceWithItems, QuoteWithItems } from "@/lib/invoices/types";
 
 export default async function ClientDetailPage({
   params,
@@ -21,11 +22,11 @@ export default async function ClientDetailPage({
 
   const [invoicesRes, quotesRes, reportsRes, docsRes, leadsRes, tasksRes] = await Promise.all([
     admin.from("invoices")
-      .select("id, invoice_number, amount, status, issue_date, due_date")
-      .eq("client_id", id).neq("status", "draft")
+      .select("*, client:clients(id,name,company,email,contact_person,address,reg_number,vat_number), line_items:invoice_line_items(*)")
+      .eq("client_id", id)
       .order("created_at", { ascending: false }),
     admin.from("quotes")
-      .select("id, quote_number, total, status, issue_date")
+      .select("*, client:clients(id,name,company,email,contact_person,address,reg_number,vat_number), line_items:quote_line_items(*)")
       .eq("client_id", id)
       .order("created_at", { ascending: false }),
     admin.from("reports")
@@ -42,8 +43,8 @@ export default async function ClientDetailPage({
       .order("sort_order", { ascending: true }),
   ]);
 
-  const invoices = invoicesRes.data ?? [];
-  const quotes = quotesRes.data ?? [];
+  const invoices = (invoicesRes.data ?? []) as InvoiceWithItems[];
+  const quotes = (quotesRes.data ?? []) as QuoteWithItems[];
   const reports = reportsRes.data ?? [];
   const documents = docsRes.data ?? [];
   const leads = leadsRes.data ?? [];
@@ -62,13 +63,26 @@ export default async function ClientDetailPage({
     }),
   ]);
 
-  const totalInvoiced = invoices.reduce((s, i) => s + i.amount, 0);
+  // Drafts are now fetched (so they can be managed from the tabs) but stay out of the money totals.
+  const totalInvoiced = invoices.filter((i) => i.status !== "draft").reduce((s, i) => s + i.amount, 0);
   const totalPaid = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
   const outstanding = invoices.filter((i) => i.status === "pending" || i.status === "overdue").reduce((s, i) => s + i.amount, 0);
 
   function fmt(n: number) {
     return `R ${n.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}`;
   }
+
+  // One-element clients list in the shape the reused finances forms expect.
+  const financeClients: Client[] = [{
+    id: client.id,
+    name: client.name,
+    company: client.company ?? null,
+    email: client.email ?? null,
+    contact_person: client.contact_person ?? null,
+    address: client.address ?? null,
+    reg_number: client.reg_number ?? null,
+    vat_number: client.vat_number ?? null,
+  }];
 
   return (
     <main className="min-h-screen px-4 sm:px-8 py-8 sm:py-10 space-y-5 animate-fade-up">
@@ -112,6 +126,7 @@ export default async function ClientDetailPage({
         clientLabel={client.company ?? client.name}
         invoices={invoices}
         quotes={quotes}
+        clients={financeClients}
         leads={leads}
         reports={reports}
         documents={documents}

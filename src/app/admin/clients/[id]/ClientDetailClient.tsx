@@ -7,10 +7,12 @@ import { deleteReport, deleteDocument } from "../actions";
 import { LeadsTab } from "./LeadsTab";
 import { Button, Card, Tabs, Table, Tr, Td, Pill, PdfViewerModal } from "@/components/ui";
 import { TasksBoard } from "../../tasks/TasksBoard";
+import { InvoiceForm } from "../../finances/InvoiceForm";
+import { QuoteForm } from "../../finances/QuoteForm";
+import { ConvertModal } from "../../finances/ConvertModal";
+import { markInvoicePaid, deleteInvoice, updateQuoteStatus, deleteQuote } from "../../finances/actions";
 import type { Task } from "@/lib/tasks/types";
-
-type Invoice = { id: string; invoice_number: string; amount: number; status: string; issue_date: string; due_date: string };
-type Quote = { id: string; quote_number: string; total: number; status: string; issue_date: string };
+import type { Client, InvoiceWithItems, QuoteWithItems } from "@/lib/invoices/types";
 type Lead = {
   id: string; full_name: string | null; phone: string | null; email: string | null;
   branch: string | null; meta_campaign_name: string | null; meta_ad_name: string | null;
@@ -41,12 +43,13 @@ function fmt(n: number) {
 const TAB_LABELS = ["Invoices", "Quotes", "Tasks", "Leads", "Reports", "Documents"];
 
 export function ClientDetailClient({
-  clientId, clientLabel, invoices, quotes, leads, reports, documents, tasks, reportUrls, documentUrls,
+  clientId, clientLabel, invoices, quotes, clients, leads, reports, documents, tasks, reportUrls, documentUrls,
 }: {
   clientId: string;
   clientLabel: string;
-  invoices: Invoice[];
-  quotes: Quote[];
+  invoices: InvoiceWithItems[];
+  quotes: QuoteWithItems[];
+  clients: Client[];
   leads: Lead[];
   reports: Report[];
   documents: Document[];
@@ -58,6 +61,9 @@ export function ClientDetailClient({
   const [showReport, setShowReport] = useState(false);
   const [showDoc, setShowDoc] = useState(false);
   const [pdfView, setPdfView] = useState<{ src: string; downloadHref: string; title: string } | null>(null);
+  const [editInvoice, setEditInvoice] = useState<InvoiceWithItems | null>(null);
+  const [editQuote, setEditQuote] = useState<QuoteWithItems | null>(null);
+  const [converting, setConverting] = useState<QuoteWithItems | null>(null);
   const [pending, start] = useTransition();
 
   return (
@@ -65,6 +71,9 @@ export function ClientDetailClient({
       {pdfView && <PdfViewerModal {...pdfView} onClose={() => setPdfView(null)} />}
       {showReport && <UploadReportForm clientId={clientId} onClose={() => setShowReport(false)} />}
       {showDoc && <UploadDocumentForm clientId={clientId} onClose={() => setShowDoc(false)} />}
+      {editInvoice && <InvoiceForm clients={clients} editInvoice={editInvoice} onClose={() => setEditInvoice(null)} />}
+      {editQuote && <QuoteForm clients={clients} editQuote={editQuote} onClose={() => setEditQuote(null)} />}
+      {converting && <ConvertModal quote={converting} onClose={() => setConverting(null)} />}
 
       <div className="flex items-center justify-between">
         <Tabs tabs={TAB_LABELS} value={tab} onChange={setTab} />
@@ -93,7 +102,7 @@ export function ClientDetailClient({
               <Td className="basis-[0.9fr] grow">Due Date</Td>
               <Td className="basis-[0.9fr] grow">Amount</Td>
               <Td className="basis-[0.8fr] grow">Status</Td>
-              <Td className="basis-[0.6fr] grow-0 shrink-0 text-right">PDF</Td>
+              <Td className="basis-[1.6fr] grow">Actions</Td>
             </Tr>
             {invoices.map((inv) => (
               <Tr key={inv.id}>
@@ -104,10 +113,27 @@ export function ClientDetailClient({
                 <Td className="basis-[0.8fr] grow">
                   <Pill tone={STATUS_TONE[inv.status] ?? "neutral"}>{inv.status}</Pill>
                 </Td>
-                <Td className="basis-[0.6fr] grow-0 shrink-0 text-right">
-                  <button
-                    onClick={() => setPdfView({ src: `/api/invoices/${inv.id}/pdf?inline=1`, downloadHref: `/api/invoices/${inv.id}/pdf`, title: `Invoice ${inv.invoice_number}` })}
-                    className="text-arqud-gold text-[12px] font-medium hover:underline">View →</button>
+                <Td className="basis-[1.6fr] grow flex gap-3 flex-wrap items-center">
+                  {inv.status !== "draft" && (
+                    <button
+                      onClick={() => setPdfView({ src: `/api/invoices/${inv.id}/pdf?inline=1`, downloadHref: `/api/invoices/${inv.id}/pdf`, title: `Invoice ${inv.invoice_number}` })}
+                      className="text-arqud-gold text-[12px] font-medium hover:underline">View →</button>
+                  )}
+                  {(inv.status === "pending" || inv.status === "overdue") && (
+                    <button disabled={pending}
+                      onClick={() => start(() => markInvoicePaid(inv.id, new Date().toISOString().split("T")[0]))}
+                      className="text-xs text-green-400 hover:text-green-300 disabled:opacity-50">Mark Paid</button>
+                  )}
+                  <button onClick={() => setEditInvoice(inv)}
+                    className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">Edit</button>
+                  <button disabled={pending}
+                    onClick={() => {
+                      const msg = inv.status === "paid"
+                        ? `Delete PAID invoice ${inv.invoice_number}? This removes it from revenue totals.`
+                        : `Delete ${inv.invoice_number}?`;
+                      if (confirm(msg)) start(() => deleteInvoice(inv.id));
+                    }}
+                    className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">Delete</button>
                 </Td>
               </Tr>
             ))}
@@ -126,7 +152,7 @@ export function ClientDetailClient({
               <Td className="basis-[1fr] grow">Date</Td>
               <Td className="basis-[1fr] grow">Total (excl. VAT)</Td>
               <Td className="basis-[0.8fr] grow">Status</Td>
-              <Td className="basis-[0.6fr] grow-0 shrink-0 text-right">PDF</Td>
+              <Td className="basis-[1.8fr] grow">Actions</Td>
             </Tr>
             {quotes.map((q) => (
               <Tr key={q.id}>
@@ -136,10 +162,44 @@ export function ClientDetailClient({
                 <Td className="basis-[0.8fr] grow">
                   <Pill tone={STATUS_TONE[q.status] ?? "neutral"}>{q.status}</Pill>
                 </Td>
-                <Td className="basis-[0.6fr] grow-0 shrink-0 text-right">
+                <Td className="basis-[1.8fr] grow flex gap-3 flex-wrap items-center">
                   <button
                     onClick={() => setPdfView({ src: `/api/quotes/${q.id}/pdf?inline=1`, downloadHref: `/api/quotes/${q.id}/pdf`, title: `Quote ${q.quote_number}` })}
                     className="text-arqud-gold text-[12px] font-medium hover:underline">View →</button>
+                  {q.status === "draft" && (
+                    <button disabled={pending}
+                      onClick={() => start(() => updateQuoteStatus(q.id, "sent"))}
+                      className="text-xs text-arqud-gold hover:text-arqud-gold-soft disabled:opacity-50">Mark Sent</button>
+                  )}
+                  {q.status === "sent" && (
+                    <>
+                      <button disabled={pending}
+                        onClick={() => start(() => updateQuoteStatus(q.id, "accepted"))}
+                        className="text-xs text-green-400 hover:text-green-300 disabled:opacity-50">Accept</button>
+                      <button disabled={pending}
+                        onClick={() => start(() => updateQuoteStatus(q.id, "rejected"))}
+                        className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">Reject</button>
+                    </>
+                  )}
+                  {q.status === "accepted" && !q.converted_to_invoice_id && (
+                    <button onClick={() => setConverting(q)}
+                      className="text-xs text-arqud-gold hover:text-arqud-gold-soft">Convert to Invoice</button>
+                  )}
+                  {!q.converted_to_invoice_id && (
+                    <button onClick={() => setEditQuote(q)}
+                      className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">Edit</button>
+                  )}
+                  {q.converted_to_invoice_id && (
+                    <span className="text-xs text-green-400">Invoiced</span>
+                  )}
+                  <button disabled={pending}
+                    onClick={() => {
+                      const msg = q.converted_to_invoice_id
+                        ? `Delete quote ${q.quote_number}? Its invoice stays but loses the link to this quote.`
+                        : `Delete ${q.quote_number}?`;
+                      if (confirm(msg)) start(() => deleteQuote(q.id));
+                    }}
+                    className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">Delete</button>
                 </Td>
               </Tr>
             ))}

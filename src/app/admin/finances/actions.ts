@@ -92,6 +92,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
   }
 
   revalidatePath("/admin/finances");
+  revalidatePath("/admin/clients/[id]", "page");
 
   // Auto-email client when invoice is created (non-draft only)
   if (!input.isDraft) {
@@ -116,6 +117,7 @@ export async function markInvoicePaid(invoiceId: string, paidAt: string) {
     .eq("id", invoiceId);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/finances");
+  revalidatePath("/admin/clients/[id]", "page");
 }
 
 export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput) {
@@ -158,6 +160,7 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
   }
 
   revalidatePath("/admin/finances");
+  revalidatePath("/admin/clients/[id]", "page");
 }
 
 export async function deleteInvoice(invoiceId: string) {
@@ -167,6 +170,7 @@ export async function deleteInvoice(invoiceId: string) {
   await admin.from("invoice_line_items").delete().eq("invoice_id", invoiceId);
   await admin.from("invoices").delete().eq("id", invoiceId);
   revalidatePath("/admin/finances");
+  revalidatePath("/admin/clients/[id]", "page");
 }
 
 export async function createQuote(input: CreateQuoteInput) {
@@ -207,6 +211,7 @@ export async function createQuote(input: CreateQuoteInput) {
   }
 
   revalidatePath("/admin/finances");
+  revalidatePath("/admin/clients/[id]", "page");
 }
 
 export async function updateQuote(quoteId: string, input: CreateQuoteInput) {
@@ -242,6 +247,7 @@ export async function updateQuote(quoteId: string, input: CreateQuoteInput) {
   }
 
   revalidatePath("/admin/finances");
+  revalidatePath("/admin/clients/[id]", "page");
 }
 
 export async function deleteQuote(quoteId: string) {
@@ -251,6 +257,7 @@ export async function deleteQuote(quoteId: string) {
   await admin.from("quote_line_items").delete().eq("quote_id", quoteId);
   await admin.from("quotes").delete().eq("id", quoteId);
   revalidatePath("/admin/finances");
+  revalidatePath("/admin/clients/[id]", "page");
 }
 
 export async function updateQuoteStatus(quoteId: string, status: string) {
@@ -261,6 +268,7 @@ export async function updateQuoteStatus(quoteId: string, status: string) {
     .eq("id", quoteId);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/finances");
+  revalidatePath("/admin/clients/[id]", "page");
 }
 
 export async function convertQuoteToInvoice(
@@ -320,4 +328,5 @@ export async function convertQuoteToInvoice(
     .eq("id", quoteId);
 
   revalidatePath("/admin/finances");
+  revalidatePath("/admin/clients/[id]", "page");
 }

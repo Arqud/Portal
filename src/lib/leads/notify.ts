@@ -7,6 +7,7 @@
 
 import { Resend } from "resend";
 import { getSetting } from "@/lib/settings/query";
+import { getResendApiKey } from "@/lib/settings/resend";
 
 export type NotifyLead = {
   full_name: string | null;
@@ -106,18 +107,23 @@ export function buildLeadNotification(lead: NotifyLead): { subject: string; html
 export async function sendLeadNotification(lead: NotifyLead): Promise<void> {
   // Every exit logs its reason — this function fails SILENTLY by contract, so
   // Vercel function logs are the only way to see why an email didn't go out.
-  if (!process.env.RESEND_API_KEY) {
-    console.error("[leads/notify] skipped: RESEND_API_KEY not set in runtime env");
-    return;
-  }
   try {
+    // Env var first, app_settings fallback — Vercel has silently dropped
+    // UI-added env vars before (that's exactly how this key vanished in prod).
+    const key = await getResendApiKey();
+    if (!key) {
+      console.error("[leads/notify] skipped: no Resend API key in runtime env or app_settings");
+      return;
+    }
+    // Log the source (never the value) so prod logs show which store supplied it.
+    console.log("[leads/notify] using Resend key from", process.env.RESEND_API_KEY?.trim() ? "env" : "settings");
     const to = await resolveNotifyRecipients(lead.brand);
     if (to.length === 0) {
       console.error("[leads/notify] skipped: no recipients configured for brand", lead.brand);
       return; // feature off for this brand (or brand "Other")
     }
     const { subject, html } = buildLeadNotification(lead);
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    const resend = new Resend(key);
     // The Resend SDK reports API failures via the returned `error`, not by throwing.
     const res = await resend.emails.send({ from: notifyFrom(lead.brand), to, subject, html });
     const error = res && "error" in res ? res.error : null;

@@ -104,12 +104,29 @@ export function buildLeadNotification(lead: NotifyLead): { subject: string; html
 // and every failure (settings read, Resend) is swallowed. The lead is already
 // safely in the CRM by the time this runs; email is strictly best-effort.
 export async function sendLeadNotification(lead: NotifyLead): Promise<void> {
-  if (!process.env.RESEND_API_KEY) return;
+  // Every exit logs its reason — this function fails SILENTLY by contract, so
+  // Vercel function logs are the only way to see why an email didn't go out.
+  if (!process.env.RESEND_API_KEY) {
+    console.error("[leads/notify] skipped: RESEND_API_KEY not set in runtime env");
+    return;
+  }
   try {
     const to = await resolveNotifyRecipients(lead.brand);
-    if (to.length === 0) return; // feature off for this brand (or brand "Other")
+    if (to.length === 0) {
+      console.error("[leads/notify] skipped: no recipients configured for brand", lead.brand);
+      return; // feature off for this brand (or brand "Other")
+    }
     const { subject, html } = buildLeadNotification(lead);
     const resend = new Resend(process.env.RESEND_API_KEY);
-    await resend.emails.send({ from: notifyFrom(lead.brand), to, subject, html });
-  } catch { /* email failure is non-blocking */ }
+    // The Resend SDK reports API failures via the returned `error`, not by throwing.
+    const res = await resend.emails.send({ from: notifyFrom(lead.brand), to, subject, html });
+    const error = res && "error" in res ? res.error : null;
+    if (error) {
+      console.error("[leads/notify] Resend rejected send", { brand: lead.brand, name: error.name, message: error.message });
+    } else {
+      console.log("[leads/notify] sent", { brand: lead.brand, recipients: to.length, id: res?.data?.id ?? null });
+    }
+  } catch (e) {
+    console.error("[leads/notify] send threw", e instanceof Error ? e.message : e);
+  }
 }

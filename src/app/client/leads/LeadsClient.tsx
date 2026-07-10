@@ -4,6 +4,7 @@ import { useState, useTransition, useMemo } from "react";
 import { updateLeadStatus, deleteLead } from "./actions";
 import { Button, Card, FilterPill, Pill, Tabs, Table, Tr, Td, Avatar, PageHeader } from "@/components/ui";
 import { getBrand, BRAND_TONE, STATUS_TONE, initialsOf } from "@/lib/leads/brand";
+import { formatDateTime } from "@/lib/leads/format";
 import { WE_WASH_BRANCHES, SPARKLING_BRANCHES, branchesForBrand, type BrandName } from "@/lib/leads/branches";
 
 export type Lead = {
@@ -357,7 +358,7 @@ export function LeadsClient({ leads: initial, total }: { leads: Lead[]; total?: 
           <div className="hidden sm:block">
             <Table>
               <Tr header>
-                <Td className="basis-[70px] grow-0 shrink-0">Date</Td>
+                <Td className="basis-[120px] grow-0 shrink-0">Date</Td>
                 <Td className="basis-[1.3fr] grow">Name</Td>
                 <Td className="basis-[1.4fr] grow">Branch</Td>
                 <Td className="basis-[0.9fr] grow">Status</Td>
@@ -397,7 +398,7 @@ function LeadRow({ lead, onSelect }: { lead: Lead; onSelect: () => void }) {
   const branchLabel = qualifiedBranch(lead);
   return (
     <Tr className="cursor-pointer" onClick={onSelect}>
-      <Td className="basis-[70px] grow-0 shrink-0 text-arqud-muted">{formatDate(lead.created_at)}</Td>
+      <Td className="basis-[120px] grow-0 shrink-0 text-arqud-muted">{formatDateTime(lead.created_at)}</Td>
       <Td className="basis-[1.3fr] grow">
         <div className="flex items-center gap-2.5 text-arqud-bone">
           <Avatar initials={initialsOf(lead.full_name)} />
@@ -460,7 +461,7 @@ function LeadCard({ lead, onSelect }: { lead: Lead; onSelect: () => void }) {
         ) : (
           <Pill tone="neutral">No branch</Pill>
         )}
-        <span className="text-arqud-muted text-[11px] shrink-0">{formatDate(lead.created_at)}</span>
+        <span className="text-arqud-muted text-[11px] shrink-0">{formatDateTime(lead.created_at)}</span>
       </div>
       {lead.follow_up_date && (
         <p className={`text-[11px] ${isOverdue ? "text-red-400" : "text-arqud-muted"}`}>
@@ -563,7 +564,7 @@ function LeadModal({
           )}
           {lead.meta_campaign_name && <p className="text-arqud-muted text-xs">Campaign: {lead.meta_campaign_name}</p>}
           <p className="text-arqud-muted text-xs">
-            {new Date(lead.created_at).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" })}
+            {formatDateTime(lead.created_at)}
           </p>
         </div>
 

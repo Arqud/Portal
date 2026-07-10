@@ -2,6 +2,7 @@
 
 import { Card, Table, Tr, Td, Pill, Avatar } from "@/components/ui";
 import { getBrand, BRAND_TONE, STATUS_TONE, initialsOf } from "@/lib/leads/brand";
+import { formatDateTime } from "@/lib/leads/format";
 
 type Lead = {
   id: string;
@@ -15,10 +16,6 @@ type Lead = {
   notes: string | null;
   created_at: string;
 };
-
-function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("en-ZA", { day: "2-digit", month: "short" });
-}
 
 export function LeadsTab({ leads }: { leads: Lead[] }) {
   const total = leads.length;
@@ -55,7 +52,7 @@ export function LeadsTab({ leads }: { leads: Lead[] }) {
       {/* Table */}
       <Table>
         <Tr header>
-          <Td className="basis-[70px] grow-0 shrink-0">Date</Td>
+          <Td className="basis-[120px] grow-0 shrink-0">Date</Td>
           <Td className="basis-[1.3fr] grow">Name</Td>
           <Td className="basis-[1fr] grow">Branch</Td>
           <Td className="basis-[1.1fr] grow">Brand</Td>
@@ -65,7 +62,7 @@ export function LeadsTab({ leads }: { leads: Lead[] }) {
 
         {leads.map((lead) => (
           <Tr key={lead.id}>
-            <Td className="basis-[70px] grow-0 shrink-0 text-arqud-muted">{formatDate(lead.created_at)}</Td>
+            <Td className="basis-[120px] grow-0 shrink-0 text-arqud-muted">{formatDateTime(lead.created_at)}</Td>
             <Td className="basis-[1.3fr] grow">
               <div className="flex items-center gap-2.5 text-arqud-bone">
                 <Avatar initials={initialsOf(lead.full_name)} />

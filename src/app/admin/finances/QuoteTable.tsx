@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateQuoteStatus } from "./actions";
+import { updateQuoteStatus, deleteQuote } from "./actions";
 import { ConvertModal } from "./ConvertModal";
 import { QuoteForm } from "./QuoteForm";
 import { QuoteDetailModal } from "./QuoteDetailModal";
@@ -26,7 +26,13 @@ export function QuoteTable({ quotes, clients, onNew }: { quotes: QuoteWithItems[
     <div>
       {converting && <ConvertModal quote={converting} onClose={() => setConverting(null)} />}
       {editing && <QuoteForm clients={clients} editQuote={editing} onClose={() => setEditing(null)} />}
-      {viewing && <QuoteDetailModal quote={viewing} onClose={() => setViewing(null)} />}
+      {viewing && (
+        <QuoteDetailModal
+          quote={viewing}
+          onClose={() => setViewing(null)}
+          onEdit={() => { setEditing(viewing); setViewing(null); }}
+        />
+      )}
       <div className="flex justify-end mb-4">
         <Button onClick={onNew}>+ New Quote</Button>
       </div>
@@ -77,13 +83,21 @@ export function QuoteTable({ quotes, clients, onNew }: { quotes: QuoteWithItems[
                   <button onClick={() => setConverting(q)}
                     className="text-xs text-arqud-gold hover:text-arqud-gold-soft">Convert to Invoice</button>
                 )}
-                {!q.converted_to_invoice_id && q.status !== "accepted" && q.status !== "rejected" && (
+                {!q.converted_to_invoice_id && (
                   <button onClick={() => setEditing(q)}
                     className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">Edit</button>
                 )}
                 {q.converted_to_invoice_id && (
                   <span className="text-xs text-green-400">Invoiced</span>
                 )}
+                <button disabled={pending}
+                  onClick={() => {
+                    const msg = q.converted_to_invoice_id
+                      ? `Delete quote ${q.quote_number}? Its invoice stays but loses the link to this quote.`
+                      : `Delete ${q.quote_number}?`;
+                    if (confirm(msg)) start(() => deleteQuote(q.id));
+                  }}
+                  className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">Delete</button>
               </Td>
             </Tr>
           ))}

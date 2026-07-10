@@ -162,6 +162,8 @@ export async function updateInvoice(invoiceId: string, input: CreateInvoiceInput
 
 export async function deleteInvoice(invoiceId: string) {
   const admin = await requireAdmin();
+  // Unlink any quote that converted into this invoice — its FK blocks the delete otherwise.
+  await admin.from("quotes").update({ converted_to_invoice_id: null }).eq("converted_to_invoice_id", invoiceId);
   await admin.from("invoice_line_items").delete().eq("invoice_id", invoiceId);
   await admin.from("invoices").delete().eq("id", invoiceId);
   revalidatePath("/admin/finances");
@@ -239,6 +241,15 @@ export async function updateQuote(quoteId: string, input: CreateQuoteInput) {
     );
   }
 
+  revalidatePath("/admin/finances");
+}
+
+export async function deleteQuote(quoteId: string) {
+  const admin = await requireAdmin();
+  // Unlink the invoice this quote converted into — the invoice itself stays.
+  await admin.from("invoices").update({ converted_from_quote_id: null }).eq("converted_from_quote_id", quoteId);
+  await admin.from("quote_line_items").delete().eq("quote_id", quoteId);
+  await admin.from("quotes").delete().eq("id", quoteId);
   revalidatePath("/admin/finances");
 }
 

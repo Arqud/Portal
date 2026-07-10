@@ -19,7 +19,7 @@ function fmtDate(d: string) {
   return new Date(d + "T00:00:00").toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
 }
 
-export function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceWithItems; onClose: () => void }) {
+export function InvoiceDetailModal({ invoice, onClose, onEdit }: { invoice: InvoiceWithItems; onClose: () => void; onEdit: () => void }) {
   const [pending, start] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showPdf, setShowPdf] = useState(false);
@@ -42,6 +42,9 @@ export function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceWithI
                 Mark Paid
               </button>
             )}
+            <button onClick={onEdit} className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">
+              Edit
+            </button>
             <a href={mailtoUrl} className="text-xs text-arqud-gold hover:text-arqud-gold-soft uppercase tracking-widest">
               Send Email
             </a>
@@ -53,7 +56,9 @@ export function InvoiceDetailModal({ invoice, onClose }: { invoice: InvoiceWithI
             </a>
             {confirmDelete ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-red-400 uppercase tracking-widest">Delete?</span>
+                <span className="text-xs text-red-400 uppercase tracking-widest">
+                  {invoice.status === "paid" ? "Delete paid invoice? This removes it from revenue totals." : "Delete?"}
+                </span>
                 <button
                   disabled={pending}
                   onClick={() => start(async () => { await deleteInvoice(invoice.id); onClose(); })}

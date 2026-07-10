@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition, useState } from "react";
-import { updateQuoteStatus } from "./actions";
+import { updateQuoteStatus, deleteQuote } from "./actions";
 import { ConvertModal } from "./ConvertModal";
 import { Pill, Button } from "@/components/ui";
 import type { QuoteWithItems } from "@/lib/invoices/types";
@@ -21,9 +21,10 @@ function fmtDate(d: string) {
   return new Date(d + "T00:00:00").toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
 }
 
-export function QuoteDetailModal({ quote, onClose }: { quote: QuoteWithItems; onClose: () => void }) {
+export function QuoteDetailModal({ quote, onClose, onEdit }: { quote: QuoteWithItems; onClose: () => void; onEdit: () => void }) {
   const [pending, start] = useTransition();
   const [converting, setConverting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const client = quote.client;
   const pdfUrl = `/api/quotes/${quote.id}/pdf`;
   const sorted = [...(quote.line_items ?? [])].sort((a, b) => a.sort_order - b.sort_order);
@@ -33,9 +34,9 @@ export function QuoteDetailModal({ quote, onClose }: { quote: QuoteWithItems; on
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 pt-6 pb-8 px-4">
       {converting && <ConvertModal quote={quote} onClose={() => { setConverting(false); onClose(); }} />}
       <div className="w-full max-w-[210mm]">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-y-2 mb-3">
           <Pill tone={STATUS_TONE[quote.status] ?? "neutral"}>{quote.status}</Pill>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             {quote.status === "draft" && (
               <button disabled={pending}
                 onClick={() => start(() => updateQuoteStatus(quote.id, "sent"))}
@@ -49,12 +50,38 @@ export function QuoteDetailModal({ quote, onClose }: { quote: QuoteWithItems; on
                 Convert to Invoice
               </button>
             )}
+            {!quote.converted_to_invoice_id && (
+              <button onClick={onEdit} className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">
+                Edit
+              </button>
+            )}
             <a href={mailtoUrl} className="text-xs text-arqud-gold hover:text-arqud-gold-soft uppercase tracking-widest">
               Send Email
             </a>
             <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
               <Button size="sm">Download PDF</Button>
             </a>
+            {confirmDelete ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-red-400 uppercase tracking-widest">
+                  {quote.converted_to_invoice_id ? "Delete quote? Its invoice stays but loses the link." : "Delete?"}
+                </span>
+                <button
+                  disabled={pending}
+                  onClick={() => start(async () => { await deleteQuote(quote.id); onClose(); })}
+                  className="text-xs text-red-400 border border-red-400/60 px-3 py-1 hover:bg-red-900/30 uppercase tracking-widest disabled:opacity-50 rounded-control"
+                >
+                  Yes, delete
+                </button>
+                <button onClick={() => setConfirmDelete(false)} className="text-xs text-arqud-muted uppercase tracking-widest hover:text-arqud-bone">
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmDelete(true)} className="text-xs text-red-400/60 hover:text-red-400 uppercase tracking-widest">
+                Delete
+              </button>
+            )}
             <button onClick={onClose} className="text-arqud-muted hover:text-arqud-bone text-xl ml-1">✕</button>
           </div>
         </div>

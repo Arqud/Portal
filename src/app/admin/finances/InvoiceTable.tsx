@@ -21,7 +21,13 @@ export function InvoiceTable({ invoices, clients, onNew }: { invoices: InvoiceWi
 
   return (
     <div>
-      {viewing && <InvoiceDetailModal invoice={viewing} onClose={() => setViewing(null)} />}
+      {viewing && (
+        <InvoiceDetailModal
+          invoice={viewing}
+          onClose={() => setViewing(null)}
+          onEdit={() => { setEditing(viewing); setViewing(null); }}
+        />
+      )}
       {editing && <InvoiceForm clients={clients} editInvoice={editing} onClose={() => setEditing(null)} />}
 
       <div className="flex justify-end mb-4">
@@ -72,11 +78,14 @@ export function InvoiceTable({ invoices, clients, onNew }: { invoices: InvoiceWi
                 )}
                 <button onClick={() => setEditing(inv)}
                   className="text-xs text-arqud-muted hover:text-arqud-gold uppercase tracking-widest">Edit</button>
-                {inv.status === "draft" && (
-                  <button disabled={pending}
-                    onClick={() => { if (confirm(`Delete ${inv.invoice_number}?`)) start(() => deleteInvoice(inv.id)); }}
-                    className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">Delete</button>
-                )}
+                <button disabled={pending}
+                  onClick={() => {
+                    const msg = inv.status === "paid"
+                      ? `Delete PAID invoice ${inv.invoice_number}? This removes it from revenue totals.`
+                      : `Delete ${inv.invoice_number}?`;
+                    if (confirm(msg)) start(() => deleteInvoice(inv.id));
+                  }}
+                  className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">Delete</button>
               </Td>
             </Tr>
           ))}

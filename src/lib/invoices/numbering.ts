@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 const PREFIXES: Record<string, string> = {
   invoice: "INV",
   quote: "QTE",
+  proposal: "PRO",
 };
 
 export function formatDocumentNumber(type: string, year: number, n: number): string {

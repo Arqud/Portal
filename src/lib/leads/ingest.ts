@@ -81,14 +81,38 @@ export function extractPreferredTime(leadData: Record<string, string>): string |
 // branch string so the CRM displays it correctly AND Duan's exact-match branch filter
 // hits (Sparkling only texts Menlyn/Rustenburg — a slug would silently miss).
 const CANONICAL_BRANCHES: readonly string[] = [...WE_WASH_BRANCHES, ...SPARKLING_BRANCHES];
-const branchKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+// Alphanumerics-only comparison key, shared by both normalizers below.
+const alnumKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
 
 export function normalizeBranch(raw: string | null): string | null {
   if (!raw) return raw;
   const trimmed = raw.trim();
   if (CANONICAL_BRANCHES.includes(trimmed)) return trimmed; // already clean
-  const key = branchKey(trimmed);
-  const match = CANONICAL_BRANCHES.find((b) => branchKey(b) === key);
+  const key = alnumKey(trimmed);
+  const match = CANONICAL_BRANCHES.find((b) => alnumKey(b) === key);
+  return match ?? trimmed; // fall back to raw if it genuinely doesn't match
+}
+
+// Meta slugs the chosen dropdown OPTION too (a real lead arrived as "this_weekend_").
+// Map it back to the canonical label so the SMS partner, portal UI and email all get
+// clean text. The em dash in "This week — morning" contributes nothing alphanumeric,
+// so "this_week_morning_" matches it. Unknown values pass through unchanged so a
+// future edit to the form's options never makes an answer vanish.
+const CANONICAL_PREFERRED_TIMES: readonly string[] = [
+  "As soon as possible",
+  "This week — morning",
+  "This week — afternoon",
+  "This weekend",
+  "Next week",
+];
+
+export function normalizePreferredTime(value: string | null): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (CANONICAL_PREFERRED_TIMES.includes(trimmed)) return trimmed; // already clean
+  const key = alnumKey(trimmed);
+  const match = CANONICAL_PREFERRED_TIMES.find((t) => alnumKey(t) === key);
   return match ?? trimmed; // fall back to raw if it genuinely doesn't match
 }
 

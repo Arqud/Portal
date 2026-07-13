@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveCampaignName, extractBranch, mapContact, WE_WASH_PAGE_ID, SPARKLING_PAGE_ID } from "@/lib/leads/ingest";
+import { resolveCampaignName, extractBranch, extractPreferredTime, mapContact, WE_WASH_PAGE_ID, SPARKLING_PAGE_ID } from "@/lib/leads/ingest";
 import { getBrand } from "@/lib/leads/brand";
 
 describe("resolveCampaignName", () => {
@@ -56,6 +56,34 @@ describe("extractBranch", () => {
   });
   it("returns null when there is no branch field", () => {
     expect(extractBranch({ full_name: "x" })).toBeNull();
+  });
+});
+
+describe("extractPreferredTime", () => {
+  it("reads the exact slug the pilot form question produces", () => {
+    expect(extractPreferredTime({ "when_would_you_like_your_car_done?": "This week — morning" })).toBe(
+      "This week — morning",
+    );
+  });
+  it("survives slug variants of the same question", () => {
+    expect(extractPreferredTime({ when_would_you_like_your_car_done: "As soon as possible" })).toBe(
+      "As soon as possible",
+    );
+    expect(extractPreferredTime({ "when_would_you_like_it_done?": "This weekend" })).toBe("This weekend");
+    expect(extractPreferredTime({ preferred_time: "Next week" })).toBe("Next week");
+    expect(extractPreferredTime({ "when_should_your_car_be_done?": "This week — afternoon" })).toBe(
+      "This week — afternoon",
+    );
+  });
+  it("returns null when no preferred-time field exists (all other forms)", () => {
+    expect(extractPreferredTime({ full_name: "x", which_branch_is_closest_to_you: "Menlyn (Pretoria)" })).toBeNull();
+  });
+  it("returns null for an empty/whitespace value", () => {
+    expect(extractPreferredTime({ "when_would_you_like_your_car_done?": "" })).toBeNull();
+    expect(extractPreferredTime({ "when_would_you_like_your_car_done?": "   " })).toBeNull();
+  });
+  it("trims the value", () => {
+    expect(extractPreferredTime({ preferred_time: "  This weekend  " })).toBe("This weekend");
   });
 });
 

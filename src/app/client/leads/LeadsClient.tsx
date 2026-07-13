@@ -13,6 +13,7 @@ export type Lead = {
   phone: string | null;
   email: string | null;
   branch: string | null;
+  preferred_time: string | null;
   meta_campaign_name: string | null;
   meta_ad_name: string | null;
   status: "new" | "contacted" | "converted" | "lost";
@@ -463,6 +464,9 @@ function LeadCard({ lead, onSelect }: { lead: Lead; onSelect: () => void }) {
         )}
         <span className="text-arqud-muted text-[11px] shrink-0">{formatDateTime(lead.created_at)}</span>
       </div>
+      {lead.preferred_time && (
+        <p className="text-arqud-muted text-[11px] truncate">Prefers: {lead.preferred_time}</p>
+      )}
       {lead.follow_up_date && (
         <p className={`text-[11px] ${isOverdue ? "text-red-400" : "text-arqud-muted"}`}>
           {isOverdue && "⚠ "}Follow-up {new Date(lead.follow_up_date).toLocaleDateString("en-ZA", { day: "2-digit", month: "short" })}
@@ -563,6 +567,7 @@ function LeadModal({
             </div>
           )}
           {lead.meta_campaign_name && <p className="text-arqud-muted text-xs">Campaign: {lead.meta_campaign_name}</p>}
+          {lead.preferred_time && <p className="text-arqud-muted text-xs">Prefers: {lead.preferred_time}</p>}
           <p className="text-arqud-muted text-xs">
             {formatDateTime(lead.created_at)}
           </p>

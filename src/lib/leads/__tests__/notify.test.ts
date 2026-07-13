@@ -94,6 +94,24 @@ describe("buildLeadNotification", () => {
     expect(html).not.toContain("tel:");
     expect(html).toContain("—");
   });
+
+  it("shows a Preferred row when the lead has a preferred time", () => {
+    const { html } = buildLeadNotification({ ...lead, preferred_time: "This week — morning" });
+    expect(html).toContain("Preferred");
+    expect(html).toContain("This week — morning");
+  });
+
+  it("omits the Preferred row entirely when there is no preferred time", () => {
+    expect(buildLeadNotification(lead).html).not.toContain("Preferred");
+    expect(buildLeadNotification({ ...lead, preferred_time: null }).html).not.toContain("Preferred");
+    expect(buildLeadNotification({ ...lead, preferred_time: "  " }).html).not.toContain("Preferred");
+  });
+
+  it("escapes HTML in the preferred time (public Meta form input)", () => {
+    const { html } = buildLeadNotification({ ...lead, preferred_time: "<b>now</b>" });
+    expect(html).not.toContain("<b>now</b>");
+    expect(html).toContain("&lt;b&gt;now&lt;/b&gt;");
+  });
 });
 
 describe("formatSast", () => {

@@ -10,6 +10,7 @@ export type ForwardLead = {
   brand: string; // "We Wash" | "Sparkling" | "Other"
   branch: string | null;
   service: string | null; // package / campaign name (bonus)
+  preferred_time: string | null; // form's "when would you like your car done?" answer (slot-aware SMS)
 };
 
 export function buildForwardPayload(input: {
@@ -19,6 +20,7 @@ export function buildForwardPayload(input: {
   brand: string;
   branch: string | null;
   service?: string | null;
+  preferred_time?: string | null;
 }): ForwardLead {
   return {
     lead_id: input.id,
@@ -27,6 +29,7 @@ export function buildForwardPayload(input: {
     brand: input.brand,
     branch: input.branch,
     service: input.service ?? null,
+    preferred_time: input.preferred_time ?? null,
   };
 }
 
@@ -55,6 +58,7 @@ export type LeadRow = {
   branch: string | null;
   meta_campaign_name: string | null;
   meta_ad_name: string | null;
+  preferred_time: string | null;
 };
 
 /**
@@ -69,6 +73,7 @@ export function forwardPayloadFromLead(row: LeadRow): ForwardLead {
     brand: getBrand({ meta_campaign_name: row.meta_campaign_name, meta_ad_name: row.meta_ad_name }),
     branch: row.branch,
     service: row.meta_campaign_name,
+    preferred_time: row.preferred_time,
   });
 }
 

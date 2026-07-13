@@ -12,6 +12,7 @@ describe("buildForwardPayload", () => {
         brand: "We Wash",
         branch: "Eldo Glen (Centurion)",
         service: "Four of a Kind R599",
+        preferred_time: "This week — morning",
       })
     ).toEqual({
       lead_id: "uuid-1",
@@ -20,11 +21,18 @@ describe("buildForwardPayload", () => {
       brand: "We Wash",
       branch: "Eldo Glen (Centurion)",
       service: "Four of a Kind R599",
+      preferred_time: "This week — morning",
     });
   });
 
   it("defaults service to null", () => {
     expect(buildForwardPayload({ id: "u", full_name: null, phone: null, brand: "Sparkling", branch: null }).service).toBeNull();
+  });
+
+  it("defaults preferred_time to null when absent (all non-pilot forms)", () => {
+    const payload = buildForwardPayload({ id: "u", full_name: null, phone: null, brand: "Sparkling", branch: null });
+    expect(payload.preferred_time).toBeNull();
+    expect("preferred_time" in payload).toBe(true); // key is always present in the signed body
   });
 });
 
@@ -38,6 +46,7 @@ describe("forwardPayloadFromLead", () => {
         branch: "Menlyn (Pretoria)",
         meta_campaign_name: "Sparkling — Leads",
         meta_ad_name: null,
+        preferred_time: null,
       })
     ).toEqual({
       lead_id: "uuid-9",
@@ -46,6 +55,7 @@ describe("forwardPayloadFromLead", () => {
       brand: "Sparkling",
       branch: "Menlyn (Pretoria)",
       service: "Sparkling — Leads",
+      preferred_time: null,
     });
   });
 
@@ -58,8 +68,23 @@ describe("forwardPayloadFromLead", () => {
         branch: "Sunnyside (Pretoria)",
         meta_campaign_name: "We Wash — Leads",
         meta_ad_name: null,
+        preferred_time: null,
       }).brand
     ).toBe("We Wash");
+  });
+
+  it("carries the stored preferred_time into a retried forward", () => {
+    expect(
+      forwardPayloadFromLead({
+        id: "u",
+        full_name: null,
+        phone: "0820000000",
+        branch: null,
+        meta_campaign_name: "We Wash — Leads",
+        meta_ad_name: null,
+        preferred_time: "As soon as possible",
+      }).preferred_time
+    ).toBe("As soon as possible");
   });
 });
 

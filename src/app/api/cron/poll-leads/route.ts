@@ -4,6 +4,7 @@ import { getSetting } from "@/lib/settings/query";
 import {
   resolveCampaignName,
   extractBranch,
+  extractPreferredTime,
   mapContact,
   normalizeBranch,
   WE_WASH_PAGE_ID,
@@ -114,6 +115,7 @@ export async function GET(request: NextRequest) {
 
         const campaignName = resolveCampaignName(lead.campaign_name, form.page_id);
         const branch = normalizeBranch(extractBranch(leadData));
+        const preferredTime = extractPreferredTime(leadData);
         const contact = mapContact(leadData);
 
         const { data: inserted, error: insertError } = await admin
@@ -128,6 +130,7 @@ export async function GET(request: NextRequest) {
             phone: contact.phone,
             email: contact.email,
             branch,
+            preferred_time: preferredTime,
             status: "new",
           })
           .select("id")
@@ -164,6 +167,7 @@ export async function GET(request: NextRequest) {
               brand,
               branch,
               service: campaignName,
+              preferred_time: preferredTime,
             }),
           );
           if (ok) {
@@ -185,6 +189,7 @@ export async function GET(request: NextRequest) {
             phone: contact.phone,
             branch,
             service: campaignName,
+            preferred_time: preferredTime,
             brand: getBrand({
               meta_campaign_name: campaignName,
               meta_ad_name: lead.ad_name ?? null,

@@ -59,6 +59,23 @@ export function extractBranch(leadData: Record<string, string>): string | null {
   return fuzzy ? leadData[fuzzy] || null : null;
 }
 
+// Preferred-time dropdown ("When would you like your car done?"). Meta slugs the
+// question text into the field name and the exact slug is unknown until the form
+// exists, so match fuzzily on normalized keys (lowercase, alphanumerics only).
+export function extractPreferredTime(leadData: Record<string, string>): string | null {
+  const match = Object.keys(leadData).find((k) => {
+    const norm = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+    return (
+      norm.includes("whenwouldyoulike") ||
+      norm.includes("preferredtime") ||
+      (norm.includes("when") && norm.includes("done"))
+    );
+  });
+  if (!match) return null;
+  const value = leadData[match]?.trim();
+  return value || null;
+}
+
 // Real Meta forms often send the dropdown VALUE slugged (e.g. "eldo_glen_(centurion)"
 // or "_menlyn_(pretoria)") instead of the clean label. Map it back to the canonical
 // branch string so the CRM displays it correctly AND Duan's exact-match branch filter

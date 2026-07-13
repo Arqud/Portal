@@ -14,6 +14,7 @@ export type NotifyLead = {
   phone: string | null;
   branch: string | null;
   service: string | null; // package / campaign name
+  preferred_time?: string | null; // form's preferred-time answer (only the pilot form asks)
   brand: string; // "We Wash" | "Sparkling" | "Other" (from getBrand)
   created_at?: string | null; // ISO; defaults to "now" for real-time ingest
 };
@@ -92,6 +93,7 @@ export function buildLeadNotification(lead: NotifyLead): { subject: string; html
       ${row("Phone", telHref ? `<a href="${escapeHtml(telHref)}" style="color:#c8a96e;text-decoration:none">${escapeHtml(lead.phone ?? "")}</a>` : "—")}
       ${row("Branch", escapeHtml(lead.branch || "—"))}
       ${row("Package", escapeHtml(lead.service || "—"))}
+      ${lead.preferred_time?.trim() ? row("Preferred", escapeHtml(lead.preferred_time.trim())) : ""}
       ${row("Received", escapeHtml(receivedAt))}
     </table>
     <a href="https://arno.arqudportal.co.za/client/leads" style="display:inline-block;background:#c8a96e;color:#080808;text-decoration:none;padding:14px 32px;font-weight:600;font-size:13px;letter-spacing:0.08em;margin-bottom:32px">VIEW IN PORTAL</a>

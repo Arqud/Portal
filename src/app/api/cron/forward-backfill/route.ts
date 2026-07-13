@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
   const { data: leads } = await admin
     .from("leads")
-    .select("id,full_name,phone,branch,meta_campaign_name,meta_ad_name")
+    .select("id,full_name,phone,branch,meta_campaign_name,meta_ad_name,preferred_time")
     .is("forwarded_at", null)
     .not("phone", "is", null)
     .gte("created_at", since)

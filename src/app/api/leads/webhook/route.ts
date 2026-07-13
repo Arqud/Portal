@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { resolveCampaignName, extractBranch, extractPreferredTime, mapContact, normalizeBranch } from "@/lib/leads/ingest";
+import { resolveCampaignName, extractBranch, extractPreferredTime, mapContact, normalizeBranch, normalizePreferredTime } from "@/lib/leads/ingest";
 import { getBrand } from "@/lib/leads/brand";
 import { buildForwardPayload, sendSignedForward } from "@/lib/leads/forward";
 import { sendLeadNotification } from "@/lib/leads/notify";
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       const adName = (value as { ad_name?: string }).ad_name ?? null;
       const campaignName = resolveCampaignName((value as { campaign_name?: string }).campaign_name, pageId);
       const branch = normalizeBranch(extractBranch(leadData));
-      const preferredTime = extractPreferredTime(leadData);
+      const preferredTime = normalizePreferredTime(extractPreferredTime(leadData));
       const contact = mapContact(leadData);
 
       const { data: inserted, error: insertError } = await admin

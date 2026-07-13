@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveCampaignName, extractBranch, extractPreferredTime, mapContact, WE_WASH_PAGE_ID, SPARKLING_PAGE_ID } from "@/lib/leads/ingest";
+import { resolveCampaignName, extractBranch, extractPreferredTime, normalizePreferredTime, mapContact, WE_WASH_PAGE_ID, SPARKLING_PAGE_ID } from "@/lib/leads/ingest";
 import { getBrand } from "@/lib/leads/brand";
 
 describe("resolveCampaignName", () => {
@@ -84,6 +84,35 @@ describe("extractPreferredTime", () => {
   });
   it("trims the value", () => {
     expect(extractPreferredTime({ preferred_time: "  This weekend  " })).toBe("This weekend");
+  });
+});
+
+describe("normalizePreferredTime", () => {
+  it("maps the real production slug back to the canonical label", () => {
+    expect(normalizePreferredTime("this_weekend_")).toBe("This weekend");
+  });
+  it("maps other option slugs to their canonical labels", () => {
+    expect(normalizePreferredTime("as_soon_as_possible")).toBe("As soon as possible");
+    expect(normalizePreferredTime("next_week")).toBe("Next week");
+  });
+  it("matches em-dash labels despite the dash contributing nothing (slug/hyphen/squashed variants)", () => {
+    expect(normalizePreferredTime("this_week_morning_")).toBe("This week — morning");
+    expect(normalizePreferredTime("this_week_-_morning")).toBe("This week — morning");
+    expect(normalizePreferredTime("This week - morning")).toBe("This week — morning");
+    expect(normalizePreferredTime("thisweekafternoon")).toBe("This week — afternoon");
+  });
+  it("passes an exact canonical label through unchanged", () => {
+    expect(normalizePreferredTime("This week — afternoon")).toBe("This week — afternoon");
+    expect(normalizePreferredTime("As soon as possible")).toBe("As soon as possible");
+  });
+  it("passes an unknown value through trimmed (future option edits must not vanish)", () => {
+    expect(normalizePreferredTime("Friday after 5")).toBe("Friday after 5");
+    expect(normalizePreferredTime("  Friday after 5  ")).toBe("Friday after 5");
+  });
+  it("returns null for null/blank input", () => {
+    expect(normalizePreferredTime(null)).toBeNull();
+    expect(normalizePreferredTime("")).toBeNull();
+    expect(normalizePreferredTime("   ")).toBeNull();
   });
 });
 

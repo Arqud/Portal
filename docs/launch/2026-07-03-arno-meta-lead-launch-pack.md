@@ -134,8 +134,10 @@ provide the campaign name, that's fine — brand still routes via `page_id`.
 
 **Notes**
 - The webhook dedupes on `leadgen_id`, so a duplicate delivery won't create a second lead.
-- Inbound POSTs are currently unauthenticated (`META_APP_SECRET` unset in prod). Fine for launch;
-  hardening a shared secret on the inbound side is a future task.
+- ~~Inbound POSTs are currently unauthenticated (`META_APP_SECRET` unset in prod). Fine for launch;
+  hardening a shared secret on the inbound side is a future task.~~ **SUPERSEDED** — that future
+  task is done: the webhook now fails closed. Make must send `x-arqud-ingest-token` matching
+  `MAKE_INGEST_TOKEN`, or the lead is rejected. See `MIGRATION-NOTES.md` for the rollout order.
 
 ---
 
@@ -252,11 +254,13 @@ onboarding a 2nd client with Meta creds, the client lookup MUST be changed to re
 **VERIFY MANUALLY before go-live (can't be checked from code):**
 1. **`clients.meta_ad_account_id` is NON-NULL on Arno's record** — if null, 100% of leads drop at
    the client lookup. (Highest-priority setup dependency.)
-2. **`META_APP_SECRET` is UNSET in Vercel prod.** Leads arrive via Make, not Meta directly, so
-   Make does not send Meta's `x-hub-signature-256`. If this secret IS set, every real lead 401s.
-   (Inbound is currently unauthenticated by design; hardening a Make-side shared secret is a
-   future task.)
+2. **`MAKE_INGEST_TOKEN` is SET in Vercel prod AND Make sends it** as the `x-arqud-ingest-token`
+   header. The webhook fails closed — without a match, every real lead 401s silently. Set the env
+   var and update the Make scenario *before* deploying. (Superseded the old advice to keep
+   `META_APP_SECRET` unset: leads arrive via Make, not Meta directly, so Make does not send Meta's
+   `x-hub-signature-256` — but `META_APP_SECRET` is now checked on its own path, so setting it no
+   longer breaks Make. See `MIGRATION-NOTES.md`.)
 3. Env vars present: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
-   `META_WEBHOOK_VERIFY_TOKEN`.
+   `META_WEBHOOK_VERIFY_TOKEN`, `MAKE_INGEST_TOKEN`.
 4. `app_settings` table exists (Morne ran the SQL — confirm).
 5. Make.com actually sends `field_data` inline in the webhook body (per §4 template).

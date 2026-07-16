@@ -99,9 +99,15 @@ describe("POST /api/leads/webhook — Path A (Meta signature)", () => {
 
   it("accepts a valid Meta signature with MAKE_INGEST_TOKEN unset (Path A truly independent)", async () => {
     vi.stubEnv("META_APP_SECRET", "app-secret");
-    vi.stubEnv("MAKE_INGEST_TOKEN", ""); // genuinely unset — proves Path A needs no Make token
-    const res = await POST(postRequest(BODY, { "x-hub-signature-256": sign(BODY, "app-secret") }));
-    expect(res.status).toBe(200);
+    // Genuinely delete the var (not empty-string) so Path A is proven with no Make token present.
+    const saved = process.env.MAKE_INGEST_TOKEN;
+    delete process.env.MAKE_INGEST_TOKEN;
+    try {
+      const res = await POST(postRequest(BODY, { "x-hub-signature-256": sign(BODY, "app-secret") }));
+      expect(res.status).toBe(200);
+    } finally {
+      if (saved !== undefined) process.env.MAKE_INGEST_TOKEN = saved;
+    }
   });
 
   it("401s an invalid Meta signature", async () => {

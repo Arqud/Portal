@@ -1,4 +1,4 @@
-# Migration: lead webhook now fails closed
+# Migration: lead webhook — fail-closed auth (on branch `webhook-fail-closed`; NOT in production until PR #27 is deployed)
 
 **Branch:** `webhook-fail-closed` (PR #27)
 **Affects:** `POST /api/leads/webhook` (production: `https://arqudportal.co.za/api/leads/webhook`)
@@ -26,9 +26,10 @@ all** — so there is no longer any state (on this branch) in which an unauthent
 processed. This becomes true in production only once PR #27 is deployed.
 
 Ingestion itself is untouched: the `leads` insert, the forward payload and `sendSignedForward`
-all behave exactly as before. This is an auth-gate change only. The `GET` `hub.challenge`
-handshake (`META_WEBHOOK_VERIFY_TOKEN`) is unchanged and now covered by a test for the unset
-case.
+all behave exactly as before — this is an auth-gate change only. The `GET` `hub.challenge`
+handshake was **also changed**: it now requires a **non-empty** `META_WEBHOOK_VERIFY_TOKEN`, so a
+blank or unset env var can no longer match a blank `hub.verify_token` (previously it could open
+the handshake). It is covered by tests for the unset, blank-env/blank-query and omitted-query cases.
 
 ## Credential design (per-environment, no shared secrets)
 

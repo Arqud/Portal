@@ -1,17 +1,18 @@
 # Migration: lead webhook now fails closed
 
-**Branch:** `fix/webhook-fail-closed-auth`
-**Affects:** `POST /api/leads/webhook` (live at `https://arno.arqudportal.co.za/api/leads/webhook`)
+**Branch:** `webhook-fail-closed` (PR #27)
+**Affects:** `POST /api/leads/webhook` (production: `https://arqudportal.co.za/api/leads/webhook`)
+**Status:** prepared, NOT deployed. Production deployment is gated on Acend's narrow authorization.
 
 ## What changed
 
 The webhook previously skipped signature verification entirely whenever `META_APP_SECRET`
 was unset — which it is in production. Any POST to the URL was ingested, forwarded to the
 partner endpoint and triggered a real SMS to whatever number it carried. This was a known,
-accepted-at-launch risk (see `docs/launch/2026-07-03-arno-meta-lead-launch-pack.md`, notes
-under §"VERIFY MANUALLY before go-live") and is now closed.
+accepted-at-launch risk (see `docs/launch/2026-07-03-arno-meta-lead-launch-pack.md`) and is
+now closed.
 
-A request is now accepted only if it satisfies **one** of:
+A request is accepted only if it satisfies **one** of:
 
 - **Path A (Meta native):** valid `x-hub-signature-256`, HMAC-SHA256 over the exact raw body
   keyed with `META_APP_SECRET`.
@@ -22,46 +23,90 @@ Anything else gets a `401` — **including when no secrets are configured at all
 longer any state in which an unauthenticated request is processed.
 
 Ingestion itself is untouched: the `leads` insert, the forward payload and `sendSignedForward`
-all behave exactly as before. This is an auth-gate change only.
+all behave exactly as before. This is an auth-gate change only. The `GET` `hub.challenge`
+handshake (`META_WEBHOOK_VERIFY_TOKEN`) is unchanged and now covered by a test for the unset
+case.
 
-The `GET` `hub.challenge` handshake (`META_WEBHOOK_VERIFY_TOKEN`) is unchanged.
+## Credential design (per-environment, no shared secrets)
 
-## ⚠️ Rollout order — Make MUST be updated FIRST
+`MAKE_INGEST_TOKEN` **must be a distinct value in each Vercel environment**:
 
-Make.com is the only live caller and it does **not** sign its posts. **If you deploy this branch
-before Make sends the token, every incoming lead will 401 and be silently lost** — no SMS, no CRM
-row, no error surfaced to anyone. Leads are not retried by Meta on our behalf here. Do these in
-order:
+- **Production** — its own unique token. This is the only value the two live Make scenarios
+  (We Wash + Sparkling) may send. It must never equal the Preview or Development value.
+- **Preview** — a separate token, used only for the Preview canaries below.
+- **Development** — a separate token, used only for local work.
 
-1. **Make + Vercel first (before any deploy).**
-   - Generate a token, e.g. `openssl rand -hex 32`.
-   - In the Make scenario's HTTP module for the portal webhook, add request header:
-     `x-arqud-ingest-token: <token>`.
-   - In Vercel (Production), add env var `MAKE_INGEST_TOKEN` = the same value.
-   - Both sides must match exactly — no whitespace, no quotes.
-2. **Then deploy this branch.** The new env var must exist in Vercel *before* the deploy that
-   reads it.
-3. **Verify a real lead flows.** Submit a test lead through the live form and confirm it lands in
-   the CRM and the SMS fires, as normal.
-4. **Confirm the hole is shut.** An unsigned, tokenless POST must now return `401`:
-   ```
-   curl -i -X POST https://arno.arqudportal.co.za/api/leads/webhook \
-     -H 'Content-Type: application/json' -d '{"entry":[]}'
-   ```
-   Expect `HTTP/1.1 401 Unauthorized`. If this returns `200`, the fix is not live — stop and
-   investigate before assuming the endpoint is protected.
+A single shared value would let a Preview/Dev test or leak authenticate against Production, so
+the values are scoped. The Path-B token is a reusable bearer accepted as immediate containment
+only; body-bound HMAC, timestamp/replay controls, request-size limits and preferably a
+separate Meta/Make endpoint are follow-up hardening.
 
-## Rollback
+## ⚠️ Rollout order — environment first, THEN deploy, Make BEFORE the endpoint tightens
 
-Revert the deploy. Do **not** "fix" a lead outage by unsetting `MAKE_INGEST_TOKEN` — under the new
-behaviour that rejects everything rather than opening the endpoint back up. If leads are 401ing,
-the cause is a token mismatch between Make and Vercel; compare the two values.
+On Vercel the environment is fixed at build time: **a variable added in the dashboard takes
+effect only on the next deployment built AFTER it was set — never on the already-running
+deployment.** Reading `process.env` per request does not change this. So:
+
+1. **Set the Production `MAKE_INGEST_TOKEN`** (unique value) in Vercel, and set the distinct
+   Preview and Development values.
+2. **Add the header on BOTH live Make scenarios** (We Wash + Sparkling) — request header
+   `x-arqud-ingest-token: <the Production token>`, exact match, no whitespace, no quotes.
+   Sender side first, so a valid caller exists before the endpoint starts rejecting
+   unauthenticated calls. Missing one scenario silently 401s that brand's leads on deploy.
+3. **Deploy this branch to Production.** Because the deploy is built after step 1, it reads the
+   new value. Confirm the production deployment's build timestamp is later than the variable's
+   "updated" time.
+4. **Verify with the Preview canaries** (below) and the monitoring view, not with a production
+   probe.
+
+## Verification — Preview-only canaries (no production probe, no live-form test)
+
+Run these against the **Preview deployment** for this branch (behind Vercel Deployment
+Protection — use a Protection-Bypass-for-Automation token via the
+`x-vercel-protection-bypass` header so the request reaches the function rather than the SSO
+edge). Each uses an **empty-entry** body `{"entry":[]}`, which authenticates/rejects without
+creating any lead, forward or SMS:
+
+- **absent token** → expect `401`.
+- **wrong token** → expect `401`.
+- **correct (Preview) token** in `x-arqud-ingest-token` → expect `200`.
+
+Do **not** submit a lead through a live form, and do **not** send an unsigned or lead-bearing
+POST to production — that path is mutating and can trigger a real SMS. The end-to-end
+lead-bearing behaviour is proven by the mocked route tests, not by production traffic.
+
+## Rollback — must stay fail-closed
+
+Do **not** `git revert` the fail-closed commit and do **not** redeploy the previous
+(fail-open) production build: either one restores the unauthenticated endpoint. Choose a
+rollback that keeps the gate shut:
+
+1. **Token mismatch (leads 401ing, code fine)** — the cause is a Production token mismatch
+   between Make and Vercel. Correct the value on whichever side is wrong and redeploy. The
+   endpoint stays fail-closed throughout.
+2. **Auth code defect** — deploy a forward compatibility fix that still rejects unauthenticated
+   requests. Never roll back to a build that processes unauthenticated POSTs.
+3. **Must halt ingestion** — stop ingestion at the source (pause the Make scenarios), then
+   replay the retained Make bundles once the fix is in. This depends on Make being configured
+   to retain and replay failed bundles (verify separately).
+
+Because the change is auth-only — no schema change, no data migration — options 1 and 2 are a
+single redeploy.
+
+## Monitoring
+
+After a narrow production go, watch the two signals in the proposed monitoring view: the
+**401 rate** on `/api/leads/webhook` (a sustained non-zero rate means a caller is failing auth
+— almost always a Make token mismatch) and a **zero-lead alert** (no successful ingestion
+within an expected window means leads are being rejected or not arriving). See the monitoring
+proposal accompanying this branch.
 
 ## Notes
 
-- `META_APP_SECRET` remains unset in prod and can stay that way. It is now only consulted for
-  Path A. Setting it does **not** break Make (Path B is checked independently) — but per the
-  launch pack this was previously a footgun, and that is no longer true.
-- Both secrets are read per-request rather than at module load, so an env change takes effect on
-  the next request rather than the next cold start.
-- If a second trusted forwarder is added later, give it its own token rather than sharing this one.
+- `META_APP_SECRET` remains unset in prod and can stay that way; it is only consulted for
+  Path A. Setting it does not break Make (Path B is checked independently).
+- Both secrets are read per-request rather than captured at module load, which avoids stale
+  module-scope capture within a running deployment. It does **not** substitute for redeploying
+  after an environment change — see the rollout note above.
+- If a second trusted forwarder is added later, give it its own token rather than sharing this
+  one.

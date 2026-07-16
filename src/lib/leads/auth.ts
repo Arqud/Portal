@@ -65,9 +65,14 @@ export async function verifyMetaSignature(
  * Either path is sufficient, neither is required to be configured — but if no
  * path validates the answer is false. That last clause is the whole point: the
  * previous implementation skipped verification entirely when the secret was
- * unset, which left the endpoint open to anyone who knew the URL. Secrets are
- * read per-call rather than at module load so a value added in the host's
- * environment takes effect on the next request, not the next cold start.
+ * unset, which left the endpoint open to anyone who knew the URL.
+ *
+ * Secrets are read per-call rather than captured at module load. This avoids
+ * stale module-scope capture WITHIN a running deployment; it does NOT make a
+ * newly-added Vercel variable appear on an already-running deployment. On Vercel
+ * the environment is fixed at build time, so a value added in the dashboard takes
+ * effect only on the next deployment BUILT AFTER it was set — never on the live
+ * deployment. The rollout therefore requires: set the variable, then deploy.
  */
 export async function authorizeIngest(rawBody: string, headers: Headers): Promise<boolean> {
   const appSecret = process.env.META_APP_SECRET ?? "";

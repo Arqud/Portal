@@ -13,8 +13,18 @@ vi.mock("@/lib/supabase/admin", () => ({
 }));
 vi.mock("@/lib/leads/notify", () => ({ sendLeadNotification: vi.fn() }));
 vi.mock("@/lib/settings/query", () => ({ getSetting: vi.fn().mockResolvedValue(null) }));
+// Keep the REAL signBody + buildForwardPayload (Path A auth depends on signBody);
+// stub only the network send so the authorized lead-bearing test can assert the
+// forward was attempted without hitting the partner endpoint.
+vi.mock("@/lib/leads/forward", async (importActual) => ({
+  ...(await importActual<typeof import("@/lib/leads/forward")>()),
+  sendSignedForward: vi.fn().mockResolvedValue(true),
+}));
 
 import { GET, POST } from "@/app/api/leads/webhook/route";
+import { sendSignedForward } from "@/lib/leads/forward";
+import { sendLeadNotification } from "@/lib/leads/notify";
+import { getSetting } from "@/lib/settings/query";
 
 function sign(body: string, secret: string): string {
   return `sha256=${createHmac("sha256", secret).update(body).digest("hex")}`;
@@ -40,6 +50,9 @@ function getRequest(params: Record<string, string>): NextRequest {
 
 beforeEach(() => {
   insertMock.mockReset();
+  vi.mocked(getSetting).mockResolvedValue(null);
+  vi.mocked(sendSignedForward).mockClear().mockResolvedValue(true);
+  vi.mocked(sendLeadNotification).mockClear();
 });
 
 afterEach(() => {
@@ -47,8 +60,12 @@ afterEach(() => {
 });
 
 describe("POST /api/leads/webhook — fail closed", () => {
-  // The production regression: an unsigned POST with no secrets set was ingested,
-  // forwarded to the partner and fired a real SMS.
+  // The VULNERABILITY (what a lead-BEARING unsigned POST would have done pre-fix):
+  // with no secret configured, verification was skipped, so the payload would have
+  // been ingested, forwarded and fired a real SMS. What was actually OBSERVED in
+  // production was narrower — one empty-entry probe (`{"entry":[]}`) returned 200 and
+  // by construction created no row, forward or SMS. These gate tests assert the 401;
+  // the lead-bearing effects are proven under "lead-bearing effects" below.
   it("401s an unsigned request when BOTH secrets are unset", async () => {
     vi.stubEnv("META_APP_SECRET", "");
     vi.stubEnv("MAKE_INGEST_TOKEN", "");
@@ -154,5 +171,109 @@ describe("GET /api/leads/webhook — Meta subscription handshake", () => {
       getRequest({ "hub.mode": "unsubscribe", "hub.verify_token": "verify-me", "hub.challenge": "c" }),
     );
     expect(res.status).toBe(403);
+  });
+
+  // Duan's requested case: if the verify token is UNSET, the handshake must not open.
+  it("403s a subscribe handshake when META_WEBHOOK_VERIFY_TOKEN is unset", async () => {
+    const saved = process.env.META_WEBHOOK_VERIFY_TOKEN;
+    delete process.env.META_WEBHOOK_VERIFY_TOKEN; // truly unset, not empty-string
+    try {
+      const res = await GET(
+        getRequest({ "hub.mode": "subscribe", "hub.verify_token": "anything", "hub.challenge": "c" }),
+      );
+      expect(res.status).toBe(403);
+    } finally {
+      if (saved !== undefined) process.env.META_WEBHOOK_VERIFY_TOKEN = saved;
+    }
+  });
+});
+
+// A single realistic Meta leadgen delivery (one entry, one change) carrying inline
+// field_data, so ingestion runs WITHOUT needing a Graph token.
+const LEAD_BODY = JSON.stringify({
+  entry: [
+    {
+      changes: [
+        {
+          value: {
+            leadgen_id: "lead-meta-1",
+            page_id: "1147234435130456", // We Wash FB page
+            campaign_name: "We Wash — Auto Detailing Complete R599",
+            field_data: [
+              { name: "full_name", values: ["Test Person"] },
+              { name: "phone_number", values: ["+27820000000"] },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+});
+
+// Chainable Supabase stub: no existing lead, one client, insert returns an id.
+// Returns a `captured` handle so tests can assert exactly what was written.
+function installAdminStub() {
+  const captured: {
+    inserted?: { table: string; row: Record<string, unknown> };
+    updated?: { table: string; row: Record<string, unknown> };
+  } = {};
+  insertMock.mockImplementation((table: string) => {
+    const b: Record<string, unknown> = {};
+    const self = () => b;
+    Object.assign(b, {
+      select: self,
+      eq: self,
+      not: self,
+      limit: self,
+      insert: (row: Record<string, unknown>) => {
+        captured.inserted = { table, row };
+        (b as { __insert?: boolean }).__insert = true;
+        return b;
+      },
+      update: (row: Record<string, unknown>) => {
+        captured.updated = { table, row };
+        return b;
+      },
+      maybeSingle: async () =>
+        table === "clients" ? { data: { id: "client-1" } } : { data: null },
+      single: async () =>
+        (b as { __insert?: boolean }).__insert
+          ? { data: { id: "lead-1" }, error: null }
+          : { data: { meta_access_token: null }, error: null },
+    });
+    return b;
+  });
+  return captured;
+}
+
+describe("POST /api/leads/webhook — lead-bearing effects", () => {
+  // Duan's requested proof #1: an UNAUTHENTICATED lead-bearing request must have
+  // zero DB, forward and notification effects — not merely return 401.
+  it("unauthenticated lead-bearing request writes nothing, forwards nothing, notifies nobody", async () => {
+    vi.stubEnv("META_APP_SECRET", "");
+    vi.stubEnv("MAKE_INGEST_TOKEN", "make-token");
+    installAdminStub(); // armed, but must never be reached
+    const res = await POST(postRequest(LEAD_BODY)); // no auth header
+    expect(res.status).toBe(401);
+    expect(insertMock).not.toHaveBeenCalled(); // admin.from() never reached
+    expect(vi.mocked(sendSignedForward)).not.toHaveBeenCalled();
+    expect(vi.mocked(sendLeadNotification)).not.toHaveBeenCalled();
+  });
+
+  // Duan's requested proof #2: an AUTHORIZED realistic request DOES insert, forward
+  // and notify (all side effects mocked).
+  it("authorized lead-bearing request inserts, forwards and notifies (effects mocked)", async () => {
+    vi.stubEnv("META_APP_SECRET", "");
+    vi.stubEnv("MAKE_INGEST_TOKEN", "make-token");
+    vi.mocked(getSetting).mockResolvedValue("https://fwd.example"); // enable forward path
+    const captured = installAdminStub();
+    const res = await POST(postRequest(LEAD_BODY, { "x-arqud-ingest-token": "make-token" }));
+    expect(res.status).toBe(200);
+    expect(captured.inserted?.table).toBe("leads");
+    expect(captured.inserted?.row.meta_lead_id).toBe("lead-meta-1");
+    expect(captured.inserted?.row.phone).toBe("+27820000000");
+    expect(vi.mocked(sendSignedForward)).toHaveBeenCalledTimes(1);
+    expect(captured.updated?.row).toHaveProperty("forwarded_at"); // stamped on 2xx forward
+    expect(vi.mocked(sendLeadNotification)).toHaveBeenCalledTimes(1);
   });
 });

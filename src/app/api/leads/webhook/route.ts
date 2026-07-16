@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { resolveCampaignName, extractBranch, extractPreferredTime, mapContact, normalizeBranch, normalizePreferredTime } from "@/lib/leads/ingest";
 import { getBrand } from "@/lib/leads/brand";
+import { authorizeIngest } from "@/lib/leads/auth";
 import { buildForwardPayload, sendSignedForward } from "@/lib/leads/forward";
 import { sendLeadNotification } from "@/lib/leads/notify";
 import { getSetting } from "@/lib/settings/query";
@@ -25,27 +26,6 @@ async function forwardLead(
   }
 }
 
-const META_APP_SECRET = process.env.META_APP_SECRET ?? "";
-
-// Verify Meta webhook signature
-async function verifySignature(body: string, signature: string): Promise<boolean> {
-  if (!META_APP_SECRET || !signature) return false;
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(META_APP_SECRET),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
-  const hex = Array.from(new Uint8Array(sig))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  const expected = `sha256=${hex}`;
-  return expected === signature;
-}
-
 // Meta sends a GET to verify the webhook endpoint
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -53,7 +33,11 @@ export async function GET(request: NextRequest) {
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
 
-  if (mode === "subscribe" && token === process.env.META_WEBHOOK_VERIFY_TOKEN) {
+  // Require a NON-EMPTY configured verify token. Without this guard a blank/unset
+  // env var would equal a blank `hub.verify_token`, opening the handshake to anyone
+  // who posts `?hub.mode=subscribe&hub.verify_token=`. The empty case must fail closed.
+  const verifyToken = process.env.META_WEBHOOK_VERIFY_TOKEN ?? "";
+  if (verifyToken && mode === "subscribe" && token === verifyToken) {
     return new Response(challenge, { status: 200 });
   }
   return new Response("Forbidden", { status: 403 });
@@ -62,10 +46,13 @@ export async function GET(request: NextRequest) {
 // Meta sends lead events as POST
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
-  const signature = request.headers.get("x-hub-signature-256") ?? "";
 
-  if (META_APP_SECRET && !(await verifySignature(rawBody, signature))) {
-    return new Response("Invalid signature", { status: 401 });
+  // Fail closed. Either a valid Meta signature or a valid forwarder token gets in;
+  // anything else — including a request arriving while no secret is configured —
+  // is rejected before we parse a byte of it. This endpoint triggers real SMS to
+  // real customers, so an unauthenticated caller must never reach ingestion.
+  if (!(await authorizeIngest(rawBody, request.headers))) {
+    return new Response("Unauthorized", { status: 401 });
   }
 
   let body: { entry?: { changes?: { value?: { leadgen_id?: string; page_id?: string; ad_id?: string; form_id?: string; adgroup_id?: string } }[] }[] };

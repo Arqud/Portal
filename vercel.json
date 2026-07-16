@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/cron/forward-backfill?key=arqud_bf_9Fq2Lx7Rj4Vt",
+      "path": "/api/cron/forward-backfill",
       "schedule": "0 3 * * *"
     }
   ]

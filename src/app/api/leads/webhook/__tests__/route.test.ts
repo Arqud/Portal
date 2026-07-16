@@ -97,9 +97,9 @@ describe("POST /api/leads/webhook — Path A (Meta signature)", () => {
     await expect(res.json()).resolves.toEqual({ ok: true });
   });
 
-  it("accepts a valid Meta signature with NO Make token present (either-path)", async () => {
+  it("accepts a valid Meta signature with MAKE_INGEST_TOKEN unset (Path A truly independent)", async () => {
     vi.stubEnv("META_APP_SECRET", "app-secret");
-    vi.stubEnv("MAKE_INGEST_TOKEN", "make-token");
+    vi.stubEnv("MAKE_INGEST_TOKEN", ""); // genuinely unset — proves Path A needs no Make token
     const res = await POST(postRequest(BODY, { "x-hub-signature-256": sign(BODY, "app-secret") }));
     expect(res.status).toBe(200);
   });
@@ -185,6 +185,22 @@ describe("GET /api/leads/webhook — Meta subscription handshake", () => {
     } finally {
       if (saved !== undefined) process.env.META_WEBHOOK_VERIFY_TOKEN = saved;
     }
+  });
+
+  // The specific exploit the non-empty guard closes: a BLANK env matching a BLANK
+  // hub.verify_token. Must fail closed.
+  it("403s blank env + blank hub.verify_token (blank must never match blank)", async () => {
+    vi.stubEnv("META_WEBHOOK_VERIFY_TOKEN", "");
+    const res = await GET(
+      getRequest({ "hub.mode": "subscribe", "hub.verify_token": "", "hub.challenge": "c" }),
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("403s blank env + omitted hub.verify_token", async () => {
+    vi.stubEnv("META_WEBHOOK_VERIFY_TOKEN", "");
+    const res = await GET(getRequest({ "hub.mode": "subscribe", "hub.challenge": "c" }));
+    expect(res.status).toBe(403);
   });
 });
 

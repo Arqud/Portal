@@ -33,7 +33,11 @@ export async function GET(request: NextRequest) {
   const token = searchParams.get("hub.verify_token");
   const challenge = searchParams.get("hub.challenge");
 
-  if (mode === "subscribe" && token === process.env.META_WEBHOOK_VERIFY_TOKEN) {
+  // Require a NON-EMPTY configured verify token. Without this guard a blank/unset
+  // env var would equal a blank `hub.verify_token`, opening the handshake to anyone
+  // who posts `?hub.mode=subscribe&hub.verify_token=`. The empty case must fail closed.
+  const verifyToken = process.env.META_WEBHOOK_VERIFY_TOKEN ?? "";
+  if (verifyToken && mode === "subscribe" && token === verifyToken) {
     return new Response(challenge, { status: 200 });
   }
   return new Response("Forbidden", { status: 403 });

@@ -12,7 +12,8 @@ unauthenticated POST could be ingested, forwarded to the partner endpoint and tr
 SMS** to whatever number it carried. (An empty or malformed POST created nothing; the exposure
 was a well-formed lead payload.) This was a known, accepted-at-launch risk (see
 `docs/launch/2026-07-03-arno-meta-lead-launch-pack.md`). **This branch closes it — but the fix
-is NOT yet deployed: production still runs the old fail-open code until PR #27 is merged.**
+is NOT yet deployed: production remains fail-open until a production deployment containing
+PR #27 is READY and serving the production alias (a merge alone is not sufficient).**
 
 A request is accepted only if it satisfies **one** of:
 

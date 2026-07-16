@@ -135,9 +135,12 @@ provide the campaign name, that's fine — brand still routes via `page_id`.
 **Notes**
 - The webhook dedupes on `leadgen_id`, so a duplicate delivery won't create a second lead.
 - ~~Inbound POSTs are currently unauthenticated (`META_APP_SECRET` unset in prod). Fine for launch;
-  hardening a shared secret on the inbound side is a future task.~~ **SUPERSEDED** — that future
-  task is done: the webhook now fails closed. Make must send `x-arqud-ingest-token` matching
-  `MAKE_INGEST_TOKEN`, or the lead is rejected. See `MIGRATION-NOTES.md` for the rollout order.
+  hardening a shared secret on the inbound side is a future task.~~ **UPDATE** — that hardening
+  is implemented on branch `webhook-fail-closed` (PR #27), but **production remains fail-open
+  until a production deployment containing PR #27 is READY and serving the production alias**.
+  From that deployment onward the webhook fails closed: Make must send `x-arqud-ingest-token`
+  matching `MAKE_INGEST_TOKEN`, or the lead is rejected. See `MIGRATION-NOTES.md` for the
+  rollout order.
 
 ---
 
@@ -255,8 +258,10 @@ onboarding a 2nd client with Meta creds, the client lookup MUST be changed to re
 1. **`clients.meta_ad_account_id` is NON-NULL on Arno's record** — if null, 100% of leads drop at
    the client lookup. (Highest-priority setup dependency.)
 2. **`MAKE_INGEST_TOKEN` is SET in Vercel prod AND Make sends it** as the `x-arqud-ingest-token`
-   header. The webhook fails closed — without a match, every real lead 401s silently. Set the env
-   var and update the Make scenario *before* deploying. (Superseded the old advice to keep
+   header. Production remains fail-open until a production deployment containing PR #27 is READY
+   and serving the production alias; from that deployment onward the webhook fails closed —
+   without a match, every real lead 401s silently. Set the env var and update the Make scenario
+   *before* deploying. (Superseded the old advice to keep
    `META_APP_SECRET` unset: leads arrive via Make, not Meta directly, so Make does not send Meta's
    `x-hub-signature-256` — but `META_APP_SECRET` is now checked on its own path, so setting it no
    longer breaks Make. See `MIGRATION-NOTES.md`.)

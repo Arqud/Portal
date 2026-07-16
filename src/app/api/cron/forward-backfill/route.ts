@@ -8,9 +8,9 @@ import { forwardPayloadFromLead, sendSignedForward, type LeadRow } from "@/lib/l
 // missed. This cron re-attempts any recent, textable lead with forwarded_at still NULL,
 // so a missed SMS is never silently lost. Idempotent: Duan dedups on lead_id.
 
-// Stable capability token (private repo, matches the iCal-feed pattern). Vercel cron
-// calls this path with ?key=. CRON_SECRET header is also accepted if configured.
-const BACKFILL_KEY = "arqud_bf_9Fq2Lx7Rj4Vt";
+// Auth: Vercel automatically attaches `Authorization: Bearer ${CRON_SECRET}` to the
+// requests it makes to this cron path. That Bearer is the ONLY accepted credential —
+// there is no in-URL `?key=`, so no secret can ride in a path, a doc, or an access log.
 
 // Only retry leads from the last 24h — avoids re-sending ancient/test leads if the
 // forward URL is configured for the first time.
@@ -18,11 +18,9 @@ const WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_PER_RUN = 100;
 
 export async function GET(request: NextRequest) {
-  const key = new URL(request.url).searchParams.get("key");
+  const cronSecret = process.env.CRON_SECRET ?? "";
   const auth = request.headers.get("authorization") ?? "";
-  const isVercelCron =
-    !!process.env.CRON_SECRET && auth === `Bearer ${process.env.CRON_SECRET}`;
-  if (key !== BACKFILL_KEY && !isVercelCron) {
+  if (!cronSecret || auth !== `Bearer ${cronSecret}`) {
     return new Response("Forbidden", { status: 403 });
   }
 

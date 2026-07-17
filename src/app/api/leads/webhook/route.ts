@@ -127,6 +127,34 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Meta attribution. form_id rides inline on the webhook body; campaign_id and
+      // adset_id do NOT, so we ask the Graph lead node for them (plus form_id as a
+      // backstop). Mirrors the field_data fallback guard: a missing token or a failed
+      // fetch leaves these null and NEVER drops the lead — attribution is a bonus, the
+      // SMS is not. form_version is not exposed by Meta, so it is always null.
+      let metaFormId: string | null = value.form_id ?? null;
+      let metaCampaignId: string | null = null;
+      let metaAdsetId: string | null = null;
+      try {
+        const attrTokenRes = await admin
+          .from("clients")
+          .select("meta_access_token")
+          .eq("id", client.id)
+          .single();
+        const attrToken = attrTokenRes.data?.meta_access_token;
+        if (attrToken) {
+          const res = await fetch(
+            `https://graph.facebook.com/v19.0/${metaLeadId}?fields=campaign_id,adset_id,form_id&access_token=${attrToken}`,
+          );
+          const json = await res.json();
+          metaCampaignId = json.campaign_id ?? null;
+          metaAdsetId = json.adset_id ?? null;
+          metaFormId = json.form_id ?? metaFormId;
+        }
+      } catch {
+        // Leave attribution fields null on any error — the lead still ingests + forwards.
+      }
+
       // Reliable brand signal: real campaign name if present, else page_id fallback.
       const pageId = value.page_id ?? null;
       const adName = (value as { ad_name?: string }).ad_name ?? null;
@@ -141,6 +169,10 @@ export async function POST(request: NextRequest) {
           client_id: client.id,
           meta_lead_id: metaLeadId,
           meta_ad_id: metaAdId,
+          meta_campaign_id: metaCampaignId,
+          meta_adset_id: metaAdsetId,
+          meta_form_id: metaFormId,
+          meta_form_version: null,
           meta_ad_name: adName,
           meta_campaign_name: campaignName,
           full_name: contact.full_name,
@@ -182,6 +214,12 @@ export async function POST(request: NextRequest) {
             branch,
             service: campaignName,
             preferred_time: preferredTime,
+            meta_lead_id: metaLeadId,
+            ad_id: metaAdId,
+            campaign_id: metaCampaignId,
+            adset_id: metaAdsetId,
+            form_id: metaFormId,
+            form_version: null,
           }),
         );
         if (forwarded) {

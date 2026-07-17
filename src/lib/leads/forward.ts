@@ -11,6 +11,15 @@ export type ForwardLead = {
   branch: string | null;
   service: string | null; // package / campaign name (bonus)
   preferred_time: string | null; // form's "when would you like your car done?" answer (slot-aware SMS)
+  // Meta attribution — the 6 fields Duan's endpoint keys on. Distinct from lead_id
+  // (our CRM UUID): meta_lead_id is Meta's own leadgen id. All null-safe: a key is
+  // ALWAYS present in the signed body, carrying null when Meta didn't give us a value.
+  meta_lead_id: string | null; // Meta's leadgen_id (NOT our CRM UUID)
+  form_id: string | null;
+  form_version: string | null; // Meta does not expose this — always null for now
+  campaign_id: string | null;
+  adset_id: string | null;
+  ad_id: string | null;
 };
 
 export function buildForwardPayload(input: {
@@ -21,6 +30,12 @@ export function buildForwardPayload(input: {
   branch: string | null;
   service?: string | null;
   preferred_time?: string | null;
+  meta_lead_id?: string | null;
+  form_id?: string | null;
+  form_version?: string | null;
+  campaign_id?: string | null;
+  adset_id?: string | null;
+  ad_id?: string | null;
 }): ForwardLead {
   return {
     lead_id: input.id,
@@ -30,6 +45,12 @@ export function buildForwardPayload(input: {
     branch: input.branch,
     service: input.service ?? null,
     preferred_time: input.preferred_time ?? null,
+    meta_lead_id: input.meta_lead_id ?? null,
+    form_id: input.form_id ?? null,
+    form_version: input.form_version ?? null,
+    campaign_id: input.campaign_id ?? null,
+    adset_id: input.adset_id ?? null,
+    ad_id: input.ad_id ?? null,
   };
 }
 
@@ -59,6 +80,14 @@ export type LeadRow = {
   meta_campaign_name: string | null;
   meta_ad_name: string | null;
   preferred_time: string | null;
+  // Stored Meta attribution columns — carried through to the forward on a retry so a
+  // backfilled SMS ships the identical attribution the live path would have.
+  meta_lead_id: string | null;
+  meta_ad_id: string | null;
+  meta_campaign_id: string | null;
+  meta_adset_id: string | null;
+  meta_form_id: string | null;
+  meta_form_version: string | null;
 };
 
 /**
@@ -74,6 +103,12 @@ export function forwardPayloadFromLead(row: LeadRow): ForwardLead {
     branch: row.branch,
     service: row.meta_campaign_name,
     preferred_time: row.preferred_time,
+    meta_lead_id: row.meta_lead_id,
+    ad_id: row.meta_ad_id,
+    campaign_id: row.meta_campaign_id,
+    adset_id: row.meta_adset_id,
+    form_id: row.meta_form_id,
+    form_version: row.meta_form_version,
   });
 }
 

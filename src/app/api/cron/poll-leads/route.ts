@@ -41,6 +41,9 @@ type MetaLead = {
   ad_id?: string;
   ad_name?: string;
   campaign_name?: string;
+  campaign_id?: string;
+  adset_id?: string;
+  form_id?: string;
   field_data?: { name: string; values: string[] }[];
 };
 
@@ -79,7 +82,7 @@ export async function GET(request: NextRequest) {
     const out: Record<string, unknown> = { form: form.label, fetched: 0, inserted: 0, forwarded: 0 };
     try {
       const res = await fetch(
-        `${GRAPH}/${form.form_id}/leads?fields=id,created_time,ad_id,ad_name,campaign_name,field_data` +
+        `${GRAPH}/${form.form_id}/leads?fields=id,created_time,ad_id,ad_name,campaign_name,campaign_id,adset_id,form_id,field_data` +
           `&limit=${MAX_PER_FORM}&access_token=${encodeURIComponent(token)}`,
       );
       const json = (await res.json()) as {
@@ -125,6 +128,11 @@ export async function GET(request: NextRequest) {
             client_id: client.id,
             meta_lead_id: metaLeadId,
             meta_ad_id: lead.ad_id ?? null,
+            meta_campaign_id: lead.campaign_id ?? null,
+            meta_adset_id: lead.adset_id ?? null,
+            // Per-form poll, so the form we polled is an authoritative fallback id.
+            meta_form_id: lead.form_id ?? form.form_id,
+            meta_form_version: null,
             meta_ad_name: lead.ad_name ?? null,
             meta_campaign_name: campaignName,
             full_name: contact.full_name,
@@ -169,6 +177,12 @@ export async function GET(request: NextRequest) {
               branch,
               service: campaignName,
               preferred_time: preferredTime,
+              meta_lead_id: metaLeadId,
+              ad_id: lead.ad_id ?? null,
+              campaign_id: lead.campaign_id ?? null,
+              adset_id: lead.adset_id ?? null,
+              form_id: lead.form_id ?? form.form_id,
+              form_version: null,
             }),
           );
           if (ok) {

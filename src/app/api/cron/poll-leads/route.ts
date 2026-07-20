@@ -8,9 +8,8 @@ import {
   mapContact,
   normalizeBranch,
   normalizePreferredTime,
-  WE_WASH_PAGE_ID,
-  SPARKLING_PAGE_ID,
 } from "@/lib/leads/ingest";
+import { POLL_FORMS, resolveBranch } from "@/lib/leads/formBranches";
 import { getBrand } from "@/lib/leads/brand";
 import { buildForwardPayload, sendSignedForward } from "@/lib/leads/forward";
 import { sendLeadNotification } from "@/lib/leads/notify";
@@ -28,12 +27,10 @@ const POLL_KEY = "arqud_poll_7Hn3Kp9Wx2Qz"; // ?key= guard (private repo, matche
 const GRAPH = "https://graph.facebook.com/v19.0";
 const MAX_PER_FORM = 50;
 
-// The pilot lead forms to poll, each tagged with the page it belongs to (page_id is
-// the authoritative brand signal). Edit here if the live ad forms ever change.
-const POLL_FORMS: { form_id: string; page_id: string; label: string }[] = [
-  { form_id: "1445058691003630", page_id: WE_WASH_PAGE_ID, label: "We Wash — Book a Valet" },
-  { form_id: "1713965523197151", page_id: SPARKLING_PAGE_ID, label: "Sparkling — Book a Detail" },
-];
+// The lead forms to poll come from the single source-of-truth form map
+// (src/lib/leads/formBranches.ts) — add a form THERE and this cron polls it,
+// each entry tagged with the page it belongs to (page_id is the authoritative
+// brand signal).
 
 type MetaLead = {
   id: string;
@@ -118,7 +115,9 @@ export async function GET(request: NextRequest) {
         }
 
         const campaignName = resolveCampaignName(lead.campaign_name, form.page_id);
-        const branch = normalizeBranch(extractBranch(leadData));
+        // Branch: the lead's own answer (normalized) always wins; per-branch forms
+        // carry no branch question, so fall back to the branch the form id implies.
+        const branch = resolveBranch(normalizeBranch(extractBranch(leadData)), lead.form_id ?? form.form_id);
         const preferredTime = normalizePreferredTime(extractPreferredTime(leadData));
         const contact = mapContact(leadData);
 

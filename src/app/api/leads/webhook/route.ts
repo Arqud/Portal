@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { resolveCampaignName, extractBranch, extractPreferredTime, mapContact, normalizeBranch, normalizePreferredTime } from "@/lib/leads/ingest";
+import { resolveBranch } from "@/lib/leads/formBranches";
 import { getBrand } from "@/lib/leads/brand";
 import { authorizeIngest } from "@/lib/leads/auth";
 import { buildForwardPayload, sendSignedForward } from "@/lib/leads/forward";
@@ -172,7 +173,9 @@ export async function POST(request: NextRequest) {
       const pageId = value.page_id ?? null;
       const adName = inlineAttr.ad_name;
       const campaignName = resolveCampaignName((value as { campaign_name?: string }).campaign_name, pageId);
-      const branch = normalizeBranch(extractBranch(leadData));
+      // Branch: the lead's own answer (normalized) always wins; per-branch forms
+      // carry no branch question, so fall back to the branch the form id implies.
+      const branch = resolveBranch(normalizeBranch(extractBranch(leadData)), metaFormId);
       const preferredTime = normalizePreferredTime(extractPreferredTime(leadData));
       const contact = mapContact(leadData);
 

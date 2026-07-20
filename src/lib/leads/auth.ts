@@ -21,8 +21,11 @@ export const META_SIGNATURE_HEADER = "x-hub-signature-256";
  * and that timing difference is enough to recover a secret one byte at a time.
  * Hashing first also means the comparison leaks nothing about the secret's
  * length, which a bare length check would.
+ *
+ * Exported for reuse by other token-gated inbound endpoints (booking outcomes);
+ * behaviour is identical for every caller.
  */
-async function safeEqual(a: string, b: string): Promise<boolean> {
+export async function safeEqual(a: string, b: string): Promise<boolean> {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",

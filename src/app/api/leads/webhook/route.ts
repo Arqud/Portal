@@ -4,6 +4,7 @@ import { resolveCampaignName, extractBranch, extractPreferredTime, mapContact, n
 import { getBrand } from "@/lib/leads/brand";
 import { authorizeIngest } from "@/lib/leads/auth";
 import { buildForwardPayload, sendSignedForward } from "@/lib/leads/forward";
+import { pickAttribution, hasFullInlineAttribution } from "@/lib/leads/attribution";
 import { sendLeadNotification } from "@/lib/leads/notify";
 import { getSetting } from "@/lib/settings/query";
 
@@ -70,7 +71,12 @@ export async function POST(request: NextRequest) {
       if (!value?.leadgen_id) continue;
 
       const metaLeadId = value.leadgen_id;
-      const metaAdId = value.adgroup_id ?? value.ad_id ?? null;
+
+      // Everything Meta-attribution-shaped that rode inline on the body, alias-tolerant
+      // and normalised (trimmed strings, numbers coerced, "" treated as absent). This is
+      // the primary source; the Graph API is only a fallback for what is missing.
+      const inlineAttr = pickAttribution(value);
+      const metaAdId = inlineAttr.ad_id;
 
       // Check if we already have this lead
       const { data: existing } = await admin
@@ -127,37 +133,44 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Meta attribution. form_id rides inline on the webhook body; campaign_id and
-      // adset_id do NOT, so we ask the Graph lead node for them (plus form_id as a
-      // backstop). Mirrors the field_data fallback guard: a missing token or a failed
-      // fetch leaves these null and NEVER drops the lead — attribution is a bonus, the
-      // SMS is not. form_version is not exposed by Meta, so it is always null.
-      let metaFormId: string | null = value.form_id ?? null;
-      let metaCampaignId: string | null = null;
-      let metaAdsetId: string | null = null;
-      try {
-        const attrTokenRes = await admin
-          .from("clients")
-          .select("meta_access_token")
-          .eq("id", client.id)
-          .single();
-        const attrToken = attrTokenRes.data?.meta_access_token;
-        if (attrToken) {
-          const res = await fetch(
-            `https://graph.facebook.com/v19.0/${metaLeadId}?fields=campaign_id,adset_id,form_id&access_token=${attrToken}`,
-          );
-          const json = await res.json();
-          metaCampaignId = json.campaign_id ?? null;
-          metaAdsetId = json.adset_id ?? null;
-          metaFormId = json.form_id ?? metaFormId;
+      // Meta attribution. Inline body wins: whatever the sender mapped onto the webhook
+      // is authoritative and costs nothing. The Graph lead node is a FALLBACK, consulted
+      // only for the ids the body did not supply — and skipped entirely once the body
+      // carried both campaign_id and adset_id, since that call is then a pure round trip
+      // on a speed-to-lead path. Mirrors the field_data fallback guard: a missing token or
+      // a failed fetch leaves these null and NEVER drops the lead — attribution is a
+      // bonus, the SMS is not. form_version is not exposed by Meta, so it is always null.
+      let metaFormId: string | null = inlineAttr.form_id;
+      let metaCampaignId: string | null = inlineAttr.campaign_id;
+      let metaAdsetId: string | null = inlineAttr.adset_id;
+      if (!hasFullInlineAttribution(inlineAttr)) {
+        try {
+          const attrTokenRes = await admin
+            .from("clients")
+            .select("meta_access_token")
+            .eq("id", client.id)
+            .single();
+          const attrToken = attrTokenRes.data?.meta_access_token;
+          if (attrToken) {
+            const res = await fetch(
+              `https://graph.facebook.com/v19.0/${metaLeadId}?fields=campaign_id,adset_id,form_id&access_token=${attrToken}`,
+            );
+            const json = await res.json();
+            // Same normaliser as the inline read, and strictly gap-filling: a Graph value
+            // can never overwrite an id the body already gave us.
+            const graphAttr = pickAttribution(json);
+            metaCampaignId = metaCampaignId ?? graphAttr.campaign_id;
+            metaAdsetId = metaAdsetId ?? graphAttr.adset_id;
+            metaFormId = metaFormId ?? graphAttr.form_id;
+          }
+        } catch {
+          // Leave attribution fields null on any error — the lead still ingests + forwards.
         }
-      } catch {
-        // Leave attribution fields null on any error — the lead still ingests + forwards.
       }
 
       // Reliable brand signal: real campaign name if present, else page_id fallback.
       const pageId = value.page_id ?? null;
-      const adName = (value as { ad_name?: string }).ad_name ?? null;
+      const adName = inlineAttr.ad_name;
       const campaignName = resolveCampaignName((value as { campaign_name?: string }).campaign_name, pageId);
       const branch = normalizeBranch(extractBranch(leadData));
       const preferredTime = normalizePreferredTime(extractPreferredTime(leadData));

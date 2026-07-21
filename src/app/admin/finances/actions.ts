@@ -35,7 +35,7 @@ async function sendInvoiceEmail(invoiceId: string, invoiceNumber: string, client
           <tr><td style="color:#6e6e6e;font-size:12px;padding:8px 0">Due Date</td><td style="color:#f3ecd9;font-size:12px;text-align:right;padding:8px 0">${dueDate}</td></tr>
         </table>
         <a href="${portalUrl}" style="display:inline-block;background:#c8a96e;color:#080808;text-decoration:none;padding:14px 32px;font-weight:600;font-size:13px;letter-spacing:0.08em;margin-bottom:32px">VIEW INVOICE</a>
-        <p style="color:#6e6e6e;font-size:11px;margin:0">Please use the invoice number as your payment reference.<br>FNB Gold Business · Acc: 63195766482 · Branch: 255355</p>
+        <p style="color:#6e6e6e;font-size:11px;margin:0">Please use the invoice number as your payment reference.<br>FNB Gold Business · Acc: 63219437109 · Branch: 255355</p>
         <p style="color:#3a3a3a;font-size:10px;margin:32px 0 0">Morne@arqud.com · ARQUD (PTY) LTD · Reg: 2025/074398/07</p>
       </div>`,
     });

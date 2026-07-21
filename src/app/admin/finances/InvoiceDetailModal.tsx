@@ -122,7 +122,7 @@ export function InvoiceDetailModal({ invoice, onClose, onEdit }: { invoice: Invo
                 {
                   label: "BILLED FROM",
                   name: "ARQUD (PTY) LTD",
-                  lines: ["Morne Swanepoel", "Morne@arqud.com", "Reg No: 2025/074398/07", "Tel: +27 60 865 8690", "Bank: FNB Gold Business", "Acc: 63195766482"],
+                  lines: ["Morne Swanepoel", "Morne@arqud.com", "Reg No: 2025/074398/07", "Tel: +27 60 865 8690", "Bank: FNB Gold Business", "Acc: 63219437109"],
                 },
                 {
                   label: "BILLED TO",
@@ -190,7 +190,7 @@ export function InvoiceDetailModal({ invoice, onClose, onEdit }: { invoice: Invo
                 <p style={{ fontSize: 7.5, letterSpacing: "0.26em", color: "#9A8058", marginBottom: "3.5mm" }}>BANKING DETAILS</p>
                 <p style={{ fontWeight: 600, fontSize: 10, color: "#0D0D12", marginBottom: "1mm" }}>FNB Gold Business Account</p>
                 <p style={{ fontSize: 9, lineHeight: 1.9, color: "#5A5650" }}>Account Holder: ARQUD (PTY) LTD</p>
-                <p style={{ fontSize: 9, lineHeight: 1.9, color: "#5A5650" }}>Account Number: 63195766482</p>
+                <p style={{ fontSize: 9, lineHeight: 1.9, color: "#5A5650" }}>Account Number: 63219437109</p>
                 <p style={{ fontSize: 9, lineHeight: 1.9, color: "#5A5650" }}>Branch Code: 255355</p>
                 <p style={{ fontSize: 9, fontStyle: "italic", color: "#9A9590" }}>Reference: {invoice.invoice_number}</p>
               </div>

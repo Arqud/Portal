@@ -139,7 +139,7 @@ export function SettingsClient({
             ["Phone", "+27 60 865 8690"],
             ["Website", "arqud.com"],
             ["Bank", "FNB Gold Business"],
-            ["Account No", "63195766482"],
+            ["Account No", "63219437109"],
             ["Branch Code", "255355"],
             ["VAT Number", "Pending — add when received"],
           ].map(([label, value]) => (

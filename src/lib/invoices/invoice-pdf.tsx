@@ -157,7 +157,7 @@ export function InvoicePDF({ invoice, arqudVatNumber }: { invoice: InvoiceWithIt
                 {vat ? <Text style={S.partyDetail}>VAT No: {arqudVatNumber}</Text> : null}
                 <Text style={S.partyDetail}>Tel: +27 60 865 8690</Text>
                 <Text style={S.partyDetail}>Bank: FNB Gold Business</Text>
-                <Text style={S.partyDetail}>Acc: 63195766482</Text>
+                <Text style={S.partyDetail}>Acc: 63219437109</Text>
               </View>
             </View>
             <View style={S.partyBox}>
@@ -214,7 +214,7 @@ export function InvoicePDF({ invoice, arqudVatNumber }: { invoice: InvoiceWithIt
               <Text style={S.bankingLabel}>BANKING DETAILS</Text>
               <Text style={S.bankingStrong}>FNB Gold Business Account</Text>
               <Text style={S.bankingDetail}>Account Holder: ARQUD (PTY) LTD</Text>
-              <Text style={S.bankingDetail}>Account Number: 63195766482</Text>
+              <Text style={S.bankingDetail}>Account Number: 63219437109</Text>
               <Text style={S.bankingDetail}>Branch Code: 255355</Text>
               <Text style={[S.bankingDetail, { fontFamily: "Helvetica-Oblique" }]}>Reference: {invoice.invoice_number}</Text>
             </View>

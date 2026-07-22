@@ -3,7 +3,6 @@ import {
 } from "@react-pdf/renderer";
 import type { InvoiceWithItems } from "@/lib/invoices/types";
 import { getBusinessTheme, invoiceTitle, type BusinessPalette } from "@/lib/brand/business-theme";
-import { SaeBrandMark } from "@/lib/brand/sae-pdf-mark";
 
 // Register Google Fonts
 Font.register({
@@ -105,14 +104,10 @@ export function InvoicePDF({ invoice, vatNumber, business }: { invoice: InvoiceW
       <Page size="A4" style={S.page}>
         {/* Header */}
         <View style={S.header}>
-          {theme.key === "sa_equipment" ? (
-            <SaeBrandMark />
-          ) : (
-            <View>
-              <Text style={S.brandName}>{theme.brandName}</Text>
-              <Text style={S.brandTag}>{theme.brandTag}</Text>
-            </View>
-          )}
+          <View>
+            <Text style={S.brandName}>{theme.brandName}</Text>
+            <Text style={S.brandTag}>{theme.brandTag}</Text>
+          </View>
           <View style={S.titleBlock}>
             <Text style={S.invoiceWord}>{invoiceTitle(vatNumber)}</Text>
             <Text style={S.invoiceNum}>{invoice.invoice_number}</Text>

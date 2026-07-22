@@ -4,6 +4,7 @@ import { createElement } from "react";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { InvoicePDF } from "@/lib/invoices/invoice-pdf";
+import { SaeInvoicePDF } from "@/lib/invoices/sae-invoice-pdf";
 import type { InvoiceWithItems } from "@/lib/invoices/types";
 
 export async function GET(
@@ -40,8 +41,12 @@ export async function GET(
     .sort((a, b) => a.sort_order - b.sort_order);
 
   const vatNumber = process.env.ARQUD_VAT_NUMBER;
+  // SA Equipment records render their own light document; everything else is ARQUD.
+  // `business` is populated once the Phase 2 migration adds the column (defaults 'arqud').
+  const business = (invoice as { business?: string }).business;
+  const InvoiceDoc = business === "sa_equipment" ? SaeInvoicePDF : InvoicePDF;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const element = createElement(InvoicePDF, { invoice: invoice as InvoiceWithItems, vatNumber }) as any;
+  const element = createElement(InvoiceDoc, { invoice: invoice as InvoiceWithItems, vatNumber }) as any;
   const stream = await renderToStream(element);
 
   const chunks: Buffer[] = [];

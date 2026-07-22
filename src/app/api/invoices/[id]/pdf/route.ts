@@ -39,9 +39,9 @@ export async function GET(
   invoice.line_items = (invoice.line_items as { sort_order: number }[])
     .sort((a, b) => a.sort_order - b.sort_order);
 
-  const arqudVatNumber = process.env.ARQUD_VAT_NUMBER;
+  const vatNumber = process.env.ARQUD_VAT_NUMBER;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const element = createElement(InvoicePDF, { invoice: invoice as InvoiceWithItems, arqudVatNumber }) as any;
+  const element = createElement(InvoicePDF, { invoice: invoice as InvoiceWithItems, vatNumber }) as any;
   const stream = await renderToStream(element);
 
   const chunks: Buffer[] = [];

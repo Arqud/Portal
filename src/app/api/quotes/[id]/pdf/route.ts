@@ -4,6 +4,7 @@ import { createElement } from "react";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { QuotePDF } from "@/lib/invoices/quote-pdf";
+import { SaeQuotePDF } from "@/lib/invoices/sae-quote-pdf";
 import type { QuoteWithItems } from "@/lib/invoices/types";
 
 export async function GET(
@@ -34,8 +35,11 @@ export async function GET(
   quote.line_items = (quote.line_items as { sort_order: number }[])
     .sort((a, b) => a.sort_order - b.sort_order);
 
+  // SA Equipment records render their own light document; everything else is ARQUD.
+  const business = (quote as { business?: string }).business;
+  const QuoteDoc = business === "sa_equipment" ? SaeQuotePDF : QuotePDF;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const element = createElement(QuotePDF, { quote: quote as QuoteWithItems }) as any;
+  const element = createElement(QuoteDoc, { quote: quote as QuoteWithItems }) as any;
   const stream = await renderToStream(element);
 
   const chunks: Buffer[] = [];

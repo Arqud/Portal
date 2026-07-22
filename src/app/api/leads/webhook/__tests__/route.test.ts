@@ -283,7 +283,8 @@ describe("POST /api/leads/webhook — lead-bearing effects", () => {
   });
 
   // Duan's requested proof #2: an AUTHORIZED realistic request DOES insert, forward
-  // and notify (all side effects mocked).
+  // and notify (all side effects mocked). Doubles as the normal-WASH-lead control for
+  // the franchise gate below: a wash lead STILL forwards.
   it("authorized lead-bearing request inserts, forwards and notifies (effects mocked)", async () => {
     vi.stubEnv("META_APP_SECRET", "");
     vi.stubEnv("MAKE_INGEST_TOKEN", "make-token");
@@ -297,5 +298,46 @@ describe("POST /api/leads/webhook — lead-bearing effects", () => {
     expect(vi.mocked(sendSignedForward)).toHaveBeenCalledTimes(1);
     expect(captured.updated?.row).toHaveProperty("forwarded_at"); // stamped on 2xx forward
     expect(vi.mocked(sendLeadNotification)).toHaveBeenCalledTimes(1);
+  });
+});
+
+// A franchise-recruitment lead delivered on the Sparkling page, with "Franchise" in the
+// campaign name (the interim name safety-net signal, before the franchise form id exists).
+const FRANCHISE_LEAD_BODY = JSON.stringify({
+  entry: [
+    {
+      changes: [
+        {
+          value: {
+            leadgen_id: "lead-franchise-1",
+            page_id: "459272044104015", // Sparkling FB page
+            campaign_name: "Sparkling Franchise — Rivonia Investor",
+            field_data: [
+              { name: "full_name", values: ["Big Investor"] },
+              { name: "phone_number", values: ["+27831112222"] },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+});
+
+describe("POST /api/leads/webhook — FRANCHISE gate (never forward franchise leads)", () => {
+  it("ingests + notifies a franchise lead but does NOT forward it to the wash SMS endpoint", async () => {
+    vi.stubEnv("META_APP_SECRET", "");
+    vi.stubEnv("MAKE_INGEST_TOKEN", "make-token");
+    vi.mocked(getSetting).mockResolvedValue("https://fwd.example"); // forward IS enabled…
+    const captured = installAdminStub();
+    const res = await POST(postRequest(FRANCHISE_LEAD_BODY, { "x-arqud-ingest-token": "make-token" }));
+    expect(res.status).toBe(200);
+    // CRM insert still happens — the lead is not lost.
+    expect(captured.inserted?.table).toBe("leads");
+    expect(captured.inserted?.row.meta_lead_id).toBe("lead-franchise-1");
+    // Notification email still fires (client still hears about the franchise lead).
+    expect(vi.mocked(sendLeadNotification)).toHaveBeenCalledTimes(1);
+    // …but the wash SMS forward is SKIPPED, and forwarded_at is therefore never stamped.
+    expect(vi.mocked(sendSignedForward)).not.toHaveBeenCalled();
+    expect(captured.updated).toBeUndefined();
   });
 });

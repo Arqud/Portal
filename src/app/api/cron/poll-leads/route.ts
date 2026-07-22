@@ -12,6 +12,7 @@ import {
 import { POLL_FORMS, resolveBranch } from "@/lib/leads/formBranches";
 import { getBrand } from "@/lib/leads/brand";
 import { buildForwardPayload, sendSignedForward } from "@/lib/leads/forward";
+import { isFranchiseLead } from "@/lib/leads/franchise";
 import { sendLeadNotification } from "@/lib/leads/notify";
 
 // Portal-native lead poller — the Make.com replacement. A free external scheduler
@@ -160,7 +161,15 @@ export async function GET(request: NextRequest) {
 
         // Forward to Duan (speed-to-lead SMS). Only textable leads; stamp forwarded_at
         // on a 2xx so the backfill cron never re-sends a delivered one.
-        if (inserted?.id && contact.phone && fwdUrl) {
+        //
+        // FRANCHISE GATE (site 2 of 3): a franchise-recruitment lead ingests + emails
+        // normally but is never forwarded to the wash SMS endpoint.
+        const isFranchise = isFranchiseLead({
+          form_id: lead.form_id ?? form.form_id,
+          campaign_name: campaignName,
+          ad_name: lead.ad_name ?? null,
+        });
+        if (inserted?.id && contact.phone && fwdUrl && !isFranchise) {
           const brand = getBrand({
             meta_campaign_name: campaignName,
             meta_ad_name: lead.ad_name ?? null,

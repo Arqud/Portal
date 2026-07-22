@@ -5,6 +5,7 @@ import { resolveBranch } from "@/lib/leads/formBranches";
 import { getBrand } from "@/lib/leads/brand";
 import { authorizeIngest } from "@/lib/leads/auth";
 import { buildForwardPayload, sendSignedForward } from "@/lib/leads/forward";
+import { isFranchiseLead } from "@/lib/leads/franchise";
 import { pickAttribution, hasFullInlineAttribution } from "@/lib/leads/attribution";
 import { sendLeadNotification } from "@/lib/leads/notify";
 import { getSetting } from "@/lib/settings/query";
@@ -219,7 +220,17 @@ export async function POST(request: NextRequest) {
       // lead still lands in the CRM for visibility but there is nothing to text. On a
       // successful forward we stamp forwarded_at; a failure leaves it null so the
       // backfill cron re-attempts it — a missed SMS is never silently dropped.
-      if (inserted?.id && contact.phone) {
+      //
+      // FRANCHISE GATE: a franchise-recruitment lead is ingested + emailed above/below
+      // exactly like any lead, but is NEVER forwarded to the wash SMS endpoint. This is
+      // the first of the three forward sites (webhook, poll cron, backfill cron) the
+      // gate covers — the backfill would otherwise re-forward a skipped franchise lead.
+      const isFranchise = isFranchiseLead({
+        form_id: metaFormId,
+        campaign_name: campaignName,
+        ad_name: adName,
+      });
+      if (inserted?.id && contact.phone && !isFranchise) {
         const brand = getBrand({ meta_campaign_name: campaignName, meta_ad_name: adName });
         const forwarded = await forwardLead(
           buildForwardPayload({

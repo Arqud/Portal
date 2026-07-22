@@ -118,6 +118,31 @@ describe("GET /api/cron/poll-leads — normal wash lead still forwards", () => {
   });
 });
 
+describe("GET /api/cron/poll-leads — form_answers capture", () => {
+  it("stores the raw field_data as a { questionName: value } map on the inserted lead", async () => {
+    const captured = installAdminStub();
+    installFetchStub(SPARKLING_FORM, {
+      id: "meta-franchise-q1",
+      campaign_name: "Sparkling Franchise — Rivonia Investor",
+      ad_name: "Franchise 46s",
+      form_id: SPARKLING_FORM,
+      field_data: [
+        { name: "full_name", values: ["Big Investor"] },
+        { name: "phone_number", values: ["+27831112222"] },
+        { name: "how_much_capital_can_you_invest", values: ["R1.75m – R2m"] },
+        { name: "which_area_are_you_interested_in", values: ["Rivonia"] },
+      ],
+    });
+    const res = await GET(getRequest());
+    expect(res.status).toBe(200);
+    expect(captured.inserted).toHaveLength(1);
+    expect(captured.inserted[0].form_answers).toMatchObject({
+      how_much_capital_can_you_invest: "R1.75m – R2m",
+      which_area_are_you_interested_in: "Rivonia",
+    });
+  });
+});
+
 describe("GET /api/cron/poll-leads — FRANCHISE gate", () => {
   it("ingests + notifies a franchise lead but does NOT forward it", async () => {
     const captured = installAdminStub();

@@ -8,6 +8,7 @@ import {
   mapContact,
   normalizeBranch,
   normalizePreferredTime,
+  safeFormAnswers,
 } from "@/lib/leads/ingest";
 import { POLL_FORMS, resolveBranch } from "@/lib/leads/formBranches";
 import { getBrand } from "@/lib/leads/brand";
@@ -114,6 +115,9 @@ export async function GET(request: NextRequest) {
         for (const f of lead.field_data ?? []) {
           leadData[f.name] = (f.values?.[0] ?? "").trim();
         }
+        // Raw form answers map (guarded — never throws), stored verbatim so the
+        // franchise page can read qualifier answers the CRM has no columns for.
+        const formAnswers = safeFormAnswers(lead.field_data);
 
         const campaignName = resolveCampaignName(lead.campaign_name, form.page_id);
         // Branch: the lead's own answer (normalized) always wins; per-branch forms
@@ -140,6 +144,7 @@ export async function GET(request: NextRequest) {
             email: contact.email,
             branch,
             preferred_time: preferredTime,
+            form_answers: formAnswers,
             status: "new",
           })
           .select("id")

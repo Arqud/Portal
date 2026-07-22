@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { resolveCampaignName, extractBranch, extractPreferredTime, mapContact, normalizeBranch, normalizePreferredTime } from "@/lib/leads/ingest";
+import { resolveCampaignName, extractBranch, extractPreferredTime, mapContact, normalizeBranch, normalizePreferredTime, safeFormAnswers } from "@/lib/leads/ingest";
 import { resolveBranch } from "@/lib/leads/formBranches";
 import { getBrand } from "@/lib/leads/brand";
 import { authorizeIngest } from "@/lib/leads/auth";
@@ -110,6 +110,11 @@ export async function POST(request: NextRequest) {
         leadData[f.name] = (f.values?.[0] ?? "").trim();
       }
 
+      // Whatever field_data actually populated leadData — inline first, else the Graph
+      // fallback below — is captured verbatim into form_answers so the franchise page
+      // can read qualifier answers the CRM has no columns for.
+      let rawFieldData: unknown = payloadFieldData;
+
       // Only when the payload carried NO field_data do we fall back to the Graph API,
       // which needs the client's access token. A missing token skips only the fallback,
       // never the lead itself.
@@ -126,6 +131,7 @@ export async function POST(request: NextRequest) {
               `https://graph.facebook.com/v19.0/${metaLeadId}?fields=field_data&access_token=${accessToken}`,
             );
             const json = await res.json();
+            if (json.field_data) rawFieldData = json.field_data;
             for (const f of json.field_data ?? []) {
               leadData[f.name] = (f.values?.[0] ?? "").trim();
             }
@@ -134,6 +140,10 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+
+      // Raw form answers map (guarded — never throws). Stored for every lead; the
+      // franchise page reads capital/timeline/funds/area out of it.
+      const formAnswers = safeFormAnswers(rawFieldData);
 
       // Meta attribution. Inline body wins: whatever the sender mapped onto the webhook
       // is authoritative and costs nothing. The Graph lead node is a FALLBACK, consulted
@@ -197,6 +207,7 @@ export async function POST(request: NextRequest) {
           email: contact.email,
           branch,
           preferred_time: preferredTime,
+          form_answers: formAnswers,
           status: "new",
         })
         .select("id")

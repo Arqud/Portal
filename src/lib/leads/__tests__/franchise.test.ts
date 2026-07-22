@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FRANCHISE_FORM_IDS, isFranchiseLead } from "@/lib/leads/franchise";
+import { FRANCHISE_FORM_IDS, isFranchiseLead, isFranchiseLeadRow, partitionFranchise } from "@/lib/leads/franchise";
 
 // A stand-in for the allow-list AFTER the real franchise Meta form is registered —
 // proves the form-id mechanics while the production set stays empty (injectable set
@@ -87,5 +87,63 @@ describe("isFranchiseLead — edge cases behave exactly as today (all null/empty
 
   it("is false for empty-string / whitespace fields", () => {
     expect(isFranchiseLead({ form_id: "   ", campaign_name: "", ad_name: "  " })).toBe(false);
+  });
+});
+
+describe("isFranchiseLeadRow — classify a persisted lead ROW (DB column names)", () => {
+  it("is true for a row whose campaign name contains 'franchise'", () => {
+    expect(
+      isFranchiseLeadRow({
+        meta_campaign_name: "Sparkling Franchise — Rivonia Investor",
+        meta_ad_name: "Franchise 46s",
+        meta_form_id: null,
+      }),
+    ).toBe(true);
+  });
+
+  it("is false for a normal Sparkling WASH row ('sparkling' must not trip it)", () => {
+    expect(
+      isFranchiseLeadRow({
+        meta_campaign_name: "Sparkling — Book a Detail",
+        meta_ad_name: "Full Monty R199",
+        meta_form_id: "1713965523197151",
+      }),
+    ).toBe(false);
+  });
+
+  it("tolerates a row missing the meta fields (falls through the name net ⇒ wash)", () => {
+    expect(isFranchiseLeadRow({})).toBe(false);
+    expect(isFranchiseLeadRow({ meta_campaign_name: null, meta_ad_name: null })).toBe(false);
+  });
+});
+
+describe("partitionFranchise — split rows into wash vs franchise", () => {
+  const rows = [
+    { id: "a", meta_campaign_name: "We Wash — R599", meta_ad_name: null, meta_form_id: null },
+    { id: "b", meta_campaign_name: "Sparkling Franchise — Rivonia", meta_ad_name: null, meta_form_id: null },
+    { id: "c", meta_campaign_name: "Sparkling — Full Monty", meta_ad_name: null, meta_form_id: null },
+    { id: "d", meta_campaign_name: null, meta_ad_name: "Franchise investor 46s", meta_form_id: null },
+  ];
+
+  it("routes franchise-named rows to franchise and everything else to wash", () => {
+    const { wash, franchise } = partitionFranchise(rows);
+    expect(wash.map((r) => r.id)).toEqual(["a", "c"]);
+    expect(franchise.map((r) => r.id)).toEqual(["b", "d"]);
+  });
+
+  it("preserves the row shape (generic) and input order", () => {
+    const { wash } = partitionFranchise(rows);
+    expect(wash[0]).toMatchObject({ id: "a", meta_campaign_name: "We Wash — R599" });
+  });
+
+  it("wash + franchise are exhaustive and never overlap", () => {
+    const { wash, franchise } = partitionFranchise(rows);
+    expect(wash.length + franchise.length).toBe(rows.length);
+    const franchiseIds = new Set(franchise.map((r) => r.id));
+    expect(wash.some((r) => franchiseIds.has(r.id))).toBe(false);
+  });
+
+  it("returns two empty lists for an empty input", () => {
+    expect(partitionFranchise([])).toEqual({ wash: [], franchise: [] });
   });
 });

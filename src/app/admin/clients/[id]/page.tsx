@@ -6,6 +6,7 @@ import { getSignedUrl } from "@/lib/storage";
 import { ClientDetailClient } from "./ClientDetailClient";
 import { ClientDetailActions } from "./ClientDetailActions";
 import { PageHeader, Card, KpiCard, Pill } from "@/components/ui";
+import { partitionFranchise } from "@/lib/leads/franchise";
 import type { Client, InvoiceWithItems, QuoteWithItems } from "@/lib/invoices/types";
 
 export default async function ClientDetailPage({
@@ -47,7 +48,10 @@ export default async function ClientDetailPage({
   const quotes = (quotesRes.data ?? []) as QuoteWithItems[];
   const reports = reportsRes.data ?? [];
   const documents = docsRes.data ?? [];
-  const leads = leadsRes.data ?? [];
+  // Franchise-recruitment leads are shown on the dedicated franchise page, never the
+  // wash CRM tab — exclude them here so this client's lead counts match "main excludes
+  // franchise".
+  const leads = partitionFranchise(leadsRes.data ?? []).wash;
   const tasks = tasksRes.data ?? [];
 
   // Generate signed URLs for reports and documents

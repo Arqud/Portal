@@ -13,6 +13,7 @@ const STATUS_TONE: Record<string, string> = {
 
 export default async function ClientInvoicesPage() {
   const { profile } = await verifySession("client");
+  if (profile.brand === "Franchise") redirect("/client/franchise-leads"); // Marissa: franchise-only
   if (profile.brand) redirect("/client/leads"); // staff logins are Leads-only
 
   if (!profile.client_id) {

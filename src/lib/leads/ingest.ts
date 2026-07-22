@@ -116,6 +116,34 @@ export function normalizePreferredTime(value: string | null): string | null {
   return match ?? trimmed; // fall back to raw if it genuinely doesn't match
 }
 
+/**
+ * Build the raw Meta answers map `{ [questionName]: value }` from a lead's
+ * `field_data`, to persist verbatim in `leads.form_answers`. This is what lets the
+ * Sparkling Franchise Leads page surface the qualifier answers (capital band,
+ * timeline, funds-available, area) that the wash CRM has no dedicated columns for.
+ *
+ * FULLY DEFENSIVE — the highest priority. A parse issue here must NEVER throw into or
+ * block lead ingestion (the whole point of the leads pipeline is that a lead is never
+ * lost). Tolerates a missing/non-array `field_data`, null entries, a missing `name`,
+ * and missing/empty `values`; on anything unexpected it returns null. Returns null
+ * (not `{}`) when there is nothing to store, so a lead with no answers stays clean.
+ */
+export function safeFormAnswers(fieldData: unknown): Record<string, string> | null {
+  try {
+    if (!Array.isArray(fieldData)) return null;
+    const out: Record<string, string> = {};
+    for (const f of fieldData) {
+      const name = typeof f?.name === "string" ? f.name.trim() : "";
+      if (!name) continue;
+      const first = Array.isArray(f?.values) ? f.values[0] : undefined;
+      out[name] = typeof first === "string" ? first.trim() : first == null ? "" : String(first);
+    }
+    return Object.keys(out).length > 0 ? out : null;
+  } catch {
+    return null;
+  }
+}
+
 export function mapContact(leadData: Record<string, string>): {
   full_name: string | null;
   phone: string | null;

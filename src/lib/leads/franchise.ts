@@ -65,3 +65,46 @@ export function isFranchiseLead(
     FRANCHISE_NAME_RE.test(input.form_name ?? "")
   );
 }
+
+// The shape of a stored lead ROW the row-level predicate needs. Kept loose (all
+// optional / nullable) so any lead query — however many columns it selected — can be
+// classified, and a row missing the meta_* fields simply falls through the name net.
+export type FranchiseLeadRow = {
+  meta_campaign_name?: string | null;
+  meta_ad_name?: string | null;
+  meta_form_id?: string | null;
+};
+
+/**
+ * Row-shaped adapter over isFranchiseLead: classify a persisted lead ROW (which uses
+ * the DB column names meta_campaign_name / meta_ad_name / meta_form_id) instead of the
+ * ingest-time input shape. Same fail-safe direction — a normal wash row is never
+ * franchise, so this only ever routes a lead to the franchise page, never off a wash
+ * surface by mistake.
+ */
+export function isFranchiseLeadRow(l: FranchiseLeadRow): boolean {
+  return isFranchiseLead({
+    campaign_name: l.meta_campaign_name,
+    ad_name: l.meta_ad_name,
+    form_id: l.meta_form_id,
+  });
+}
+
+/**
+ * Split a list of lead rows into `wash` (everything the existing CRM shows) and
+ * `franchise` (the Sparkling Franchise Leads page). One pass, order-preserving, and
+ * generic so callers keep their own row type. This is the single partition every wash
+ * surface uses to EXCLUDE franchise leads and the franchise page uses to KEEP them,
+ * so the two can never overlap or double-count.
+ */
+export function partitionFranchise<T extends FranchiseLeadRow>(
+  rows: readonly T[],
+): { wash: T[]; franchise: T[] } {
+  const wash: T[] = [];
+  const franchise: T[] = [];
+  for (const row of rows) {
+    if (isFranchiseLeadRow(row)) franchise.push(row);
+    else wash.push(row);
+  }
+  return { wash, franchise };
+}

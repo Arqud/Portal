@@ -3,6 +3,7 @@ import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { PageHeader, Card, Table, Tr, Td, Pill, Avatar, StatCard, AreaChart, Donut, ProgressTrack } from "@/components/ui";
 import { getBrand, BRAND_TONE, STATUS_TONE as LEAD_TONE } from "@/lib/leads/brand";
+import { partitionFranchise } from "@/lib/leads/franchise";
 import { outstandingTotal, collectedYTD, revenueByMonth, cashflowYTD, pipeline, leadStats } from "@/lib/dashboard/metrics";
 import { getTasks } from "@/lib/tasks/query";
 import { todayTasks, sortForToday } from "@/lib/tasks/logic";
@@ -58,7 +59,7 @@ export default async function CommandCenterPage() {
     admin.from("invoices").select("client_id, amount, status, issue_date, paid_at, invoice_number, due_date").neq("status", "draft"),
     admin.from("campaigns").select("*"),
     admin.from("quotes").select("quote_number, total, status, client_id"),
-    admin.from("leads").select("full_name, branch, meta_campaign_name, meta_ad_name, status, created_at").order("created_at", { ascending: false }),
+    admin.from("leads").select("full_name, branch, meta_campaign_name, meta_ad_name, meta_form_id, status, created_at").order("created_at", { ascending: false }),
     admin.from("transactions").select("amount, date"),
     getTasks(),
   ]);
@@ -68,7 +69,9 @@ export default async function CommandCenterPage() {
   const invoices = invoicesRes.data ?? [];
   const campaigns = (campaignsRes.data ?? []) as Record<string, unknown>[];
   const quotes = quotesRes.data ?? [];
-  const leads = leadsRes.data ?? [];
+  // Franchise-recruitment leads have their own page (/admin/franchise-leads); keep the
+  // command center's wash lead KPIs, sparkline and Live Leads table franchise-free.
+  const leads = partitionFranchise(leadsRes.data ?? []).wash;
   const transactions = txRes.data ?? [];
 
   const clientName = (id: string) => clients.find((c) => c.id === id)?.company ?? clients.find((c) => c.id === id)?.name ?? "—";

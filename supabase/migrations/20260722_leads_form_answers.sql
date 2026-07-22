@@ -1,0 +1,16 @@
+-- Franchise lead qualifier answers.
+-- The Sparkling FRANCHISE recruitment form asks qualifier questions (capital band,
+-- timeline, funds-available, area) that the wash CRM has no columns for. Rather than
+-- add a column per question, store the raw Meta field_data as a
+-- { [questionName]: value } JSON map. The Sparkling Franchise Leads page reads the
+-- capital / timeline / funds / area answers out of this map.
+--
+-- Nullable: every existing row and every wash lead simply has null (or a stored map
+-- that no wash surface reads). Populated at the two LIVE ingest sites only — the
+-- webhook (src/app/api/leads/webhook/route.ts) and the poll cron
+-- (src/app/api/cron/poll-leads/route.ts); the nightly backfill cron has no field_data
+-- and is untouched. Capture is fully guarded so a parse issue can never block ingestion.
+--
+-- Run in Supabase SQL Editor (Dashboard > SQL Editor > New query) BEFORE this code is
+-- deployed. Safe/idempotent — additive nullable column, no backfill, no data change.
+alter table public.leads add column if not exists form_answers jsonb;

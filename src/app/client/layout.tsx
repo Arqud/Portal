@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { verifySession } from "@/lib/auth/session";
 import { getClientCompany } from "@/lib/auth/getClientCompany";
 import { Sidebar } from "@/components/ui/Sidebar";
+import { navModeForBrand } from "@/lib/auth/access";
 import { BRANDS, resolveBrand } from "@/lib/brand/brand-meta";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -30,13 +31,26 @@ export async function generateViewport(): Promise<Viewport> {
 export default async function ClientLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await verifySession("client");
   const company = await getClientCompany(profile.client_id);
+  const isFranchise = profile.brand === "Franchise";
+  // Franchise (Marissa) reads as "Sparkling Franchise"; wash staff keep "<Brand> — Leads";
+  // a full account (Arno) uses its company name.
+  const brandName = isFranchise
+    ? "Sparkling Franchise"
+    : profile.brand
+      ? `${profile.brand} — Leads`
+      : company ?? "CLIENT PORTAL";
+  const userLabel = isFranchise
+    ? "Franchise leads"
+    : profile.brand
+      ? `${profile.brand} team`
+      : company ?? "Client";
   return (
     <div className="flex min-h-screen">
       <Sidebar
         variant="client"
-        brandName={profile.brand ? `${profile.brand} — Leads` : company ?? "CLIENT PORTAL"}
-        leadsOnly={!!profile.brand}
-        user={{ name: profile.full_name ?? "Client", label: profile.brand ? `${profile.brand} team` : company ?? "Client" }}
+        brandName={brandName}
+        navMode={navModeForBrand(profile.brand)}
+        user={{ name: profile.full_name ?? "Client", label: userLabel }}
       />
       <main className="flex-1 min-w-0 pt-14 md:pt-0">{children}</main>
     </div>

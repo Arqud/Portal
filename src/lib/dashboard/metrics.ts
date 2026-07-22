@@ -1,7 +1,17 @@
+import { partitionFranchise } from "@/lib/leads/franchise";
+
 export type InvoiceLite = { amount: number; status: string; issue_date: string; paid_at?: string | null };
 export type TxLite = { amount: number; date: string };
 export type QuoteLite = { quote_number: string; total: number; status: string; client_label?: string };
-export type LeadLite = { created_at: string };
+// Optional meta_* fields let leadStats exclude franchise-recruitment leads from the
+// wash lead counts. They are optional so existing callers that pass only { created_at }
+// keep compiling (a row with no meta fields is never franchise → counted as before).
+export type LeadLite = {
+  created_at: string;
+  meta_campaign_name?: string | null;
+  meta_ad_name?: string | null;
+  meta_form_id?: string | null;
+};
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const ym = (d: Date) => d.getFullYear() * 12 + d.getMonth();
@@ -93,7 +103,11 @@ export function pipeline(quotes: QuoteLite[]) {
   return { open, deals };
 }
 
-export function leadStats(leads: LeadLite[], ref: Date) {
+export function leadStats(allLeads: LeadLite[], ref: Date) {
+  // Franchise-recruitment leads are counted on their own page, never in the wash lead
+  // KPIs — strip them first so these counts match every other "main excludes franchise"
+  // surface.
+  const leads = partitionFranchise(allLeads).wash;
   const month = leads.filter((l) => {
     const d = parse(l.created_at);
     return d && ym(d) === ym(ref);

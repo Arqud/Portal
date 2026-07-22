@@ -1,22 +1,29 @@
+import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { LeadsClient } from "./LeadsClient";
 import { PageHeader, Card } from "@/components/ui";
 import { getBrand } from "@/lib/leads/brand";
+import { partitionFranchise } from "@/lib/leads/franchise";
 
 export default async function ClientLeadsPage() {
   const { profile } = await verifySession("client");
+  // Marissa (Franchise scope) has no wash access — send her to her own page.
+  if (profile.brand === "Franchise") redirect("/client/franchise-leads");
   const admin = createSupabaseAdminClient();
 
   const { data: leads } = await admin
     .from("leads")
-    .select("id,full_name,phone,email,branch,preferred_time,meta_campaign_name,meta_ad_name,status,notes,follow_up_date,created_at")
+    .select("id,full_name,phone,email,branch,preferred_time,meta_campaign_name,meta_ad_name,meta_form_id,status,notes,follow_up_date,created_at")
     .eq("client_id", profile.client_id!)
     .order("created_at", { ascending: false });
 
+  // Franchise-recruitment leads live on their OWN page — strip them from the wash CRM
+  // BEFORE the brand filter (getBrand maps "Sparkling Franchise" → "Sparkling", so
+  // without this they would leak into the Sparkling tab).
+  const all = partitionFranchise(leads ?? []).wash;
   // Brand-scoped staff (profile.brand set) only ever receive their own brand's
   // leads — filtered here on the server so other-brand leads never reach them.
-  const all = leads ?? [];
   const list = profile.brand ? all.filter((l) => getBrand(l) === profile.brand) : all;
   const total = list.length;
 

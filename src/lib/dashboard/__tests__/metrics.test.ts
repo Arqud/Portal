@@ -84,6 +84,20 @@ describe("leadStats", () => {
     expect(s.week).toBe(1);
     expect(s.d30).toBe(2);
   });
+
+  it("excludes franchise-recruitment leads from the wash counts", () => {
+    const s = leadStats(
+      [
+        { created_at: "2026-06-14T10:00:00", meta_campaign_name: "We Wash — R599" }, // wash, this month
+        { created_at: "2026-06-14T11:00:00", meta_campaign_name: "Sparkling Franchise — Rivonia" }, // franchise, excluded
+        { created_at: "2026-06-13T10:00:00", meta_ad_name: "Franchise investor 46s" }, // franchise, excluded
+      ],
+      ref
+    );
+    expect(s.month).toBe(1); // only the wash lead is counted
+    expect(s.week).toBe(1);
+    expect(s.d30).toBe(1);
+  });
 });
 
 describe("collectedYTD", () => {

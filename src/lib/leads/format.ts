@@ -10,3 +10,10 @@ export function formatDateTime(d: string) {
     hour12: false,
   });
 }
+
+// Normalise a SA phone number to E.164 digits for a wa.me link (0821234567 → 27821234567).
+export function toE164(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("0")) return "27" + digits.slice(1);
+  return digits;
+}

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getSetting } from "@/lib/settings/query";
 import { forwardPayloadFromLead, sendSignedForward, type LeadRow } from "@/lib/leads/forward";
+import { isFranchiseLead } from "@/lib/leads/franchise";
 
 // Retry/backfill for the speed-to-lead forward. A lead's forward can fail if Duan's
 // endpoint is briefly down or slow (>8s) — the lead is safe in the CRM but its SMS was
@@ -47,6 +48,19 @@ export async function GET(request: NextRequest) {
   let forwarded = 0;
   for (const row of (leads ?? []) as LeadRow[]) {
     if (!row.phone) continue; // nothing to text
+    // FRANCHISE GATE (site 3 of 3): a franchise lead is (correctly) never forwarded at
+    // the webhook, so its forwarded_at stays null and it lands in THIS retry set. Skip
+    // it here too, or the backfill would text a franchise investor the wash SMS ~24h
+    // later. It leaves the 24h window naturally, so it is never forwarded at all.
+    if (
+      isFranchiseLead({
+        form_id: row.meta_form_id,
+        campaign_name: row.meta_campaign_name,
+        ad_name: row.meta_ad_name,
+      })
+    ) {
+      continue;
+    }
     const ok = await sendSignedForward(url, secret, forwardPayloadFromLead(row));
     if (ok) {
       await admin

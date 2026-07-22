@@ -4,11 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/cn";
+import type { NavMode } from "@/lib/auth/access";
 import { Avatar } from "./DataTable";
 import { ThemeToggle } from "./ThemeToggle";
 
 type NavItem = { label: string; href: string; soon?: boolean };
 type NavGroup = { heading: string; items: readonly NavItem[] };
+
+// Sparkling Franchise recruitment leads live on their own page — shown to Arno (full
+// account) and Marissa (franchise-only), never to wash staff.
+const FRANCHISE_ITEM: NavItem = { label: "Sparkling Franchise Leads", href: "/client/franchise-leads" };
 
 const CLIENT_GROUPS: readonly NavGroup[] = [
   {
@@ -20,6 +25,7 @@ const CLIENT_GROUPS: readonly NavGroup[] = [
       { label: "Invoices", href: "/client/invoices" },
       { label: "Reports", href: "/client/reports" },
       { label: "Documents", href: "/client/documents" },
+      FRANCHISE_ITEM,
     ],
   },
 ];
@@ -31,6 +37,7 @@ const ADMIN_GROUPS: readonly NavGroup[] = [
       { label: "Home", href: "/admin/overview" },
       { label: "Clients", href: "/admin/clients" },
       { label: "Campaigns", href: "/admin/campaigns" },
+      { label: "Franchise Leads", href: "/admin/franchise-leads" },
     ],
   },
   {
@@ -50,19 +57,27 @@ type SidebarProps = {
   variant: "client" | "admin";
   brandName: string;
   user: { name: string; label: string };
-  // Brand-scoped staff logins get a Leads-only sidebar.
-  leadsOnly?: boolean;
+  // Client nav scope, derived from profiles.brand (see navModeForBrand):
+  //   'full'          → Arno: the complete client nav (incl. the franchise item)
+  //   'leadsOnly'     → wash staff: just the Leads page
+  //   'franchiseOnly' → Marissa: just the Sparkling Franchise Leads page
+  navMode?: NavMode;
 };
 
-export function Sidebar({ variant, brandName, user, leadsOnly }: SidebarProps) {
+export function Sidebar({ variant, brandName, user, navMode = "full" }: SidebarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const clientGroups: readonly NavGroup[] = leadsOnly
-    ? [{ heading: "Menu", items: [{ label: "Leads", href: "/client/leads" }] }]
-    : CLIENT_GROUPS;
+  const clientGroups: readonly NavGroup[] =
+    navMode === "leadsOnly"
+      ? [{ heading: "Menu", items: [{ label: "Leads", href: "/client/leads" }] }]
+      : navMode === "franchiseOnly"
+        ? [{ heading: "Menu", items: [FRANCHISE_ITEM] }]
+        : CLIENT_GROUPS;
   const groups = variant === "client" ? clientGroups : ADMIN_GROUPS;
-  const homeHref = variant === "client" ? (leadsOnly ? "/client/leads" : "/client/dashboard") : "/admin/overview";
+  const clientHome =
+    navMode === "franchiseOnly" ? "/client/franchise-leads" : navMode === "leadsOnly" ? "/client/leads" : "/client/dashboard";
+  const homeHref = variant === "client" ? clientHome : "/admin/overview";
   const initials = user.name.charAt(0).toUpperCase() || "?";
 
   const itemBox = "flex items-center gap-[11px] text-[13px] px-3 py-[10px] rounded-control transition-colors duration-150";

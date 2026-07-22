@@ -6,6 +6,7 @@ import { CampaignsBrandView } from "./CampaignsBrandView";
 
 export default async function ClientCampaignsPage() {
   const { profile } = await verifySession("client");
+  if (profile.brand === "Franchise") redirect("/client/franchise-leads"); // Marissa: franchise-only
   if (profile.brand) redirect("/client/leads"); // staff logins are Leads-only
   const admin = createSupabaseAdminClient();
 

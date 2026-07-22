@@ -1,6 +1,43 @@
 import { describe, expect, it } from "vitest";
-import { resolveCampaignName, extractBranch, extractPreferredTime, normalizePreferredTime, mapContact, WE_WASH_PAGE_ID, SPARKLING_PAGE_ID } from "@/lib/leads/ingest";
+import { resolveCampaignName, extractBranch, extractPreferredTime, normalizePreferredTime, mapContact, safeFormAnswers, WE_WASH_PAGE_ID, SPARKLING_PAGE_ID } from "@/lib/leads/ingest";
 import { getBrand } from "@/lib/leads/brand";
+
+describe("safeFormAnswers — capture raw Meta field_data as { name: value }, never throwing", () => {
+  it("builds a { questionName: firstValue } map from field_data", () => {
+    expect(
+      safeFormAnswers([
+        { name: "how_much_capital_can_you_invest", values: ["R1.5m – R2m"] },
+        { name: "when_are_you_looking_to_start", values: ["In 3 months"] },
+        { name: "which_area_are_you_interested_in", values: ["Rivonia"] },
+      ]),
+    ).toEqual({
+      how_much_capital_can_you_invest: "R1.5m – R2m",
+      when_are_you_looking_to_start: "In 3 months",
+      which_area_are_you_interested_in: "Rivonia",
+    });
+  });
+
+  it("trims names and values and keeps only the first value", () => {
+    expect(safeFormAnswers([{ name: "  area  ", values: ["  Rivonia  ", "ignored"] }])).toEqual({ area: "Rivonia" });
+  });
+
+  it("returns null when there is nothing to store (empty / no named fields)", () => {
+    expect(safeFormAnswers([])).toBeNull();
+    expect(safeFormAnswers([{ values: ["orphan"] }])).toBeNull(); // no name
+  });
+
+  it("NEVER throws on a malformed payload — returns null or skips the bad entry", () => {
+    expect(safeFormAnswers(null)).toBeNull();
+    expect(safeFormAnswers(undefined)).toBeNull();
+    expect(safeFormAnswers("not an array")).toBeNull();
+    expect(safeFormAnswers(42)).toBeNull();
+    // A null entry and a missing-values entry must not blow up the whole map.
+    expect(safeFormAnswers([null, { name: "area", values: ["Rivonia"] }, { name: "capital" }])).toEqual({
+      area: "Rivonia",
+      capital: "",
+    });
+  });
+});
 
 describe("resolveCampaignName", () => {
   it("keeps a real campaign name", () => {

@@ -11,6 +11,7 @@ const BTN_OUTLINE_SM = "inline-flex items-center gap-2 font-semibold tracking-wi
 
 export default async function ClientDashboardPage() {
   const { profile } = await verifySession("client");
+  if (profile.brand === "Franchise") redirect("/client/franchise-leads"); // Marissa: franchise-only
   if (profile.brand) redirect("/client/leads"); // staff logins are Leads-only
   const admin = createSupabaseAdminClient();
 

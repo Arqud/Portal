@@ -75,7 +75,7 @@ const SA_EQUIPMENT: BusinessDocTheme = {
     dark: "#0E1116",
     navy: "#171B21",
     gold: "#F5B301",
-    goldLight: "#F7C63C",
+    goldLight: "#F5B301",
     goldDim: "#8A6410",
     bg: "#FFFFFF",
     bgAlt: "#F5F7F8",

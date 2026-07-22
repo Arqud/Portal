@@ -1,6 +1,7 @@
 import { Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer";
 import type { QuoteWithItems } from "@/lib/invoices/types";
 import { getBusinessTheme, type BusinessPalette } from "@/lib/brand/business-theme";
+import { SaeBrandMark } from "@/lib/brand/sae-pdf-mark";
 
 Font.register({ family: "Jost", src: "https://fonts.gstatic.com/s/jost/v18/92zPtBhPNqw79Ij1E865zBUv7myjJAVGPokMmuTl.woff2" });
 
@@ -73,10 +74,14 @@ export function QuotePDF({ quote, business }: { quote: QuoteWithItems; business?
     <Document>
       <Page size="A4" style={S.page}>
         <View style={S.header}>
-          <View>
-            <Text style={S.brandName}>{theme.brandName}</Text>
-            <Text style={S.brandTag}>{theme.brandTag}</Text>
-          </View>
+          {theme.key === "sa_equipment" ? (
+            <SaeBrandMark />
+          ) : (
+            <View>
+              <Text style={S.brandName}>{theme.brandName}</Text>
+              <Text style={S.brandTag}>{theme.brandTag}</Text>
+            </View>
+          )}
           <View style={S.titleBlock}>
             <Text style={S.docWord}>Quote</Text>
             <Text style={S.docNum}>{quote.quote_number}</Text>

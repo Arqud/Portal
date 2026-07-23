@@ -2,7 +2,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { verifySession } from "@/lib/auth/session";
 import { FinancesClient } from "./FinancesClient";
 import { getTransactions } from "./transactionActions";
-import type { InvoiceWithItems, QuoteWithItems } from "@/lib/invoices/types";
+import type { InvoiceWithItems, QuoteWithItems, Client } from "@/lib/invoices/types";
 import { PageHeader, KpiCard } from "@/components/ui";
 
 async function flagOverdue() {
@@ -30,13 +30,13 @@ export default async function FinancesPage() {
     admin.from("quotes")
       .select("*, client:clients(id,name,company,email,contact_person,address,reg_number,vat_number), line_items:quote_line_items(*)")
       .order("created_at", { ascending: false }),
-    admin.from("clients").select("id,name,company,email,contact_person,address,reg_number,vat_number").eq("status", "active"),
+    admin.from("clients").select("*").eq("status", "active"),
     getTransactions(),
   ]);
 
   const invoices = (invRes.data ?? []) as InvoiceWithItems[];
   const quotes = (qRes.data ?? []) as QuoteWithItems[];
-  const clients = (cRes.data ?? []) as { id: string; name: string; company: string | null; email: string; contact_person: string | null; address: string | null; reg_number: string | null; vat_number: string | null }[];
+  const clients = (cRes.data ?? []) as Client[];
 
   const invoicedThisMonth = invoices
     .filter((i) => i.issue_date >= monthStart && i.status !== "draft")

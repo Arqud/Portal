@@ -6,6 +6,7 @@ import { InvoiceDetailModal } from "./InvoiceDetailModal";
 import { InvoiceForm } from "./InvoiceForm";
 import { Table, Tr, Td, Pill, Button } from "@/components/ui";
 import type { InvoiceWithItems, Client } from "@/lib/invoices/types";
+import { businessKey } from "@/lib/business/persist";
 
 const STATUS_TONE: Record<string, string> = {
   draft: "neutral",
@@ -55,7 +56,12 @@ export function InvoiceTable({ invoices, clients, onNew }: { invoices: InvoiceWi
                   {inv.invoice_number}
                 </button>
               </Td>
-              <Td className="basis-[1.2fr] grow text-arqud-bone">{inv.client?.company ?? inv.client?.name ?? "—"}</Td>
+              <Td className="basis-[1.2fr] grow text-arqud-bone">
+                {inv.client?.company ?? inv.client?.name ?? "—"}
+                {businessKey(inv.business) === "sa_equipment" && (
+                  <span className="ml-2 inline-block text-[10px] uppercase tracking-wider text-arqud-gold border border-arqud-gold/40 rounded px-1.5 py-0.5 align-middle">SA Equip</span>
+                )}
+              </Td>
               <Td className="basis-[1fr] grow text-arqud-muted">{inv.issue_date}</Td>
               <Td className="basis-[1fr] grow text-arqud-muted">{inv.due_date}</Td>
               <Td className="basis-[1fr] grow text-arqud-bone">R {Number(inv.amount).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</Td>

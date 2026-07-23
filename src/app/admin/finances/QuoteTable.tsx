@@ -7,6 +7,7 @@ import { QuoteForm } from "./QuoteForm";
 import { QuoteDetailModal } from "./QuoteDetailModal";
 import { Table, Tr, Td, Pill, Button } from "@/components/ui";
 import type { QuoteWithItems, Client } from "@/lib/invoices/types";
+import { businessKey } from "@/lib/business/persist";
 
 // Quote statuses (draft/sent/accepted/rejected) mapped by meaning to the shared Pill tone vocabulary.
 const STATUS_TONE: Record<string, string> = {
@@ -55,7 +56,12 @@ export function QuoteTable({ quotes, clients, onNew }: { quotes: QuoteWithItems[
                   {q.quote_number}
                 </button>
               </Td>
-              <Td className="basis-[1.2fr] grow text-arqud-bone">{q.client?.company ?? q.client?.name ?? "—"}</Td>
+              <Td className="basis-[1.2fr] grow text-arqud-bone">
+                {q.client?.company ?? q.client?.name ?? "—"}
+                {businessKey(q.business) === "sa_equipment" && (
+                  <span className="ml-2 inline-block text-[10px] uppercase tracking-wider text-arqud-gold border border-arqud-gold/40 rounded px-1.5 py-0.5 align-middle">SA Equip</span>
+                )}
+              </Td>
               <Td className="basis-[1fr] grow text-arqud-muted">{q.issue_date}</Td>
               <Td className="basis-[1.1fr] grow text-arqud-bone">R {q.total.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</Td>
               <Td className="basis-[0.8fr] grow">

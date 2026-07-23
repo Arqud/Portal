@@ -11,6 +11,7 @@ import { nextDocumentNumber } from "@/lib/invoices/numbering";
 import { calcSubtotal, calcVat, calcTotal, calcLineAmount } from "@/lib/invoices/calculations";
 import { generateShareToken } from "@/lib/proposals/token";
 import type { ProposalLineItem, ProposalSection } from "@/lib/proposals/types";
+import { withBusiness } from "@/lib/business/persist";
 
 export type ProposalInput = {
   client_id: string | null;
@@ -23,6 +24,7 @@ export type ProposalInput = {
   valid_until: string | null;
   sections: ProposalSection[];
   lineItems: Omit<ProposalLineItem, "id">[];
+  business?: string | null;
 };
 
 async function requireAdmin() {
@@ -89,17 +91,26 @@ export async function createProposal(input: ProposalInput): Promise<{ id: string
   const admin = await requireAdmin();
   assertRecipient(input);
 
+  // A client proposal follows its client's business (the wall); a prospect
+  // proposal uses the chosen business. select("*") is migration-safe.
+  let business = input.business ?? null;
+  if (input.client_id) {
+    const { data: clientRow } = await admin
+      .from("clients").select("*").eq("id", input.client_id).single();
+    business = clientRow?.business ?? business;
+  }
+
   const proposalNumber = await nextDocumentNumber("proposal");
   const lineItems = buildLineItems(input.lineItems);
 
   const { data: proposal, error } = await admin
     .from("proposals")
-    .insert({
+    .insert(withBusiness({
       ...normalizeInput(input),
       proposal_number: proposalNumber,
       status: "draft",
       share_token: generateShareToken(),
-    })
+    }, business))
     .select("id")
     .single();
 

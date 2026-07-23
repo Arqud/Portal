@@ -9,6 +9,7 @@ import { Card, Input, Select, Textarea, Button } from "@/components/ui";
 import { calcLineAmount, calcSubtotal } from "@/lib/invoices/calculations";
 import { createProposal, updateProposal, type ProposalInput } from "./actions";
 import type { ProposalLineItem, ProposalWithItems } from "@/lib/proposals/types";
+import { BUSINESS_OPTIONS } from "@/lib/business/persist";
 
 type ClientOption = { id: string; name: string; company: string | null; email: string | null };
 
@@ -29,6 +30,7 @@ export function ProposalForm({
 }) {
   const router = useRouter();
   const isEdit = Boolean(editProposal);
+  const [business, setBusiness] = useState<string>("arqud");
 
   const [mode, setMode] = useState<"client" | "prospect">(
     editProposal ? (editProposal.client_id ? "client" : "prospect") : clients.length > 0 ? "client" : "prospect",
@@ -100,6 +102,7 @@ export function ProposalForm({
           lineItems: lines
             .filter((l) => l.description.trim())
             .map((l, i) => ({ ...l, sort_order: i })),
+          business,
         };
         if (isEdit && editProposal) {
           await updateProposal(editProposal.id, input);
@@ -117,6 +120,22 @@ export function ProposalForm({
   return (
     <Card className="w-full max-w-2xl space-y-6">
       {err && <p className="text-red-400 text-sm">{err}</p>}
+
+      {!isEdit && (
+        <div className="space-y-3">
+          <span className={label}>Business</span>
+          <div className="flex gap-6">
+            {BUSINESS_OPTIONS.map((b) => (
+              <label key={b.value} className="flex items-center gap-2 text-sm text-arqud-bone cursor-pointer">
+                <input type="radio" name="proposal-business" value={b.value}
+                  checked={business === b.value} onChange={() => setBusiness(b.value)}
+                  className="accent-arqud-gold" />
+                {b.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recipient: existing client or brand-new prospect */}
       <div className="space-y-3">

@@ -6,7 +6,7 @@ import { Button, Input, Select } from "@/components/ui";
 
 type Client = {
   id: string; name: string; company: string | null; email: string;
-  subdomain_slug: string; contact_person: string | null; address: string | null;
+  subdomain_slug: string; contact_person: string | null; phone: string | null; address: string | null;
   reg_number: string | null; vat_number: string | null; status: string;
 };
 
@@ -60,9 +60,14 @@ export function EditClientForm({ client, onClose }: { client: Client; onClose: (
               <Input name="contact_person" defaultValue={client.contact_person ?? ""} />
             </div>
             <div>
-              <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Physical Address</label>
-              <Input name="address" defaultValue={client.address ?? ""} />
+              <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Phone</label>
+              <Input name="phone" type="tel" defaultValue={client.phone ?? ""} />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Physical Address</label>
+            <Input name="address" defaultValue={client.address ?? ""} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -15,6 +15,7 @@ export type Client = {
   name: string;
   company: string | null;
   email: string | null;
+  phone: string | null;
   contact_person: string | null;
   address: string | null;
   reg_number: string | null;

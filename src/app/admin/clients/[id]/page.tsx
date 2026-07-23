@@ -23,11 +23,11 @@ export default async function ClientDetailPage({
 
   const [invoicesRes, quotesRes, reportsRes, docsRes, leadsRes, tasksRes] = await Promise.all([
     admin.from("invoices")
-      .select("*, client:clients(id,name,company,email,contact_person,address,reg_number,vat_number), line_items:invoice_line_items(*)")
+      .select("*, client:clients(id,name,company,email,phone,contact_person,address,reg_number,vat_number), line_items:invoice_line_items(*)")
       .eq("client_id", id)
       .order("created_at", { ascending: false }),
     admin.from("quotes")
-      .select("*, client:clients(id,name,company,email,contact_person,address,reg_number,vat_number), line_items:quote_line_items(*)")
+      .select("*, client:clients(id,name,company,email,phone,contact_person,address,reg_number,vat_number), line_items:quote_line_items(*)")
       .eq("client_id", id)
       .order("created_at", { ascending: false }),
     admin.from("reports")
@@ -82,6 +82,7 @@ export default async function ClientDetailPage({
     name: client.name,
     company: client.company ?? null,
     email: client.email ?? null,
+    phone: client.phone ?? null,
     contact_person: client.contact_person ?? null,
     address: client.address ?? null,
     reg_number: client.reg_number ?? null,
@@ -108,6 +109,8 @@ export default async function ClientDetailPage({
           <span className="text-arqud-muted">{client.email}</span>
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-arqud-muted mt-2">
+          {client.contact_person && <span>{client.contact_person}</span>}
+          {client.phone && <span>Tel: {client.phone}</span>}
           {client.address && <span>{client.address}</span>}
           {client.reg_number && <span>Reg: {client.reg_number}</span>}
           <span>

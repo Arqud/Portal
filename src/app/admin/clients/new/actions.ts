@@ -26,6 +26,7 @@ export async function addNewClient(formData: FormData) {
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, "");
   const contactPerson = String(formData.get("contact_person") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
   const regNumber = String(formData.get("reg_number") ?? "").trim();
   const vatNumber = String(formData.get("vat_number") ?? "").trim();
@@ -45,6 +46,7 @@ export async function addNewClient(formData: FormData) {
       email,
       subdomain_slug: subdomainSlug || `billing-${Date.now()}`,
       contact_person: contactPerson || null,
+      phone: phone || null,
       address: address || null,
       reg_number: regNumber || null,
       vat_number: vatNumber || null,

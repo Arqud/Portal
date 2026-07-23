@@ -25,10 +25,10 @@ export default async function FinancesPage() {
 
   const [invRes, qRes, cRes, transactions] = await Promise.all([
     admin.from("invoices")
-      .select("*, client:clients(id,name,company,email,contact_person,address,reg_number,vat_number), line_items:invoice_line_items(*)")
+      .select("*, client:clients(id,name,company,email,phone,contact_person,address,reg_number,vat_number), line_items:invoice_line_items(*)")
       .order("created_at", { ascending: false }),
     admin.from("quotes")
-      .select("*, client:clients(id,name,company,email,contact_person,address,reg_number,vat_number), line_items:quote_line_items(*)")
+      .select("*, client:clients(id,name,company,email,phone,contact_person,address,reg_number,vat_number), line_items:quote_line_items(*)")
       .order("created_at", { ascending: false }),
     admin.from("clients").select("*").eq("status", "active"),
     getTransactions(),

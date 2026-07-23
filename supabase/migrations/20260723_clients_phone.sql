@@ -1,0 +1,11 @@
+-- Client phone number.
+-- Clients had name / company / email / contact_person / address / reg_number / vat_number
+-- but no phone field. This adds an optional phone column so a client's phone can be
+-- captured when creating or editing a client and shown on their detail page.
+--
+-- Nullable + additive: every existing client row simply has null and renders fine — no
+-- backfill, no behaviour change beyond the new optional field.
+--
+-- Run in Supabase SQL Editor (Dashboard > SQL Editor > New query) BEFORE this code is
+-- deployed. Safe/idempotent — additive nullable column, no data change.
+alter table public.clients add column if not exists phone text;

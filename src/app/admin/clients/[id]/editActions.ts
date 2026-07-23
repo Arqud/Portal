@@ -24,6 +24,7 @@ export async function updateClient(clientId: string, formData: FormData) {
       company: String(formData.get("company") ?? "").trim() || null,
       email: String(formData.get("email") ?? "").trim(),
       contact_person: String(formData.get("contact_person") ?? "").trim() || null,
+      phone: String(formData.get("phone") ?? "").trim() || null,
       address: String(formData.get("address") ?? "").trim() || null,
       reg_number: String(formData.get("reg_number") ?? "").trim() || null,
       vat_number: String(formData.get("vat_number") ?? "").trim() || null,

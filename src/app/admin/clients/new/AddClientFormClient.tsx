@@ -89,9 +89,14 @@ export function AddClientFormClient({ defaultBusiness = "arqud" }: { defaultBusi
           <Input name="contact_person" placeholder="Arno Gustafson" />
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Physical Address</label>
-          <Input name="address" placeholder="Potchefstroom, North West" />
+          <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Phone</label>
+          <Input name="phone" type="tel" placeholder="082 123 4567" />
         </div>
+      </div>
+
+      <div>
+        <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Physical Address</label>
+        <Input name="address" placeholder="Potchefstroom, North West" />
       </div>
 
       <div className="grid grid-cols-2 gap-4">

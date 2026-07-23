@@ -34,7 +34,8 @@ export default function PrivacyPolicyPage() {
           <p>
             This Privacy Policy explains how <strong className="text-arqud-bone">ARQUD (PTY) LTD</strong> (&ldquo;ARQUD&rdquo;,
             &ldquo;we&rdquo;, &ldquo;us&rdquo;) collects and handles your personal information. ARQUD operates this portal
-            (arqudportal.co.za) and runs digital marketing and lead-generation campaigns on behalf of its business clients.
+            (arqudportal.co.za) and runs digital marketing and lead-generation campaigns — including franchise and business-opportunity
+            recruitment — on behalf of its business clients.
           </p>
           <p>
             When you submit an enquiry through one of our advertising forms (for example a Facebook or Instagram lead form for a
@@ -53,7 +54,19 @@ export default function PrivacyPolicyPage() {
             <li>The service or package you are interested in</li>
           </ul>
           <p>
-            We do not collect payment card details, ID numbers, or other sensitive information through these lead forms.
+            If you enquire about a business or franchise opportunity (such as owning a Sparkling Auto Care Centre
+            franchise), we may also collect:
+          </p>
+          <ul className="list-disc space-y-1.5 pl-5">
+            <li>Your available investment capital, as a range you select</li>
+            <li>How you intend to fund the investment</li>
+            <li>Your investment timeline</li>
+            <li>The area or location you are interested in</li>
+            <li>Your company name, if you choose to provide it</li>
+          </ul>
+          <p>
+            We do not collect payment card details, ID numbers, or other special personal information through these lead
+            forms.
           </p>
         </Section>
 
@@ -63,6 +76,10 @@ export default function PrivacyPolicyPage() {
             <li>Contact you by phone, WhatsApp, or email to respond to your enquiry and book your service</li>
             <li>Route your enquiry to the branch closest to you</li>
             <li>Keep a record of your enquiry for the relevant business</li>
+            <li>
+              Where you enquire about a franchise or business opportunity, contact you about that opportunity, assess
+              suitability, and send you the relevant information or opportunity pack
+            </li>
           </ul>
           <p>
             We rely on your consent, given when you submit the form, as the lawful basis for processing your information under the

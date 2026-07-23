@@ -70,3 +70,26 @@ export function extractFranchiseQualifiers(
 
   return result;
 }
+
+// Ordered, labeled qualifier rows for the franchise lead-notification email. The four
+// headline signals lead — Capital FIRST so the capital band is the most prominent row —
+// then Timeline, Funds, Area, then any remaining answers (already humanised). Null/blank
+// values are dropped so the email never shows an empty qualifier row. Built on top of
+// extractFranchiseQualifiers so the field-matching logic lives in exactly one place; the
+// two ingestion call sites (webhook + poll cron) both feed this into sendLeadNotification.
+export function franchiseQualifierRows(
+  answers: Record<string, string> | null | undefined,
+): { label: string; value: string }[] {
+  const q = extractFranchiseQualifiers(answers);
+  const rows: { label: string; value: string }[] = [];
+  const push = (label: string, value: string | null) => {
+    const v = value?.trim();
+    if (v) rows.push({ label, value: v });
+  };
+  push("Capital", q.capital);
+  push("Timeline", q.timeline);
+  push("Funds", q.funds);
+  push("Area", q.area);
+  for (const o of q.other) push(o.label, o.value);
+  return rows;
+}

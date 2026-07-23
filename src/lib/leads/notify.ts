@@ -15,14 +15,22 @@ export type NotifyLead = {
   branch: string | null;
   service: string | null; // package / campaign name
   preferred_time?: string | null; // form's preferred-time answer (only the pilot form asks)
-  brand: string; // "We Wash" | "Sparkling" | "Other" (from getBrand)
+  brand: string; // "We Wash" | "Sparkling" | "Other" (from getBrand), or "Franchise" for franchise-recruitment leads
   created_at?: string | null; // ISO; defaults to "now" for real-time ingest
+  // Franchise-only: the labeled qualifier answers (Capital, Timeline, Funds, Area + any
+  // others) built at the call site from the lead's form_answers. When brand === "Franchise"
+  // these replace the wash-only Branch/Package/Preferred rows so Marissa can triage the
+  // capital band at a glance. Ignored for every other brand.
+  qualifiers?: { label: string; value: string }[];
 };
 
 // app_settings key per brand. Brand "Other" has no inbox — intentionally absent.
+// "Franchise" routes to its OWN inbox (Marissa) so investor leads never land in the
+// Sparkling wash inbox.
 export const NOTIFY_SETTING_KEYS: Record<string, string> = {
   "We Wash": "lead_notify_email_we_wash",
   Sparkling: "lead_notify_email_sparkling",
+  Franchise: "lead_notify_email_franchise",
 };
 
 // The setting value supports comma-separated addresses ("a@x.co.za, b@x.co.za").
@@ -44,6 +52,7 @@ export async function resolveNotifyRecipients(brand: string): Promise<string[]> 
 
 // From-name matches the brand so the inbox can filter/recognise at a glance.
 export function notifyFrom(brand: string): string {
+  if (brand === "Franchise") return "Sparkling Franchise Leads <noreply@arqudportal.co.za>";
   return brand === "Sparkling"
     ? "Sparkling Leads <noreply@arqudportal.co.za>"
     : "We Wash Cars Leads <noreply@arqudportal.co.za>";
@@ -83,6 +92,19 @@ export function buildLeadNotification(lead: NotifyLead): { subject: string; html
   const row = (label: string, value: string) =>
     `<tr><td style="color:#6e6e6e;font-size:12px;padding:8px 0;border-bottom:1px solid #1a1f2e">${label}</td><td style="color:#f3ecd9;font-size:13px;text-align:right;padding:8px 0;border-bottom:1px solid #1a1f2e">${value}</td></tr>`;
 
+  // Franchise leads show their qualifier answers (Capital band leading) instead of the
+  // wash-only Branch/Package/Preferred rows — every label AND value escaped since they
+  // originate from a public Meta form. Every other brand keeps the wash rows byte-for-byte.
+  const detailRows =
+    lead.brand === "Franchise"
+      ? (lead.qualifiers ?? [])
+          .filter((q) => q.value != null && q.value.trim() !== "")
+          .map((q) => row(escapeHtml(q.label), escapeHtml(q.value.trim())))
+          .join("\n      ")
+      : `${row("Branch", escapeHtml(lead.branch || "—"))}
+      ${row("Package", escapeHtml(lead.service || "—"))}
+      ${lead.preferred_time?.trim() ? row("Preferred", escapeHtml(lead.preferred_time.trim())) : ""}`;
+
   const html = `<div style="background:#080808;padding:40px;font-family:'Helvetica Neue',sans-serif;max-width:520px;margin:0 auto">
     <h1 style="color:#c8a96e;font-size:22px;letter-spacing:0.25em;margin:0 0 8px">${escapeHtml(lead.brand.toUpperCase())}</h1>
     <p style="color:#6e6e6e;font-size:10px;letter-spacing:0.2em;margin:0 0 32px">NEW LEAD &middot; CLIENT PORTAL</p>
@@ -91,9 +113,7 @@ export function buildLeadNotification(lead: NotifyLead): { subject: string; html
       ${row("Brand", escapeHtml(lead.brand))}
       ${row("Name", escapeHtml(lead.full_name?.trim() || "—"))}
       ${row("Phone", telHref ? `<a href="${escapeHtml(telHref)}" style="color:#c8a96e;text-decoration:none">${escapeHtml(lead.phone ?? "")}</a>` : "—")}
-      ${row("Branch", escapeHtml(lead.branch || "—"))}
-      ${row("Package", escapeHtml(lead.service || "—"))}
-      ${lead.preferred_time?.trim() ? row("Preferred", escapeHtml(lead.preferred_time.trim())) : ""}
+      ${detailRows}
       ${row("Received", escapeHtml(receivedAt))}
     </table>
     <a href="https://arno.arqudportal.co.za/client/leads" style="display:inline-block;background:#c8a96e;color:#080808;text-decoration:none;padding:14px 32px;font-weight:600;font-size:13px;letter-spacing:0.08em;margin-bottom:32px">VIEW IN PORTAL</a>

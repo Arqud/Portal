@@ -10,6 +10,8 @@ import { todayTasks, sortForToday } from "@/lib/tasks/logic";
 import { getSetting } from "@/lib/settings/query";
 import { parseICS } from "@/lib/calendar/ics";
 import { expandOccurrences } from "@/lib/calendar/expand";
+import { getActiveBusiness } from "@/lib/business/active";
+import { SaeOverview } from "./SaeOverview";
 import { TodayTile } from "./TodayTile";
 
 const two = (n: number) => String(n).padStart(2, "0");
@@ -51,6 +53,10 @@ function timeAgo(iso: string): string {
 
 export default async function CommandCenterPage() {
   await verifySession("admin");
+
+  // SA Equipment gets its own scoped home; ARQUD keeps the full command center below.
+  if ((await getActiveBusiness()) === "sa_equipment") return <SaeOverview />;
+
   const admin = createSupabaseAdminClient();
   const now = new Date();
 

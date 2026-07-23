@@ -144,3 +144,35 @@ h4 {
   background: var(--color-arqud-panel);
   box-shadow: var(--shadow-card);
 }
+
+/* ---- SA Equipment workspace: warm-cream light premium + signal-amber accent ----
+   Applied on the admin wrapper together with data-theme="light"; these rules come
+   AFTER the light block so (equal specificity) they win where they overlap. Only
+   the tokens that differ from generic light are set — the rest inherit from above. */
+[data-business="sa_equipment"] {
+  --color-arqud-bg: #F6F3EC;
+  --color-arqud-bg-2: #FBF9F4;
+  --color-arqud-panel: #FFFFFF;
+  --color-arqud-panel-2: #FBF9F4;
+  --color-arqud-line: #ECE4D5;
+  --color-arqud-line-2: #E3D9C6;
+
+  --color-arqud-gold: #9A6E0C;       /* deep readable amber — text, headings, borders */
+  --color-arqud-gold-soft: #E0A312;  /* rich amber — highlights / gradients */
+  --color-arqud-gold-dim: #8A6410;
+
+  --color-arqud-bone: #14120D;       /* primary text -> brand ink */
+  --color-arqud-bone-dim: #57513F;
+  --color-arqud-muted: #9A9382;
+
+  --color-arqud-gold-glow: rgba(245, 179, 1, 0.10);
+  --shadow-card: 0 1px 2px rgba(20, 16, 10, .05), 0 14px 36px rgba(20, 16, 10, .07);
+}
+
+[data-business="sa_equipment"] .panel-gradient {
+  background: var(--color-arqud-panel);
+  box-shadow: var(--shadow-card);
+}
+
+/* drop the dark film-grain overlay whenever an SA Equipment workspace is on screen */
+body:has([data-business="sa_equipment"])::before { opacity: 0; }

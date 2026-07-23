@@ -6,6 +6,7 @@ import { getBrand } from "@/lib/leads/brand";
 import { authorizeIngest } from "@/lib/leads/auth";
 import { buildForwardPayload, sendSignedForward } from "@/lib/leads/forward";
 import { isFranchiseLead } from "@/lib/leads/franchise";
+import { franchiseQualifierRows } from "@/lib/leads/franchiseAnswers";
 import { pickAttribution, hasFullInlineAttribution } from "@/lib/leads/attribution";
 import { sendLeadNotification } from "@/lib/leads/notify";
 import { getSetting } from "@/lib/settings/query";
@@ -280,7 +281,12 @@ export async function POST(request: NextRequest) {
           branch,
           service: campaignName,
           preferred_time: preferredTime,
-          brand: getBrand({ meta_campaign_name: campaignName, meta_ad_name: adName }),
+          // Franchise leads notify Marissa's dedicated inbox (brand "Franchise") with
+          // the capital/timeline/funds/area qualifier rows — from the SAME form_answers
+          // captured on insert — instead of the Sparkling wash inbox. All other leads
+          // notify their brand inbox exactly as before.
+          brand: isFranchise ? "Franchise" : getBrand({ meta_campaign_name: campaignName, meta_ad_name: adName }),
+          ...(isFranchise ? { qualifiers: franchiseQualifierRows(formAnswers) } : {}),
         });
       }
     }

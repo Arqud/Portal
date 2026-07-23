@@ -14,6 +14,7 @@ import { POLL_FORMS, resolveBranch } from "@/lib/leads/formBranches";
 import { getBrand } from "@/lib/leads/brand";
 import { buildForwardPayload, sendSignedForward } from "@/lib/leads/forward";
 import { isFranchiseLead } from "@/lib/leads/franchise";
+import { franchiseQualifierRows } from "@/lib/leads/franchiseAnswers";
 import { sendLeadNotification } from "@/lib/leads/notify";
 
 // Portal-native lead poller — the Make.com replacement. A free external scheduler
@@ -218,10 +219,17 @@ export async function GET(request: NextRequest) {
             branch,
             service: campaignName,
             preferred_time: preferredTime,
-            brand: getBrand({
-              meta_campaign_name: campaignName,
-              meta_ad_name: lead.ad_name ?? null,
-            }),
+            // Franchise leads notify Marissa's dedicated inbox (brand "Franchise") with
+            // the capital/timeline/funds/area qualifier rows — from the SAME form_answers
+            // captured on insert — instead of the Sparkling wash inbox. All other leads
+            // notify their brand inbox exactly as before.
+            brand: isFranchise
+              ? "Franchise"
+              : getBrand({
+                  meta_campaign_name: campaignName,
+                  meta_ad_name: lead.ad_name ?? null,
+                }),
+            ...(isFranchise ? { qualifiers: franchiseQualifierRows(formAnswers) } : {}),
             created_at: lead.created_time ?? null,
           });
         }

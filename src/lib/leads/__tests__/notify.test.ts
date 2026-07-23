@@ -34,6 +34,23 @@ const lead = {
   created_at: "2026-07-09T12:32:00Z",
 };
 
+// A franchise-recruitment lead: no wash branch/package, carries the qualifier rows the
+// call site built from form_answers (Capital band first). Routes to Marissa's inbox.
+const franchiseLead = {
+  full_name: "Big Investor",
+  phone: "083 111 2222",
+  branch: null,
+  service: null,
+  brand: "Franchise",
+  created_at: "2026-07-23T08:00:00Z",
+  qualifiers: [
+    { label: "Capital", value: "R1.75m – R2m" },
+    { label: "Timeline", value: "In 3 months" },
+    { label: "Funds", value: "Yes, cash available" },
+    { label: "Area", value: "Rivonia / Sandton" },
+  ],
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -114,6 +131,67 @@ describe("buildLeadNotification", () => {
   });
 });
 
+describe("buildLeadNotification — franchise leads", () => {
+  it("brands the email FRANCHISE and shows a New Franchise lead subject", () => {
+    const { subject, html } = buildLeadNotification(franchiseLead);
+    expect(subject).toBe("New Franchise lead — Big Investor");
+    expect(html).toContain("FRANCHISE");
+  });
+
+  it("renders the qualifier rows with the capital band shown prominently", () => {
+    const { html } = buildLeadNotification(franchiseLead);
+    expect(html).toContain("Capital");
+    expect(html).toContain("R1.75m – R2m");
+    expect(html).toContain("Timeline");
+    expect(html).toContain("In 3 months");
+    expect(html).toContain("Funds");
+    expect(html).toContain("Area");
+    expect(html).toContain("Rivonia / Sandton");
+    // Capital is the first detail row after Name/Phone — it precedes every other qualifier.
+    expect(html.indexOf("Capital")).toBeLessThan(html.indexOf("Timeline"));
+    expect(html.indexOf("Capital")).toBeLessThan(html.indexOf("Area"));
+  });
+
+  it("drops the wash-only Branch / Package / Preferred rows for a franchise lead", () => {
+    const { html } = buildLeadNotification(franchiseLead);
+    expect(html).not.toContain("Branch");
+    expect(html).not.toContain("Package");
+    expect(html).not.toContain("Preferred");
+  });
+
+  it("escapes both label and value of qualifier rows (public Meta form input)", () => {
+    const { html } = buildLeadNotification({
+      ...franchiseLead,
+      qualifiers: [{ label: "<i>Capital</i>", value: '<img src=x onerror="y">' }],
+    });
+    expect(html).not.toContain('<img src=x onerror="y">');
+    expect(html).toContain("&lt;img src=x onerror=&quot;y&quot;&gt;");
+    expect(html).toContain("&lt;i&gt;Capital&lt;/i&gt;");
+  });
+
+  it("still shows the shared Name / Phone / Received rows", () => {
+    const { html } = buildLeadNotification(franchiseLead);
+    expect(html).toContain("Big Investor");
+    expect(html).toContain('href="tel:0831112222"');
+    expect(html).toContain("Received");
+  });
+});
+
+// The wash email must be COMPLETELY unchanged by the franchise routing — no qualifier
+// rows, still keyed off its own brand inbox and layout.
+describe("buildLeadNotification — wash leads are unchanged", () => {
+  it("still renders Branch and Package and never renders qualifier-only labels", () => {
+    const { html } = buildLeadNotification(lead);
+    expect(html).toContain("Branch");
+    expect(html).toContain("Package");
+    expect(html).toContain("Eldo Glen (Centurion)");
+    expect(html).toContain("Four of a Kind R599");
+    // No franchise qualifier labels leak into a wash email.
+    expect(html).not.toContain("Capital");
+    expect(html).not.toContain("Timeline");
+  });
+});
+
 describe("formatSast", () => {
   it("converts UTC to Africa/Johannesburg time", () => {
     const got = formatSast("2026-07-09T12:32:00Z");
@@ -131,6 +209,10 @@ describe("notifyFrom", () => {
 
   it("uses the Sparkling from-name for Sparkling leads", () => {
     expect(notifyFrom("Sparkling")).toBe("Sparkling Leads <noreply@arqudportal.co.za>");
+  });
+
+  it("uses a dedicated Sparkling Franchise from-name for franchise leads", () => {
+    expect(notifyFrom("Franchise")).toBe("Sparkling Franchise Leads <noreply@arqudportal.co.za>");
   });
 });
 
@@ -167,6 +249,12 @@ describe("resolveNotifyRecipients", () => {
     expect(mockGetSetting).toHaveBeenCalledWith("lead_notify_email_sparkling");
   });
 
+  it("reads lead_notify_email_franchise for the Franchise brand (Marissa's inbox)", async () => {
+    mockGetSetting.mockResolvedValue("marissa@sparklingauto.co.za");
+    await expect(resolveNotifyRecipients("Franchise")).resolves.toEqual(["marissa@sparklingauto.co.za"]);
+    expect(mockGetSetting).toHaveBeenCalledWith("lead_notify_email_franchise");
+  });
+
   it("returns [] when the setting is missing (feature off)", async () => {
     mockGetSetting.mockResolvedValue(null);
     await expect(resolveNotifyRecipients("We Wash")).resolves.toEqual([]);
@@ -197,6 +285,24 @@ describe("sendLeadNotification", () => {
     expect(args.from).toBe("We Wash Cars Leads <noreply@arqudportal.co.za>");
     expect(args.to).toEqual(["info@wewash.co.za", "arno@wewash.co.za"]);
     expect(args.subject).toBe("New We Wash lead — Thabo M — Eldo Glen (Centurion)");
+  });
+
+  it("routes a franchise lead to lead_notify_email_franchise with the Franchise from-name + capital band", async () => {
+    vi.stubEnv("RESEND_API_KEY", "test-key");
+    mockGetSetting.mockImplementation(async (key: string) =>
+      key === "lead_notify_email_franchise" ? "marissa@sparklingauto.co.za" : null
+    );
+    sendMock.mockResolvedValue({ data: { id: "email-f" }, error: null });
+
+    await sendLeadNotification(franchiseLead);
+
+    expect(mockGetSetting).toHaveBeenCalledWith("lead_notify_email_franchise");
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    const args = sendMock.mock.calls[0][0];
+    expect(args.from).toBe("Sparkling Franchise Leads <noreply@arqudportal.co.za>");
+    expect(args.to).toEqual(["marissa@sparklingauto.co.za"]);
+    expect(args.subject).toBe("New Franchise lead — Big Investor");
+    expect(args.html).toContain("R1.75m – R2m");
   });
 
   it("does not send when no recipients are configured for the brand", async () => {

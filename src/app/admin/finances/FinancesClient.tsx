@@ -7,6 +7,7 @@ import { InvoiceForm } from "./InvoiceForm";
 import { QuoteForm } from "./QuoteForm";
 import { TransactionsTab } from "./TransactionsTab";
 import { KpiCard, Tabs, Button, Select } from "@/components/ui";
+import { businessKey } from "@/lib/business/persist";
 import type { InvoiceWithItems, QuoteWithItems, Client } from "@/lib/invoices/types";
 import type { Transaction } from "./transactionActions";
 
@@ -34,6 +35,19 @@ export function FinancesClient({ invoices, quotes, clients, transactions }: Prop
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth()); // 0-based
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [showAllTime, setShowAllTime] = useState(true);
+  const [businessFilter, setBusinessFilter] = useState<"all" | "arqud" | "sa_equipment">("all");
+
+  // Master books: the register carries both businesses; this narrows it per
+  // business (each row is tagged for the accountant). Untagged rows read as ARQUD,
+  // so before the migration everything shows as ARQUD.
+  const scopedInvoices = useMemo(
+    () => (businessFilter === "all" ? invoices : invoices.filter((i) => businessKey(i.business) === businessFilter)),
+    [invoices, businessFilter],
+  );
+  const scopedQuotes = useMemo(
+    () => (businessFilter === "all" ? quotes : quotes.filter((q) => businessKey(q.business) === businessFilter)),
+    [quotes, businessFilter],
+  );
 
   // Get available years from data
   const availableYears = useMemo(() => {
@@ -48,27 +62,27 @@ export function FinancesClient({ invoices, quotes, clients, transactions }: Prop
 
   // Filter by selected month/year
   const filteredInvoices = useMemo(() => {
-    if (showAllTime) return invoices;
-    return invoices.filter((inv) => {
+    if (showAllTime) return scopedInvoices;
+    return scopedInvoices.filter((inv) => {
       const d = new Date(inv.issue_date);
       return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
     });
-  }, [invoices, selectedMonth, selectedYear, showAllTime]);
+  }, [scopedInvoices, selectedMonth, selectedYear, showAllTime]);
 
   const filteredQuotes = useMemo(() => {
-    if (showAllTime) return quotes;
-    return quotes.filter((q) => {
+    if (showAllTime) return scopedQuotes;
+    return scopedQuotes.filter((q) => {
       const d = new Date(q.issue_date);
       return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
     });
-  }, [quotes, selectedMonth, selectedYear, showAllTime]);
+  }, [scopedQuotes, selectedMonth, selectedYear, showAllTime]);
 
   // Revenue summary for selected period
   const invoicedPeriod = filteredInvoices.filter((i) => i.status !== "draft").reduce((s, i) => s + i.amount, 0);
   const collectedPeriod = filteredInvoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
-  const outstanding = invoices.filter((i) => i.status === "pending").reduce((s, i) => s + i.amount, 0);
-  const overdue = invoices.filter((i) => i.status === "overdue").reduce((s, i) => s + i.amount, 0);
-  const ytd = invoices.filter((i) => {
+  const outstanding = scopedInvoices.filter((i) => i.status === "pending").reduce((s, i) => s + i.amount, 0);
+  const overdue = scopedInvoices.filter((i) => i.status === "overdue").reduce((s, i) => s + i.amount, 0);
+  const ytd = scopedInvoices.filter((i) => {
     return i.issue_date.startsWith(String(selectedYear)) && i.status !== "draft";
   }).reduce((s, i) => s + i.amount, 0);
 
@@ -88,8 +102,14 @@ export function FinancesClient({ invoices, quotes, clients, transactions }: Prop
       {showQuote && <QuoteForm clients={clients} onClose={() => setShowQuote(false)} />}
 
       {/* Period selector */}
-      <div className="flex items-center gap-3 mb-6">
-        <span className="text-xs uppercase tracking-widest text-arqud-muted">Period:</span>
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <span className="text-xs uppercase tracking-widest text-arqud-muted">Business:</span>
+        <Select value={businessFilter} onChange={(e) => setBusinessFilter(e.target.value as "all" | "arqud" | "sa_equipment")} className="w-auto">
+          <option value="all">All businesses</option>
+          <option value="arqud">ARQUD</option>
+          <option value="sa_equipment">SA Equipment</option>
+        </Select>
+        <span className="text-xs uppercase tracking-widest text-arqud-muted ml-2">Period:</span>
 
         {!showAllTime && (
           <>

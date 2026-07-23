@@ -19,6 +19,8 @@ export type Client = {
   address: string | null;
   reg_number: string | null;
   vat_number: string | null;
+  /** 'arqud' | 'sa_equipment'. Undefined until the business migration is applied. */
+  business?: string;
 };
 
 export type Invoice = {
@@ -39,6 +41,8 @@ export type Invoice = {
   converted_from_quote_id: string | null;
   created_at: string;
   updated_at: string;
+  /** 'arqud' | 'sa_equipment'. Undefined until the business migration is applied. */
+  business?: string;
 };
 
 export type InvoiceWithItems = Invoice & {
@@ -59,6 +63,8 @@ export type Quote = {
   converted_to_invoice_id: string | null;
   created_at: string;
   updated_at: string;
+  /** 'arqud' | 'sa_equipment'. Undefined until the business migration is applied. */
+  business?: string;
 };
 
 export type QuoteWithItems = Quote & {

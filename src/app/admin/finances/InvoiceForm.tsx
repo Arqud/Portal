@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { createInvoice, updateInvoice } from "./actions";
 import { Card, Input, Select, Textarea, Button } from "@/components/ui";
 import type { Client, LineItem, InvoiceWithItems } from "@/lib/invoices/types";
+import { BUSINESS_OPTIONS, businessKey } from "@/lib/business/persist";
 import { calcLineAmount, calcSubtotal, calcVat, calcTotal } from "@/lib/invoices/calculations";
 
 const emptyLine = (): Omit<LineItem, "id"> => ({
@@ -23,7 +24,22 @@ export function InvoiceForm({
   const today = new Date().toISOString().split("T")[0];
   const due14 = new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0];
 
-  const [clientId, setClientId] = useState(editInvoice?.client_id ?? clients[0]?.id ?? "");
+  const [business, setBusiness] = useState<string>("arqud");
+  // Show the switcher only in the finances context (many clients); it filters the
+  // client list. On a single client's own page the business is fixed, so no
+  // switcher and no filtering. Either way the invoice's business is derived from
+  // the chosen client server-side, so the two can never disagree.
+  const showBusinessSwitcher = !isEdit && clients.length > 1;
+  const visibleClients = showBusinessSwitcher ? clients.filter((c) => businessKey(c.business) === business) : clients;
+  const [clientId, setClientId] = useState(
+    editInvoice?.client_id
+      ?? (clients.length > 1 ? clients.find((c) => businessKey(c.business) === "arqud")?.id : clients[0]?.id)
+      ?? clients[0]?.id ?? "",
+  );
+  function changeBusiness(next: string) {
+    setBusiness(next);
+    setClientId(clients.find((c) => businessKey(c.business) === next)?.id ?? "");
+  }
   const [issueDate, setIssueDate] = useState(editInvoice?.issue_date ?? today);
   const [dueDate, setDueDate] = useState(editInvoice?.due_date ?? due14);
   const [terms, setTerms] = useState(editInvoice?.terms ?? "14 Days");
@@ -143,11 +159,23 @@ export function InvoiceForm({
         </div>
         {err && <p className="text-red-400 text-sm">{err}</p>}
 
+        {showBusinessSwitcher && (
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Business</label>
+            <Select value={business} onChange={(e) => changeBusiness(e.target.value)} className="w-full">
+              {BUSINESS_OPTIONS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+            </Select>
+          </div>
+        )}
+
         <div>
           <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Client</label>
           <Select value={clientId} onChange={(e) => setClientId(e.target.value)} className="w-full">
-            {clients.map((c) => <option key={c.id} value={c.id}>{c.company ?? c.name}</option>)}
+            {visibleClients.map((c) => <option key={c.id} value={c.id}>{c.company ?? c.name}</option>)}
           </Select>
+          {showBusinessSwitcher && visibleClients.length === 0 && (
+            <p className="text-xs text-arqud-muted mt-1">No {business === "sa_equipment" ? "SA Equipment" : "ARQUD"} clients yet — add one first.</p>
+          )}
         </div>
 
         <div className="grid grid-cols-3 gap-4">

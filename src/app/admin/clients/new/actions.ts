@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { withBusiness } from "@/lib/business/persist";
 
 async function requireAdmin() {
   const supabase = await createSupabaseServerClient();
@@ -29,6 +30,7 @@ export async function addNewClient(formData: FormData) {
   const regNumber = String(formData.get("reg_number") ?? "").trim();
   const vatNumber = String(formData.get("vat_number") ?? "").trim();
   const createPortalAccess = formData.get("create_portal_access") === "on";
+  const business = String(formData.get("business") ?? "").trim();
 
   if (!name || !email) {
     throw new Error("Name and email are required");
@@ -37,7 +39,7 @@ export async function addNewClient(formData: FormData) {
   // Insert client record
   const { data: clientRecord, error: clientErr } = await admin
     .from("clients")
-    .insert({
+    .insert(withBusiness({
       name,
       company: company || null,
       email,
@@ -47,7 +49,7 @@ export async function addNewClient(formData: FormData) {
       reg_number: regNumber || null,
       vat_number: vatNumber || null,
       status: "active",
-    })
+    }, business))
     .select("id")
     .single();
 

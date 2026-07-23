@@ -28,6 +28,18 @@ export function AddClientFormClient() {
     <form onSubmit={handle} className="space-y-5">
       {err && <p className="text-red-400 text-sm">{err}</p>}
 
+      <div>
+        <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Business</label>
+        <select name="business" defaultValue="arqud"
+          className="w-full bg-arqud-panel border border-arqud-line-2 rounded-control px-3.5 py-2.5 text-arqud-bone text-sm focus:outline-none focus:ring-1 focus:ring-arqud-gold/40 transition">
+          <option value="arqud">ARQUD — marketing</option>
+          <option value="sa_equipment">SA Equipment — machinery</option>
+        </select>
+        <p className="text-xs text-arqud-muted mt-1.5">
+          Which business is this customer for? It decides which branding their invoices and quotes carry.
+        </p>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Contact Name *</label>

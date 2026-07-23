@@ -9,6 +9,7 @@ import { getResendApiKey } from "@/lib/settings/resend";
 import { calcSubtotal, calcVat, calcTotal, calcLineAmount } from "@/lib/invoices/calculations";
 import type { CreateDocumentInput as CreateInvoiceInput } from "@/lib/invoices/types";
 import type { CreateDocumentInput as CreateQuoteInput } from "@/lib/invoices/types";
+import { withBusiness } from "@/lib/business/persist";
 
 async function sendInvoiceEmail(invoiceId: string, invoiceNumber: string, clientEmail: string, clientName: string, amount: number, dueDate: string) {
   try {
@@ -56,6 +57,12 @@ async function requireAdmin() {
 export async function createInvoice(input: CreateInvoiceInput) {
   const admin = await requireAdmin();
 
+  // The client's business drives the invoice's business (the wall); its contact
+  // details drive the email. select("*") is safe before and after the migration
+  // (business is simply undefined until the column exists).
+  const { data: clientRow } = await admin
+    .from("clients").select("*").eq("id", input.clientId).single();
+
   const lineItems = input.lineItems.map((li, i) => ({
     ...li,
     amount: calcLineAmount(li.rate, li.quantity),
@@ -71,7 +78,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
 
   const { data: invoice, error } = await admin
     .from("invoices")
-    .insert({
+    .insert(withBusiness({
       client_id: input.clientId,
       invoice_number: invoiceNumber,
       status: input.isDraft ? "draft" : "pending",
@@ -85,7 +92,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
       amount: total,
       description: null,
       pdf_url: null,
-    })
+    }, clientRow?.business))
     .select("id")
     .single();
 
@@ -102,15 +109,11 @@ export async function createInvoice(input: CreateInvoiceInput) {
   revalidatePath("/admin/clients/[id]", "page");
 
   // Auto-email client when invoice is created (non-draft only)
-  if (!input.isDraft) {
-    const { data: clientData } = await admin
-      .from("clients").select("email, company, name").eq("id", input.clientId).single();
-    if (clientData?.email) {
-      await sendInvoiceEmail(
-        invoice.id, invoiceNumber ?? "", clientData.email,
-        clientData.company ?? clientData.name, total, input.dueDate ?? "",
-      );
-    }
+  if (!input.isDraft && clientRow?.email) {
+    await sendInvoiceEmail(
+      invoice.id, invoiceNumber ?? "", clientRow.email,
+      clientRow.company ?? clientRow.name, total, input.dueDate ?? "",
+    );
   }
 
   return { id: invoice.id, invoiceNumber: invoiceNumber };
@@ -183,6 +186,10 @@ export async function deleteInvoice(invoiceId: string) {
 export async function createQuote(input: CreateQuoteInput) {
   const admin = await requireAdmin();
 
+  // Quote business follows its client (the wall). select("*") is migration-safe.
+  const { data: clientRow } = await admin
+    .from("clients").select("*").eq("id", input.clientId).single();
+
   const lineItems = input.lineItems.map((li, i) => ({
     ...li,
     amount: calcLineAmount(li.rate, li.quantity),
@@ -196,7 +203,7 @@ export async function createQuote(input: CreateQuoteInput) {
 
   const { data: quote, error } = await admin
     .from("quotes")
-    .insert({
+    .insert(withBusiness({
       client_id: input.clientId,
       quote_number: quoteNumber,
       status: "draft",
@@ -204,7 +211,7 @@ export async function createQuote(input: CreateQuoteInput) {
       notes: input.notes || null,
       subtotal,
       total: subtotal,
-    })
+    }, clientRow?.business))
     .select("id")
     .single();
 
@@ -306,7 +313,7 @@ export async function convertQuoteToInvoice(
 
   const { data: invoice, error: invErr } = await admin
     .from("invoices")
-    .insert({
+    .insert(withBusiness({
       client_id: quote.client_id,
       invoice_number: invoiceNumber,
       status: "pending",
@@ -321,7 +328,7 @@ export async function convertQuoteToInvoice(
       converted_from_quote_id: quoteId,
       description: null,
       pdf_url: null,
-    })
+    }, quote.business))
     .select("id")
     .single();
 

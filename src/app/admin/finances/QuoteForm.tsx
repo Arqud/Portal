@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { createQuote, updateQuote } from "./actions";
 import { Card, Input, Select, Textarea, Button } from "@/components/ui";
 import type { Client, LineItem, QuoteWithItems } from "@/lib/invoices/types";
+import { BUSINESS_OPTIONS, businessKey } from "@/lib/business/persist";
 import { calcLineAmount, calcSubtotal } from "@/lib/invoices/calculations";
 
 const emptyLine = (): Omit<LineItem, "id"> => ({
@@ -19,7 +20,18 @@ export function QuoteForm({
 }) {
   const isEdit = Boolean(editQuote);
   const today = new Date().toISOString().split("T")[0];
-  const [clientId, setClientId] = useState(editQuote?.client_id ?? clients[0]?.id ?? "");
+  const [business, setBusiness] = useState<string>("arqud");
+  const showBusinessSwitcher = !isEdit && clients.length > 1;
+  const visibleClients = showBusinessSwitcher ? clients.filter((c) => businessKey(c.business) === business) : clients;
+  const [clientId, setClientId] = useState(
+    editQuote?.client_id
+      ?? (clients.length > 1 ? clients.find((c) => businessKey(c.business) === "arqud")?.id : clients[0]?.id)
+      ?? clients[0]?.id ?? "",
+  );
+  function changeBusiness(next: string) {
+    setBusiness(next);
+    setClientId(clients.find((c) => businessKey(c.business) === next)?.id ?? "");
+  }
   const [issueDate, setIssueDate] = useState(editQuote?.issue_date ?? today);
   const [notes, setNotes] = useState(editQuote?.notes ?? "");
   const [lines, setLines] = useState<Omit<LineItem, "id">[]>(
@@ -74,11 +86,23 @@ export function QuoteForm({
         </div>
         {err && <p className="text-red-400 text-sm">{err}</p>}
 
+        {showBusinessSwitcher && (
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Business</label>
+            <Select value={business} onChange={(e) => changeBusiness(e.target.value)} className="w-full">
+              {BUSINESS_OPTIONS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+            </Select>
+          </div>
+        )}
+
         <div>
           <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1">Client</label>
           <Select value={clientId} onChange={(e) => setClientId(e.target.value)} className="w-full">
-            {clients.map((c) => <option key={c.id} value={c.id}>{c.company ?? c.name}</option>)}
+            {visibleClients.map((c) => <option key={c.id} value={c.id}>{c.company ?? c.name}</option>)}
           </Select>
+          {showBusinessSwitcher && visibleClients.length === 0 && (
+            <p className="text-xs text-arqud-muted mt-1">No {business === "sa_equipment" ? "SA Equipment" : "ARQUD"} clients yet — add one first.</p>
+          )}
         </div>
 
         <div>

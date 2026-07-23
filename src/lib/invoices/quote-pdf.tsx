@@ -50,6 +50,10 @@ function makeStyles(p: BusinessPalette) {
     noteBox: { backgroundColor: p.bgAlt, borderWidth: 1, borderColor: p.border, padding: "3.5mm 5mm" },
     noteLabel: { fontSize: 7, letterSpacing: 2.8, color: p.goldDim, marginBottom: "2.5mm" },
     noteText: { fontFamily: "Helvetica-Oblique", fontSize: 9.5, lineHeight: 1.45, color: p.textMid },
+    bankingRow: { flexDirection: "row", gap: "5mm", marginTop: "0mm" },
+    bankingBox: { flex: 1, backgroundColor: p.bgAlt, borderWidth: 1, borderColor: p.border, padding: "3.5mm 5mm" },
+    bankingStrong: { fontFamily: "Helvetica-Bold", fontSize: 9.5, color: p.text, marginBottom: "1.5mm" },
+    bankingDetail: { fontSize: 8.5, lineHeight: 1.5, color: p.textMid },
     footer: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: p.dark, paddingHorizontal: "14mm", paddingVertical: "4mm", flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     footerLeft: { fontSize: 7.5, color: `rgba(${p.paperRGB},0.3)`, letterSpacing: 1.5 },
     footerRight: { fontSize: 7.5, color: `rgba(${p.accentRGB},0.4)`, letterSpacing: 2 },
@@ -106,6 +110,8 @@ export function QuotePDF({ quote, business }: { quote: QuoteWithItems; business?
               <Text style={S.partyDetail}>Morne@arqud.com</Text>
               <Text style={S.partyDetail}>Reg No: 2025/074398/07</Text>
               <Text style={S.partyDetail}>Tel: +27 60 865 8690</Text>
+              <Text style={S.partyDetail}>Bank: FNB Gold Business</Text>
+              <Text style={S.partyDetail}>Acc: 63219437109</Text>
             </View>
             <View style={S.partyBox}>
               <Text style={S.partyLabel}>PREPARED FOR</Text>
@@ -141,12 +147,22 @@ export function QuotePDF({ quote, business }: { quote: QuoteWithItems; business?
           <View style={S.vatNote}>
             <Text style={S.vatNoteText}>VAT (15%) will be added upon invoice conversion.</Text>
           </View>
-          {quote.notes ? (
-            <View style={S.noteBox}>
-              <Text style={S.noteLabel}>NOTES</Text>
-              <Text style={S.noteText}>{quote.notes}</Text>
+          <View style={S.bankingRow} wrap={false}>
+            <View style={S.bankingBox}>
+              <Text style={S.noteLabel}>BANKING DETAILS</Text>
+              <Text style={S.bankingStrong}>FNB Gold Business Account</Text>
+              <Text style={S.bankingDetail}>Account Holder: ARQUD (PTY) LTD</Text>
+              <Text style={S.bankingDetail}>Account Number: 63219437109</Text>
+              <Text style={S.bankingDetail}>Branch Code: 255355</Text>
+              <Text style={[S.bankingDetail, { fontFamily: "Helvetica-Oblique" }]}>Reference: {quote.quote_number}</Text>
             </View>
-          ) : null}
+            {quote.notes ? (
+              <View style={[S.noteBox, { flex: 1, marginTop: 0 }]}>
+                <Text style={S.noteLabel}>NOTES</Text>
+                <Text style={S.noteText}>{quote.notes}</Text>
+              </View>
+            ) : null}
+          </View>
         </View>
         <View style={S.footer} fixed>
           <Text style={S.footerLeft}>{theme.legalFooter}</Text>

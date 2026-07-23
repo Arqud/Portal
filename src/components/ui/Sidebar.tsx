@@ -5,8 +5,10 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/cn";
 import type { NavMode } from "@/lib/auth/access";
+import type { BusinessKey } from "@/lib/business/persist";
 import { Avatar } from "./DataTable";
 import { ThemeToggle } from "./ThemeToggle";
+import { BusinessSwitcher } from "./BusinessSwitcher";
 
 type NavItem = { label: string; href: string; soon?: boolean };
 type NavGroup = { heading: string; items: readonly NavItem[] };
@@ -30,6 +32,7 @@ const CLIENT_GROUPS: readonly NavGroup[] = [
   },
 ];
 
+// ARQUD agency workspace — the full command center.
 const ADMIN_GROUPS: readonly NavGroup[] = [
   {
     heading: "Workspace",
@@ -53,6 +56,26 @@ const ADMIN_GROUPS: readonly NavGroup[] = [
   },
 ];
 
+// SA Equipment workspace — its own focused home. No leads/campaigns (a dealer, not
+// an agency). Finances is shared: it's the one company's books, reached from here too.
+const SAE_GROUPS: readonly NavGroup[] = [
+  {
+    heading: "Workspace",
+    items: [
+      { label: "Home", href: "/admin/overview" },
+      { label: "Customers", href: "/admin/clients" },
+      { label: "Proposals", href: "/admin/proposals" },
+    ],
+  },
+  {
+    heading: "Run the business",
+    items: [
+      { label: "Finances", href: "/admin/finances" },
+      { label: "Settings", href: "/admin/settings" },
+    ],
+  },
+];
+
 type SidebarProps = {
   variant: "client" | "admin";
   brandName: string;
@@ -62,11 +85,15 @@ type SidebarProps = {
   //   'leadsOnly'     → wash staff: just the Leads page
   //   'franchiseOnly' → Marissa: just the Sparkling Franchise Leads page
   navMode?: NavMode;
+  // Admin only: which business workspace is active. Drives the brand, nav and theme.
+  business?: BusinessKey;
 };
 
-export function Sidebar({ variant, brandName, user, navMode = "full" }: SidebarProps) {
+export function Sidebar({ variant, brandName, user, navMode = "full", business = "arqud" }: SidebarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  const isSae = variant === "admin" && business === "sa_equipment";
 
   const clientGroups: readonly NavGroup[] =
     navMode === "leadsOnly"
@@ -74,14 +101,23 @@ export function Sidebar({ variant, brandName, user, navMode = "full" }: SidebarP
       : navMode === "franchiseOnly"
         ? [{ heading: "Menu", items: [FRANCHISE_ITEM] }]
         : CLIENT_GROUPS;
-  const groups = variant === "client" ? clientGroups : ADMIN_GROUPS;
+  const adminGroups = isSae ? SAE_GROUPS : ADMIN_GROUPS;
+  const groups = variant === "client" ? clientGroups : adminGroups;
   const clientHome =
     navMode === "franchiseOnly" ? "/client/franchise-leads" : navMode === "leadsOnly" ? "/client/leads" : "/client/dashboard";
   const homeHref = variant === "client" ? clientHome : "/admin/overview";
   const initials = user.name.charAt(0).toUpperCase() || "?";
+  const mobileWord = isSae ? "SA EQUIPMENT" : "ARQUD";
 
   const itemBox = "flex items-center gap-[11px] text-[13px] px-3 py-[10px] rounded-control transition-colors duration-150";
   const iconBox = "w-4 h-4 rounded-[5px] border-[1.5px] shrink-0";
+
+  // ARQUD keeps its filled-gold active state; SA Equipment gets a refined light-
+  // premium treatment (faint amber wash + amber text) that reads cleanly on cream.
+  const activeItem = isSae
+    ? "bg-arqud-gold/12 text-arqud-gold font-semibold"
+    : "bg-gradient-to-r from-arqud-gold to-arqud-gold-soft text-arqud-bg font-semibold shadow-[0_6px_18px_rgba(200,169,110,0.25)]";
+  const activeIcon = isSae ? "border-arqud-gold bg-arqud-gold/25" : "border-arqud-bg bg-arqud-bg/25";
 
   const navList = (
     <nav aria-label="Primary" className="flex flex-col gap-3">
@@ -106,15 +142,10 @@ export function Sidebar({ variant, brandName, user, navMode = "full" }: SidebarP
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                className={cn(
-                  itemBox,
-                  isActive
-                    ? "bg-gradient-to-r from-arqud-gold to-arqud-gold-soft text-arqud-bg font-semibold shadow-[0_6px_18px_rgba(200,169,110,0.25)]"
-                    : "text-arqud-bone-dim hover:bg-arqud-gold/5 hover:text-arqud-bone"
-                )}
+                className={cn(itemBox, isActive ? activeItem : "text-arqud-bone-dim hover:bg-arqud-gold/5 hover:text-arqud-bone")}
               >
                 <span
-                  className={cn(iconBox, isActive ? "border-arqud-bg bg-arqud-bg/25" : "border-current opacity-70")}
+                  className={cn(iconBox, isActive ? activeIcon : "border-current opacity-70")}
                   aria-hidden="true"
                 />
                 {label}
@@ -130,8 +161,8 @@ export function Sidebar({ variant, brandName, user, navMode = "full" }: SidebarP
     <>
       {/* Mobile header bar with drawer toggle */}
       <div className="md:hidden flex items-center justify-between px-4 h-14 bg-arqud-bg border-b border-arqud-line fixed top-0 inset-x-0 z-50">
-        <Link href={homeHref} className="font-display text-lg tracking-[0.28em] text-arqud-gold">
-          ARQUD
+        <Link href={homeHref} className={cn("font-display text-arqud-gold", isSae ? "text-sm tracking-[0.14em]" : "text-lg tracking-[0.28em]")}>
+          {mobileWord}
         </Link>
         <button
           type="button"
@@ -163,14 +194,18 @@ export function Sidebar({ variant, brandName, user, navMode = "full" }: SidebarP
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <Link href={homeHref} className="group block px-2 pb-[22px]">
-          <span className="block font-display text-[20px] tracking-[0.3em] text-arqud-gold group-hover:text-arqud-gold-soft transition-colors duration-150">
-            ARQUD
-          </span>
-          <span className="mt-2 block text-[10px] uppercase tracking-[0.12em] text-arqud-muted leading-snug line-clamp-2">
-            {variant === "client" ? brandName : "Command Center"}
-          </span>
-        </Link>
+        {variant === "admin" ? (
+          <BusinessSwitcher current={business} />
+        ) : (
+          <Link href={homeHref} className="group block px-2 pb-[22px]">
+            <span className="block font-display text-[20px] tracking-[0.3em] text-arqud-gold group-hover:text-arqud-gold-soft transition-colors duration-150">
+              ARQUD
+            </span>
+            <span className="mt-2 block text-[10px] uppercase tracking-[0.12em] text-arqud-muted leading-snug line-clamp-2">
+              {brandName}
+            </span>
+          </Link>
+        )}
 
         {navList}
 
@@ -181,7 +216,8 @@ export function Sidebar({ variant, brandName, user, navMode = "full" }: SidebarP
               <p className="text-[12.5px] text-arqud-bone leading-tight truncate">{user.name}</p>
               <p className="text-[10.5px] text-arqud-muted leading-tight truncate">{user.label}</p>
             </div>
-            <ThemeToggle />
+            {/* SA Equipment is a fixed light-premium brand — no dark/light toggle there. */}
+            {!isSae && <ThemeToggle />}
           </div>
           <form action="/logout" method="post" className="mt-3">
             <button

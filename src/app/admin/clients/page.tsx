@@ -2,6 +2,8 @@ import Link from "next/link";
 import { verifySession } from "@/lib/auth/session";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { PageHeader, Card, Table, Tr, Td, Pill, Avatar } from "@/components/ui";
+import { getActiveBusiness } from "@/lib/business/active";
+import { businessKey } from "@/lib/business/persist";
 
 // Button is a <button>; this mirrors its primary classes for real <a> navigation (no asChild support).
 const BTN_PRIMARY = "inline-flex items-center gap-2 font-semibold tracking-wide rounded-control transition-all text-xs px-[18px] py-[11px] text-arqud-bg bg-gradient-to-r from-arqud-gold to-arqud-gold-soft shadow-[0_8px_22px_rgba(200,169,110,0.28)] hover:-translate-y-px";
@@ -10,12 +12,21 @@ export default async function AdminClientsPage() {
   await verifySession("admin");
   const admin = createSupabaseAdminClient();
 
+  const business = await getActiveBusiness();
+  const isSae = business === "sa_equipment";
+
   const { data: clients } = await admin
     .from("clients")
     .select("*")
     .order("created_at", { ascending: false });
 
-  const list = clients ?? [];
+  // Scope to the active workspace: SA Equipment shows only its customers; ARQUD shows
+  // its own (untagged rows read as ARQUD, so the current list is unchanged there).
+  const list = (clients ?? []).filter((c) => businessKey(c.business) === business);
+  const addHref = isSae ? "/admin/clients/new?business=sa_equipment" : "/admin/clients/new";
+  const addLabel = isSae ? "+ Add Customer" : "+ Add Client";
+  const pageTitle = isSae ? "Customers" : "Clients";
+  const noun = isSae ? "customer" : "client";
 
   const { data: invoices } = await admin
     .from("invoices")
@@ -38,16 +49,16 @@ export default async function AdminClientsPage() {
 
   return (
     <main className="min-h-screen px-4 sm:px-8 py-8 sm:py-10 animate-fade-up">
-      <PageHeader title="Clients" count={`${activeCount} active · ${list.length} total`}>
-        <Link href="/admin/clients/new" className={BTN_PRIMARY}>+ Add Client</Link>
+      <PageHeader title={pageTitle} count={`${activeCount} active · ${list.length} total`}>
+        <Link href={addHref} className={BTN_PRIMARY}>{addLabel}</Link>
       </PageHeader>
 
       {list.length === 0 ? (
         <Card>
           <div className="py-10 text-center space-y-3">
-            <p className="font-display text-2xl text-arqud-gold">No clients yet</p>
-            <p className="text-arqud-muted text-sm">Add your first client to get started.</p>
-            <Link href="/admin/clients/new" className={`${BTN_PRIMARY} mt-2`}>+ Add Client</Link>
+            <p className="font-display text-2xl text-arqud-gold">No {noun}s yet</p>
+            <p className="text-arqud-muted text-sm">Add your first {noun} to get started.</p>
+            <Link href={addHref} className={`${BTN_PRIMARY} mt-2`}>{addLabel}</Link>
           </div>
         </Card>
       ) : (

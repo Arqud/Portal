@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useTransition, useState } from "react";
 import { addNewClient } from "./actions";
 import { Button, Input } from "@/components/ui";
+import type { BusinessKey } from "@/lib/business/persist";
 
-export function AddClientFormClient() {
+export function AddClientFormClient({ defaultBusiness = "arqud" }: { defaultBusiness?: BusinessKey }) {
   const [isPending, start] = useTransition();
   const [err, setErr] = useState("");
   const [subdomain, setSubdomain] = useState("");
@@ -30,7 +31,7 @@ export function AddClientFormClient() {
 
       <div>
         <label className="block text-xs uppercase tracking-widest text-arqud-muted mb-1.5">Business</label>
-        <select name="business" defaultValue="arqud"
+        <select name="business" defaultValue={defaultBusiness}
           className="w-full bg-arqud-panel border border-arqud-line-2 rounded-control px-3.5 py-2.5 text-arqud-bone text-sm focus:outline-none focus:ring-1 focus:ring-arqud-gold/40 transition">
           <option value="arqud">ARQUD — marketing</option>
           <option value="sa_equipment">SA Equipment — machinery</option>

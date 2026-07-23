@@ -37,6 +37,13 @@ export const FORM_BRANCHES: Record<string, FormBranchEntry> = {
   "1445058691003630": { branch: null, page_id: WE_WASH_PAGE_ID, label: "We Wash — Book a Valet" },
   "1713965523197151": { branch: null, page_id: SPARKLING_PAGE_ID, label: "Sparkling — Book a Detail" },
 
+  // ── Sparkling FRANCHISE recruitment form ── branch: null (franchise leads have
+  //    no branch; the franchise gate in franchise.ts skips them from the wash SMS
+  //    forward). Polled here as a belt-and-suspenders ingestion path alongside the
+  //    form-agnostic webhook. NOTE: real ad leads are "targeted" and retrievable;
+  //    testing-tool "untargeted" leads need the form's untargeted-retrieval enabled.
+  "1536722477910340": { branch: null, page_id: SPARKLING_PAGE_ID, label: "Sparkling Franchise — Rivonia" },
+
   // ── TODO(form-per-branch cutover): when the 9 per-branch Meta forms are
   //    created, add one entry per form below — that single edit makes the cron
   //    poll the form AND branch-tags its leads. Template (replace the form id

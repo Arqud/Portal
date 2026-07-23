@@ -6,9 +6,10 @@ import { FRANCHISE_FORM_IDS, isFranchiseLead, isFranchiseLeadRow, partitionFranc
 // mirrors the branchForForm(id, map) convention already used in formBranches.ts).
 const WITH_FRANCHISE_FORM: ReadonlySet<string> = new Set(["9990000000000099"]);
 
-describe("FRANCHISE_FORM_IDS (wired but empty until the form exists)", () => {
-  it("is empty by default — no form id is hard-coded yet", () => {
-    expect(FRANCHISE_FORM_IDS.size).toBe(0);
+describe("FRANCHISE_FORM_IDS (the registered franchise form)", () => {
+  it("contains the Sparkling Franchise — Rivonia form id", () => {
+    expect(FRANCHISE_FORM_IDS.has("1536722477910340")).toBe(true);
+    expect(FRANCHISE_FORM_IDS.size).toBe(1);
   });
 });
 
@@ -26,7 +27,7 @@ describe("isFranchiseLead — allow-list (form id)", () => {
   });
 
   it("uses the empty production set by default — a known wash form id is not franchise", () => {
-    // No injected set → the real (empty) FRANCHISE_FORM_IDS is consulted.
+    // No injected set → the real FRANCHISE_FORM_IDS is consulted; a wash form id is not in it.
     expect(isFranchiseLead({ form_id: "1713965523197151" })).toBe(false);
   });
 });

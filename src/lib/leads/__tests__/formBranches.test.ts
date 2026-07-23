@@ -18,8 +18,12 @@ const CUTOVER_MAP: Record<string, FormBranchEntry> = {
 };
 
 describe("FORM_BRANCHES map", () => {
-  it("contains exactly the two current live forms, both branch: null (they still ask the branch question)", () => {
-    expect(Object.keys(FORM_BRANCHES).sort()).toEqual(["1445058691003630", "1713965523197151"]);
+  it("contains the two live wash forms + the registered franchise form (all branch: null)", () => {
+    expect(Object.keys(FORM_BRANCHES).sort()).toEqual([
+      "1445058691003630",
+      "1536722477910340",
+      "1713965523197151",
+    ]);
     expect(FORM_BRANCHES["1445058691003630"]).toEqual({
       branch: null,
       page_id: WE_WASH_PAGE_ID,
@@ -29,6 +33,11 @@ describe("FORM_BRANCHES map", () => {
       branch: null,
       page_id: SPARKLING_PAGE_ID,
       label: "Sparkling — Book a Detail",
+    });
+    expect(FORM_BRANCHES["1536722477910340"]).toEqual({
+      branch: null,
+      page_id: SPARKLING_PAGE_ID,
+      label: "Sparkling Franchise — Rivonia",
     });
   });
 
@@ -43,10 +52,11 @@ describe("FORM_BRANCHES map", () => {
 });
 
 describe("POLL_FORMS (derived from the map)", () => {
-  it("matches the exact shape + entries the poll cron used before (no behaviour change today)", () => {
+  it("is derived from the map — the two wash forms plus the franchise form", () => {
     expect(POLL_FORMS).toEqual([
       { form_id: "1445058691003630", page_id: WE_WASH_PAGE_ID, label: "We Wash — Book a Valet" },
       { form_id: "1713965523197151", page_id: SPARKLING_PAGE_ID, label: "Sparkling — Book a Detail" },
+      { form_id: "1536722477910340", page_id: SPARKLING_PAGE_ID, label: "Sparkling Franchise — Rivonia" },
     ]);
   });
 });

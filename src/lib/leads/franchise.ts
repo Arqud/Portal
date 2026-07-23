@@ -23,7 +23,7 @@
  * a form id is registered, the name safety-net in isFranchiseLead() covers the ad.
  */
 export const FRANCHISE_FORM_IDS: ReadonlySet<string> = new Set<string>([
-  // "PASTE_META_FRANCHISE_FORM_ID_HERE",
+  "1536722477910340", // Sparkling Franchise — Rivonia (registered 2026-07-23)
 ]);
 
 // The name signal for the interim, before the form id is known. A wash campaign /

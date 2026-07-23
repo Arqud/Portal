@@ -163,7 +163,7 @@ h4 {
 
   --color-arqud-bone: #14120D;       /* primary text -> brand ink */
   --color-arqud-bone-dim: #57513F;
-  --color-arqud-muted: #9A9382;
+  --color-arqud-muted: #857F70;      /* clears ~3:1 on the cream page bg, not just on white cards */
 
   --color-arqud-gold-glow: rgba(245, 179, 1, 0.10);
   --shadow-card: 0 1px 2px rgba(20, 16, 10, .05), 0 14px 36px rgba(20, 16, 10, .07);
@@ -172,6 +172,17 @@ h4 {
 [data-business="sa_equipment"] .panel-gradient {
   background: var(--color-arqud-panel);
   box-shadow: var(--shadow-card);
+}
+
+/* Primary CTAs: the gold-gradient + cream text (the shared Button primary and every
+   BTN_PRIMARY built from the same utilities) washes out on cream. In the SA Equipment
+   workspace, render them as a solid signal-amber fill with ink text. Scoped to <a>/<button>
+   so decorative gradients (progress bars) are untouched; specificity beats the utilities. */
+[data-business="sa_equipment"] a.bg-gradient-to-r.from-arqud-gold,
+[data-business="sa_equipment"] button.bg-gradient-to-r.from-arqud-gold {
+  background-image: none;
+  background-color: #F5B301;
+  color: #0E1116;
 }
 
 /* drop the dark film-grain overlay whenever an SA Equipment workspace is on screen */

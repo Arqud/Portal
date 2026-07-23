@@ -7,6 +7,7 @@ import { Button, Input } from "@/components/ui";
 import type { BusinessKey } from "@/lib/business/persist";
 
 export function AddClientFormClient({ defaultBusiness = "arqud" }: { defaultBusiness?: BusinessKey }) {
+  const isSae = defaultBusiness === "sa_equipment";
   const [isPending, start] = useTransition();
   const [err, setErr] = useState("");
   const [subdomain, setSubdomain] = useState("");
@@ -119,7 +120,7 @@ export function AddClientFormClient({ defaultBusiness = "arqud" }: { defaultBusi
 
       <div className="flex gap-3 pt-2">
         <Button type="submit" disabled={isPending} className="flex-1 justify-center">
-          {isPending ? "Creating…" : "Add Client"}
+          {isPending ? "Creating…" : isSae ? "Add Customer" : "Add Client"}
         </Button>
         <Link href="/admin/clients"
           className="flex-1 inline-flex items-center justify-center font-semibold tracking-wide rounded-control transition-all text-xs px-[18px] py-[11px] text-arqud-gold-soft border border-arqud-gold/40 hover:border-arqud-gold/70 hover:bg-arqud-gold/5">

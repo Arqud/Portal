@@ -6,6 +6,7 @@ import { getActiveBusiness } from "@/lib/business/active";
 import { businessKey } from "@/lib/business/persist";
 
 // Button is a <button>; this mirrors its primary classes for real <a> navigation (no asChild support).
+// (In the SA Equipment workspace a scoped globals.css rule recolors this to solid amber + ink.)
 const BTN_PRIMARY = "inline-flex items-center gap-2 font-semibold tracking-wide rounded-control transition-all text-xs px-[18px] py-[11px] text-arqud-bg bg-gradient-to-r from-arqud-gold to-arqud-gold-soft shadow-[0_8px_22px_rgba(200,169,110,0.28)] hover:-translate-y-px";
 
 export default async function AdminClientsPage() {
@@ -90,7 +91,9 @@ export default async function AdminClientsPage() {
                 </Td>
                 <Td className="basis-[0.9fr] grow text-arqud-bone">{fmt(stats.total)}</Td>
                 <Td className="basis-[0.9fr] grow">
-                  <span className={stats.outstanding > 0 ? "text-arqud-gold-soft" : "text-arqud-bone"}>{fmt(stats.outstanding)}</span>
+                  {/* gold-soft is legible on ARQUD's dark rows but washes out on SA Equipment's
+                      white rows — SAE uses the deeper gold token so the balance stays readable. */}
+                  <span className={stats.outstanding > 0 ? (isSae ? "text-arqud-gold" : "text-arqud-gold-soft") : "text-arqud-bone"}>{fmt(stats.outstanding)}</span>
                 </Td>
                 <Td className="basis-[0.7fr] grow">
                   <Pill tone={client.status === "active" ? "converted" : "neutral"}>{client.status}</Pill>

@@ -69,9 +69,9 @@ export function BusinessSwitcher({ current }: { current: BusinessKey }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
+        aria-haspopup="true"
         aria-expanded={open}
-        aria-label="Switch workspace"
+        aria-label={`Current workspace: ${BUSINESS_LABEL[current]}. Switch workspace`}
         disabled={pending}
         className="group flex w-full items-center gap-2.5 rounded-control px-2.5 py-2 text-left transition-colors hover:bg-arqud-gold/[0.06] disabled:opacity-60"
       >
@@ -91,7 +91,6 @@ export function BusinessSwitcher({ current }: { current: BusinessKey }) {
 
       {open && (
         <div
-          role="menu"
           aria-label="Workspaces"
           className="absolute left-1 right-1 top-full z-50 mt-1 overflow-hidden rounded-control border border-arqud-line-2 bg-arqud-panel shadow-card"
         >
@@ -102,8 +101,7 @@ export function BusinessSwitcher({ current }: { current: BusinessKey }) {
               <button
                 key={opt.value}
                 type="button"
-                role="menuitemradio"
-                aria-checked={isCur}
+                aria-current={isCur ? "true" : undefined}
                 onClick={() => choose(opt.value)}
                 className={cn(
                   "flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-[13px] transition-colors",

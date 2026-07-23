@@ -189,7 +189,11 @@ export function Sidebar({ variant, brandName, user, navMode = "full", business =
       {/* Sidebar column: drawer on mobile, static column from md up */}
       <aside
         className={cn(
-          "w-[228px] shrink-0 flex flex-col bg-gradient-to-b from-arqud-bg-2 to-arqud-bg border-r border-arqud-line p-4 pt-6",
+          "w-[228px] shrink-0 flex flex-col bg-gradient-to-b from-arqud-bg-2 to-arqud-bg border-r border-arqud-line p-4",
+          // The admin drawer leads with the workspace switcher; on mobile it must clear
+          // the fixed 56px top bar (z-50) so the switcher isn't tucked behind it. Desktop
+          // (md:static, no top bar) keeps the original pt-6. Client drawer is unchanged.
+          variant === "admin" ? "pt-[72px] md:pt-6" : "pt-6",
           "fixed inset-y-0 left-0 z-40 transition-transform duration-200 md:static md:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
         )}
